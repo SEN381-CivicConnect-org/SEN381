@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Use Registration Form</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --ok: #2f6f4f;
+    --err: #9b3226;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --ok: #7fc4a0;
+      --err: #e08b7e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 52rem; margin: 0 auto; }
+  h1 { font-size: 1.9rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  p { margin: 0 0 1rem; }
+  label { display: block; margin-bottom: 1.15rem; }
+  .lab {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .hint { display: block; color: var(--muted); font-size: .88rem; margin-bottom: .35rem; }
+  input, select, textarea {
+    width: 100%;
+    padding: .55rem .7rem;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    font: inherit;
+    font-size: .95rem;
+  }
+  textarea { min-height: 5.5rem; resize: vertical; }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+  @media (max-width: 40rem) { .row2 { grid-template-columns: 1fr; } }
+  .actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-top: .5rem; }
+  button {
+    padding: .55rem 1.1rem;
+    font: inherit;
+    font-size: .95rem;
+    border-radius: .35rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #16161a; } }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  #status { margin: 1rem 0 0; font-size: .94rem; min-height: 1.6rem; }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--err); }
+  #fallback[hidden] { display: none; }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .4rem;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    font-size: .85rem;
+    white-space: pre;
+  }
+  .link-state { font-size: .88rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI Use Registration Form</h1>
+  <p class="sub">Capture an AI usage entry and append it directly to the AI Usage register.</p>
+
+  <div class="note">
+    <span class="label">Before you start</span>
+    <p>Writing to the register file needs the File System Access API (Chrome or Edge). Click <strong>Link register file</strong> once and select <code>Useage Register/AI Usage.html</code> &mdash; the browser remembers the file for later submissions. In other browsers the form still builds the table row for you to paste in manually.</p>
+    <p class="link-state" id="linkState">Register file: not linked.</p>
+    <div class="actions">
+      <button type="button" id="linkBtn">Link register file</button>
+      <button type="button" id="openBtn">Open register</button>
+    </div>
+  </div>
+
+  <form id="form" autocomplete="off">
+    <h2>Entry details</h2>
+
+    <div class="row2">
+      <label>
+        <span class="lab">Date</span>
+        <input type="date" id="date" name="date" required>
+      </label>
+      <label>
+        <span class="lab">Student</span>
+        <select id="student" name="student" required>
+          <option value="" selected disabled>Select a team member</option>
+          <option value="Shaun">Shaun</option>
+          <option value="Fourie">Fourie</option>
+          <option value="Bernard">Bernard</option>
+        </select>
+      </label>
+    </div>
+
+    <label>
+      <span class="lab">Tool</span>
+      <input type="text" id="tool" name="tool" list="tools" placeholder="e.g. ChatGPT" required>
+      <datalist id="tools">
+        <option value="ChatGPT"></option>
+        <option value="Claude"></option>
+        <option value="Gemini"></option>
+        <option value="GitHub Copilot"></option>
+      </datalist>
+    </label>
+
+    <label>
+      <span class="lab">Engineering task</span>
+      <span class="hint">The task the AI was used for.</span>
+      <textarea id="task" name="task" required></textarea>
+    </label>
+
+    <label>
+      <span class="lab">AI contribution</span>
+      <span class="hint">What the AI actually produced or was asked.</span>
+      <textarea id="contribution" name="contribution" required></textarea>
+    </label>
+
+    <label>
+      <span class="lab">Verification</span>
+      <span class="hint">How the output was checked against project sources.</span>
+      <textarea id="verification" name="verification" required></textarea>
+    </label>
+
+    <label>
+      <span class="lab">Decision</span>
+      <span class="hint">What was accepted, rejected or changed.</span>
+      <textarea id="decision" name="decision" required></textarea>
+    </label>
+
+    <label>
+      <span class="lab">Issues found</span>
+      <textarea id="issues" name="issues" required></textarea>
+    </label>
+
+    <div class="actions">
+      <button type="submit" class="primary">Submit</button>
+      <button type="reset">Clear</button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <div id="fallback" hidden>
+    <h2>Row to paste</h2>
+    <p>Copy this block and paste it just before <code>&lt;/tbody&gt;</code> in the register file.</p>
+    <pre id="rowOut"></pre>
+    <div class="actions"><button type="button" id="copyBtn">Copy row</button></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var REGISTER = "Useage Register/AI Usage.html";
+  var DB_NAME = "ai-usage-form", STORE = "handles", KEY = "register";
+  var form = document.getElementById("form");
+  var statusEl = document.getElementById("status");
+  var linkState = document.getElementById("linkState");
+  var fallback = document.getElementById("fallback");
+  var rowOut = document.getElementById("rowOut");
+  var supported = typeof window.showOpenFilePicker === "function";
+  var handle = null;
+
+  // Shows a short message under the form, styled as success or error.
+  function say(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = kind || "";
+  }
+
+  // Escapes text so it is safe to place inside an HTML table cell.
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Returns today's local date as yyyy-mm-dd for the date input.
+  function today() {
+    var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+
+  // Converts a yyyy-mm-dd input value to the dd/mm/yyyy format used in the register.
+  function fmtDate(v) {
+    var p = v.split("-");
+    return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : v;
+  }
+
+  // Opens (or creates) the IndexedDB database that persists the register file handle.
+  function idb() {
+    return new Promise(function (res, rej) {
+      var r = indexedDB.open(DB_NAME, 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore(STORE); };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+    });
+  }
+
+  // Stores the picked file handle so the file only has to be selected once.
+  function saveHandle(h) {
+    return idb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction(STORE, "readwrite");
+        t.objectStore(STORE).put(h, KEY);
+        t.oncomplete = function () { res(); };
+        t.onerror = function () { rej(t.error); };
+      });
+    });
+  }
+
+  // Retrieves a previously stored file handle, or null if none was saved.
+  function loadHandle() {
+    return idb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction(STORE, "readonly");
+        var rq = t.objectStore(STORE).get(KEY);
+        rq.onsuccess = function () { res(rq.result || null); };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    });
+  }
+
+  // Updates the note showing whether the register file is currently linked.
+  function setLinkState(name) {
+    linkState.textContent = name ? "Register file: " + name + " (linked)." : "Register file: not linked.";
+  }
+
+  // Asks the browser for read/write permission on the stored handle.
+  function hasPermission(h, prompt) {
+    var opts = { mode: "readwrite" };
+    return (prompt ? h.requestPermission(opts) : h.queryPermission(opts)).then(function (p) {
+      return p === "granted";
+    });
+  }
+
+  // Prompts the user to select the register file and remembers it.
+  function pickFile() {
+    return window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: "HTML register", accept: { "text/html": [".html"] } }]
+    }).then(function (list) {
+      handle = list[0];
+      setLinkState(handle.name);
+      return saveHandle(handle).then(function () { return handle; });
+    });
+  }
+
+  // Returns a usable handle, reusing the stored one when permission is still granted.
+  function ensureHandle() {
+    if (handle) {
+      return hasPermission(handle, false).then(function (ok) {
+        return ok ? handle : hasPermission(handle, true).then(function (ok2) {
+          return ok2 ? handle : pickFile();
+        });
+      });
+    }
+    return pickFile();
+  }
+
+  // Builds the HTML table row for one register entry.
+  function buildRow(d) {
+    return [
+      "        <tr>",
+      '          <td class="name">' + esc(fmtDate(d.date)) + "</td>",
+      '          <td class="name">' + esc(d.student) + "</td>",
+      "          <td>" + esc(d.tool) + "</td>",
+      "          <td>" + esc(d.task) + "</td>",
+      "          <td>" + esc(d.contribution) + "</td>",
+      "          <td>" + esc(d.verification) + "</td>",
+      "          <td>" + esc(d.decision) + "</td>",
+      "          <td>" + esc(d.issues) + "</td>",
+      "        </tr>"
+    ].join("\n");
+  }
+
+  // Reads the register file, inserts the row before </tbody> and writes it back.
+  function appendRow(rowHtml) {
+    return ensureHandle().then(function (h) {
+      return h.getFile().then(function (f) { return f.text(); }).then(function (text) {
+        var i = text.lastIndexOf("</tbody>");
+        if (i === -1) throw new Error("No </tbody> found - is that the AI Usage register file?");
+        var before = text.slice(0, i).replace(/[ \t]*$/, "");
+        var updated = before + rowHtml + "\n      " + text.slice(i);
+        return h.createWritable().then(function (w) {
+          return w.write(updated).then(function () { return w.close(); });
+        });
+      });
+    });
+  }
+
+  document.getElementById("linkBtn").addEventListener("click", function () {
+    if (!supported) { say("This browser cannot write files. Use Chrome or Edge, or paste the row manually.", "err"); return; }
+    pickFile().then(function () { say("Register file linked.", "ok"); })
+      .catch(function (e) { if (e.name !== "AbortError") say(e.message, "err"); });
+  });
+
+  document.getElementById("openBtn").addEventListener("click", function () {
+    window.open(REGISTER, "_blank");
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", function () {
+    navigator.clipboard.writeText(rowOut.textContent).then(function () { say("Row copied to clipboard.", "ok"); });
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+
+    var data = {
+      date: form.date.value,
+      student: form.student.value.trim(),
+      tool: form.tool.value.trim(),
+      task: form.task.value.trim(),
+      contribution: form.contribution.value.trim(),
+      verification: form.verification.value.trim(),
+      decision: form.decision.value.trim(),
+      issues: form.issues.value.trim()
+    };
+    var row = buildRow(data);
+
+    if (!supported) {
+      rowOut.textContent = row;
+      fallback.hidden = false;
+      form.reset();
+      say("Entry built. This browser cannot write the file - copy the row below into the register.", "err");
+      return;
+    }
+
+    say("Saving to register...");
+    appendRow(row).then(function () {
+      form.reset();
+      fallback.hidden = true;
+      say("Entry added to " + REGISTER + ".", "ok");
+    }).catch(function (err) {
+      if (err && err.name === "AbortError") { say("Cancelled - nothing was saved.", "err"); return; }
+      rowOut.textContent = row;
+      fallback.hidden = false;
+      say("Could not write the register: " + (err && err.message ? err.message : err) + " Copy the row below instead.", "err");
+    });
+  });
+
+  form.addEventListener("reset", function () {
+    say("");
+    setTimeout(function () { form.date.value = today(); }, 0);
+  });
+
+  form.date.value = today();
+
+  if (supported) {
+    loadHandle().then(function (h) {
+      if (!h) return;
+      handle = h;
+      setLinkState(h.name);
+    }).catch(function () {});
+  } else {
+    setLinkState(null);
+    say("Read-only mode: this browser has no file write support, so submissions produce a row to paste.", "err");
+  }
+})();
+</script>
+</body>
+</html>

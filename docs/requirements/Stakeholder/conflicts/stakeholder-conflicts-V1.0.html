@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stakeholder Conflicts</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --conflict: #a3452f;
+    --solution: #3f6b46;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --conflict: #e08d76;
+      --solution: #8fbf99;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 44rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  article {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.1rem;
+  }
+  article h3 {
+    font-size: 1rem;
+    margin: 0 0 .7rem;
+    color: var(--accent);
+  }
+  .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: .15rem;
+  }
+  .label.c { color: var(--conflict); }
+  .label.s { color: var(--solution); }
+  .block { margin-bottom: .8rem; }
+  .block:last-child { margin-bottom: 0; }
+  .block p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Stakeholder Conflicts</h1>
+  <p class="sub">Incident reporting and ticket management system &mdash; SEN381</p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="id">ID</th>
+        <th>Conflict</th>
+        <th>Parties</th>
+        <th>Resolution</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="id">STK-CFL-01</td>
+        <td class="name">Self-declared urgency</td>
+        <td>Incident reporters (STK-01) vs. technicians (STK-02)</td>
+        <td>Priority calculated from impact and urgency, with a supervisor (STK-03) override that records a reason.</td>
+      </tr>
+      <tr>
+        <td class="id">STK-CFL-02</td>
+        <td class="name">Mass reportable incidents</td>
+        <td>Incident reporters (STK-01) vs. technicians (STK-02)</td>
+        <td>Cluster related reports into a parent incident and subscribe every reporter to it.</td>
+      </tr>
+      <tr>
+        <td class="id">STK-CFL-03</td>
+        <td class="name">Closure speed vs. traceability</td>
+        <td>Technicians (STK-02) vs. finance department (STK-05)</td>
+        <td>Keep the technician's report as concise as possible while retaining all relevant and important data.</td>
+      </tr>
+      <tr>
+        <td class="id">STK-CFL-04</td>
+        <td class="name">Visibility of open incidents</td>
+        <td>Incident reporters (STK-01) vs. operations manager (STK-04)</td>
+        <td>Publish unresolved incidents, optionally alongside resolution statistics per category.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Details</h2>
+
+  <article>
+    <h3>STK-CFL-01 &mdash; Self-declared urgency vs. a pre-populated ticket queue</h3>
+    <div class="block">
+      <span class="label c">Conflict</span>
+      <p>All users reporting an issue (STK-01) will want their issue to take top priority; however, technicians (STK-02) will already have a pre-populated ticket queue. The problem is that if urgency is self-declared, everything will be declared urgent.</p>
+    </div>
+    <div class="block">
+      <span class="label s">Solution</span>
+      <p>Have priority calculated off impact and urgency, using the reported location and category. However, an override will still exist for the team supervisor (STK-03) to exert human discretion, with a recorded reason.</p>
+    </div>
+  </article>
+
+  <article>
+    <h3>STK-CFL-02 &mdash; Mass reportable incidents</h3>
+    <div class="block">
+      <span class="label c">Conflict</span>
+      <p>When the network drops or a similar mass reportable incident takes place, every user that reports the incident (STK-01) wants their report to be acknowledged, but the technicians (STK-02) want to resolve only one incident.</p>
+    </div>
+    <div class="block">
+      <span class="label s">Solution</span>
+      <p>Cluster related reports into a parent incident and subscribe every reporter to it. Each person keeps their own reference and receives updates, but technicians (STK-02) only work with one item.</p>
+    </div>
+  </article>
+
+  <article>
+    <h3>STK-CFL-03 &mdash; Closure speed vs. traceability of goods</h3>
+    <div class="block">
+      <span class="label c">Conflict</span>
+      <p>Technicians (STK-02) want to resolve a ticket as quickly as possible with minimal typing, whereas the finance department (STK-05) wants a detailed report with as much traceability to physical goods and hardware as possible, to track faulty goods that need to be replaced or to notify suppliers about faulty equipment.</p>
+    </div>
+    <div class="block">
+      <span class="label s">Solution</span>
+      <p>Make the report a technician (STK-02) must fill in as concise as possible while retaining all relevant and important data.</p>
+    </div>
+  </article>
+
+  <article>
+    <h3>STK-CFL-04 &mdash; Visibility of unresolved incidents</h3>
+    <div class="block">
+      <span class="label c">Conflict</span>
+      <p>Users (STK-01) want reports that were already made to be visible, whereas the operations manager (STK-04) would prefer not to display a list of unresolved issues.</p>
+    </div>
+    <div class="block">
+      <span class="label s">Solution</span>
+      <p>Publish unresolved incidents, as the argument for publishing the data is stronger than the argument against. It is also possible to publish resolution statistics per category.</p>
+    </div>
+  </article>
+</main>
+</body>
+</html>

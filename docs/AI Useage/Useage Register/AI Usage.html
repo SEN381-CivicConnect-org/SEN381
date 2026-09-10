@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Usage Register</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 72rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 68rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-size: .94rem;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI Usage</h1>
+  <p class="sub">Record of AI tool usage across the CivicConnect team, including the engineering task, the AI contribution, how it was verified and the decision taken.</p>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Student</th>
+          <th>Tool</th>
+          <th>Engineering task</th>
+          <th>AI contribution</th>
+          <th>Verification</th>
+          <th>Decision</th>
+          <th>Issues found</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">06/09/2026</td>
+          <td class="name">Shaun</td>
+          <td>Gemini</td>
+          <td>AI Research</td>
+          <td>The question: Are the risks that I have identified appropriate risks for CivicConnect.</td>
+          <td>I conferred with my team if the risks that Gemini identified are risks we should consider.</td>
+          <td>Did not accept this result.</td>
+          <td>The risks were already planned for, or were not applicable to CivicConnect.</td>
+        </tr>
+        <tr>
+          <td class="name">08/09/2026</td>
+          <td class="name">Fourie</td>
+          <td>Claude</td>
+          <td>Research</td>
+          <td>&ldquo;What are significant stakeholders to be aware of in this scenario&rdquo; with an upload of the Project Requirements Specification.</td>
+          <td>Verified that project direction is aligned with what the rest of my team envisioned, verified that the project direction is applicable with my lecturer and went through the Project Requirement Specification to verify that relevant stakeholders and their needs were being addressed as in section 3 of the document.</td>
+          <td>Accepted some of the results.</td>
+          <td>Originally the stakeholders were not applicable with CivicConnect and after prompt refinement some stakeholders were redundant and still not applicable.</td>
+        </tr>
+        <tr>
+          <td class="name">07 Sep 2026</td>
+          <td class="name">Bernard Small</td>
+          <td>ChatGPT</td>
+          <td>Develop and review CivicConnect Scope Baseline</td>
+          <td>Provided assistance in structuring the scope as In-Scope, Out-of-Scope and Deferred capabilities; scope limitations and assumptions; as well as the reason for the deliberate omission of WhatsApp integration from the scope.</td>
+          <td>Comparison of the proposed scope with the CivicConnect Master Project Brief and Milestone 1 requirements. Scope was evaluated paragraph by paragraph prior to its approval by the student.</td>
+          <td>Keep a controlled scope starting with the approved requester, staff and management abilities. Postponing other integrations and features without an official approval through change control.</td>
+          <td>Scope creep was seen from adding the option of extra features. WhatsApp integration was seen as the addition of unnecessary APIs, security, and authentication at this stage.</td>
+        </tr>
+        <tr>
+          <td class="name">09 Sep 2026</td>
+          <td class="name">Bernard Small</td>
+          <td>ChatGPT</td>
+          <td>Refine Scope Baseline for a reusable office ticket-management system</td>
+          <td>Provided assistance in restructuring the scope from a community-specific scope to an internal office ticket management system with configurable capabilities, exclusions, future scope and one more configurability limitation.</td>
+          <td>Updated scope was validated for meeting minimum business capabilities and project constraints. External references in scope were evaluated separately and the final language and boundaries were evaluated by the student.</td>
+          <td>CivicConnect would ensure the reusability in different offices by means of controlled configuration of categories of requests, office locations and abilities, rather than customizing the system for each individual office.</td>
+          <td>The use of the phrase &ldquo;any office&rdquo; implied a generic no-code system or enterprise multi-tenant software. The scope was thus restricted to only configuration and not open workflow or form creation.</td>
+        </tr>
+        <tr>
+          <td class="name">07 Sep 2026</td>
+          <td class="name">Bernard Small</td>
+          <td>ChatGPT</td>
+          <td>Analyse and document GitHub and team governance for Milestone 1</td>
+          <td>Provided assistance in understanding the GitHub governance requirements and drafting a description of the repository purpose, branch ownership, Pull Request control, peer review, ClickUp traceability, repository security and evidence progression requirements.</td>
+          <td>Comparisons were made between governance recommendations and the SEN381 Master Project Brief and Milestone 1 requirements. The resulting governance plan and repository control plan were evaluated by the student.</td>
+          <td>GitHub is the controlled environment for engineering and evidence while ClickUp is the environment for task management. Any substantive changes should be controlled by branches, Pull Requests and peer reviews.</td>
+          <td>The governance review confirmed that there were two non-author approvals necessary according to the project brief. The need for proper progressive PR, issues, review, and commit evidence was also identified for this milestone.</td>
+        </tr>
+        <tr>
+          <td class="name">09 Sep 2026</td>
+          <td class="name">Bernard Small</td>
+          <td>ChatGPT</td>
+          <td>Align GitHub governance documentation with the updated CivicConnect scope</td>
+          <td>Provided assistance in determining which sections of the GitHub governance document were impacted by the modified scope and making changes only to the sections relevant to the scope modifications.</td>
+          <td>Updated wording for GitHub was compared with the latest Scope Baseline. The changes were approved by the student and the highlighting used for the comparison was removed.</td>
+          <td>The new governance of GitHub is defined as CivicConnect being a configurable office-based service request system. Changes going beyond the approved configuration boundary are scope changes.</td>
+          <td>There was a discrepancy in the previous GitHub document in relation to the new configurable-office direction. However, it was sorted out without altering the existing governance process.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

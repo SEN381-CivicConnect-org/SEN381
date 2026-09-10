@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stakeholder Register</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --high: #7a3f22;
+    --med: #8a7320;
+    --low: #4a4a44;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --high: #e0a97f;
+      --med: #d8c874;
+      --low: #a3a39c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 44rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tag {
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: .15rem .5rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+  }
+  .tag.high { color: var(--high); }
+  .tag.med  { color: var(--med); }
+  .tag.low  { color: var(--low); }
+  article { margin-bottom: 1.6rem; }
+  article h3 {
+    font-size: 1rem;
+    margin: 0 0 .3rem;
+    color: var(--accent);
+  }
+  article p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Stakeholder Register</h1>
+  <p class="sub">Incident reporting and ticket management system &mdash; SEN381</p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="id">ID</th>
+        <th>Stakeholder</th>
+        <th>Role / Interest in the System</th>
+        <th>Influence</th>
+        <th>Interest</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="id">STK-01</td>
+        <td class="name">Incident Reporter</td>
+        <td>Primary user. Reports an issue and is kept informed when it is escalated and when it is resolved.</td>
+        <td><span class="tag high">High</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-02</td>
+        <td class="name">Technician</td>
+        <td>Primary user. Works a list of pending tickets with minimal typing so ticket closure times are not impeded. Not alerted repeatedly when many users report the same issue.</td>
+        <td><span class="tag med">Medium</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-03</td>
+        <td class="name">Team Supervisor</td>
+        <td>Oversees tickets assigned to technicians (STK-02), applies human discretion when a ticket needs urgency escalation, and ensures the team's workload is properly managed by the program.</td>
+        <td><span class="tag high">High</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-04</td>
+        <td class="name">Operations Manager</td>
+        <td>Monitors service-target turnaround and views evidence of completed jobs to manage brand reputation.</td>
+        <td><span class="tag high">High</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-05</td>
+        <td class="name">Finance Department</td>
+        <td>Monitors data on broken equipment for claims and budgeting purposes.</td>
+        <td><span class="tag low">Low</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-06</td>
+        <td class="name">Information Regulators</td>
+        <td>Oversee the lawful processing of staff personal information. Engage only if the law has been breached.</td>
+        <td><span class="tag high">High</span></td>
+        <td><span class="tag low">Low</span></td>
+      </tr>
+      <tr>
+        <td class="id">STK-07</td>
+        <td class="name">Project Team</td>
+        <td>Oversees development of the project within the deliverable scope.</td>
+        <td><span class="tag high">High</span></td>
+        <td><span class="tag high">High</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Details</h2>
+
+  <article>
+    <h3>STK-01 &mdash; Incident Reporter</h3>
+    <p>The primary user of the project. They can report an issue, know when it has been escalated, and know when it has been resolved. They exert a high level of influence and a high level of interest in this project.</p>
+  </article>
+
+  <article>
+    <h3>STK-02 &mdash; Technicians</h3>
+    <p>Also primary users, working from a list of pending tickets to be resolved with minimal typing so as not to impede ticket closure times. They will not be alerted for the same issue multiple times if many users report the same issue. They exert a medium level of influence and a high level of interest.</p>
+  </article>
+
+  <article>
+    <h3>STK-03 &mdash; Team Supervisor</h3>
+    <p>Oversees the tickets assigned to technicians (STK-02) in order to exert human discretion when a certain ticket needs urgency escalation, and to ensure the team's workload is being properly managed by the program. They have a high level of influence and a high level of interest.</p>
+  </article>
+
+  <article>
+    <h3>STK-04 &mdash; Operations Manager</h3>
+    <p>Needs to monitor service-target turnaround and view evidence of completed jobs in order to manage brand reputation. They have a high level of influence and a high level of interest.</p>
+  </article>
+
+  <article>
+    <h3>STK-05 &mdash; Finance Department</h3>
+    <p>Monitors data of broken equipment for claims and budgeting purposes. They exert a high level of interest and a low level of influence on this project.</p>
+  </article>
+
+  <article>
+    <h3>STK-06 &mdash; Information Regulators</h3>
+    <p>Oversee the lawful processing of staff personal information. They have a high level of influence and a low level of interest in this project, only taking note if the law has been breached.</p>
+  </article>
+
+  <article>
+    <h3>STK-07 &mdash; Project Team</h3>
+    <p>Oversees the development of this project within the deliverable scope. They exert both a high level of influence and a high level of interest in this project.</p>
+  </article>
+</main>
+</body>
+</html>
