@@ -101,7 +101,7 @@ async function loadPullRequest(github, owner, repo, number) {
     query($owner:String!, $repo:String!, $pr:Int!) {
       repository(owner:$owner, name:$repo) {
         pullRequest(number:$pr) {
-          id number title state merged isDraft
+          id number title state merged isDraft body baseRefName
           author { login }
           projectItems(first:20, includeArchived:true) { nodes { id isArchived project { id } } }
           closingIssuesReferences(first:20) {
@@ -117,6 +117,50 @@ async function loadPullRequest(github, owner, repo, number) {
     }`;
   const res = await github.graphql(q, { owner, repo, pr: Number(number) });
   return res.repository.pullRequest;
+}
+
+// Pulls closing keywords out of a PR body, because GitHub only resolves them itself
+// when the PR targets the default branch -- and this team's PRs target dev.
+function parseClosingKeywords(body) {
+  // Emphasis markers are stripped first: GitHub refuses to parse "**Closes** #9",
+  // which silently does nothing and is a mistake worth catching rather than copying.
+  const text = (body || '').replace(/[*_`]/g, ' ');
+  const re = /\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\b\s*:?\s*#(\d+)/gi;
+  const numbers = new Set();
+  let m;
+  while ((m = re.exec(text)) !== null) numbers.add(Number(m[3]));
+  return [...numbers];
+}
+
+// Loads the label and project-item detail the rules need for issues found by keyword.
+async function loadIssues(github, owner, repo, numbers) {
+  const issues = [];
+  for (const num of numbers) {
+    const res = await github.graphql(
+      `query($owner:String!, $repo:String!, $num:Int!) {
+         repository(owner:$owner, name:$repo) {
+           issue(number:$num) {
+             id number title
+             labels(first:30) { nodes { name } }
+             projectItems(first:20, includeArchived:true) { nodes { id isArchived project { id } } }
+           }
+         }
+       }`,
+      { owner, repo, num }
+    );
+    if (res.repository.issue) issues.push(res.repository.issue);
+  }
+  return issues;
+}
+
+// Combines GitHub's own link list with keyword parsing, so linking works on any base branch.
+async function resolveLinkedIssues(github, core, owner, repo, pr) {
+  const native = pr.closingIssuesReferences.nodes;
+  const seen = new Set(native.map((i) => i.number));
+  const extra = parseClosingKeywords(pr.body).filter((n) => !seen.has(n) && n !== pr.number);
+  if (extra.length === 0) return native;
+  core.info(`  keyword fallback picked up #${extra.join(', #')} (base branch ${pr.baseRefName})`);
+  return native.concat(await loadIssues(github, owner, repo, extra));
 }
 
 // Decides whether merged work still needs a QA pass, based on the linked issues' labels.
@@ -197,7 +241,7 @@ async function createTestIssue(github, core, project, owner, repo, pr, linkedIss
 // Applies the board rules for a single PR based on whether it is open, merged, or closed unmerged.
 async function syncPullRequest(github, core, project, owner, repo, number, excluded) {
   const pr = await loadPullRequest(github, owner, repo, number);
-  const linked = pr.closingIssuesReferences.nodes;
+  const linked = await resolveLinkedIssues(github, core, owner, repo, pr);
   core.info(`PR #${pr.number} state=${pr.state} merged=${pr.merged} linked=[${linked.map((i) => i.number).join(',')}]`);
 
   if (linked.length === 0) {

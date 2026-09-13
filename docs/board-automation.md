@@ -8,8 +8,18 @@ which runs `.github/scripts/board-sync.js`.
 
 - Move a card from **Todo** to **In Progress** by hand when you start work.
 - Put `Closes #123` (or `Fixes` / `Resolves`) in the PR description, **or** link the
-  issue through the PR's **Development** sidebar. Both work — the sidebar route just
+  issue through the PR's **Development** sidebar. Both work. The sidebar route just
   takes up to 15 minutes to show on the board, because GitHub fires no webhook for it.
+
+  Case doesn't matter: `Closes`, `closes`, `CLOSES`, and `Closes: #123` all parse.
+
+  > **Why the workflow parses keywords itself.** GitHub only resolves closing keywords
+  > into a real link when the PR targets the **default branch** (`staging` here). Our
+  > PRs target `dev`, so GitHub ignores them and its own linked-issue list comes back
+  > empty. `board-sync.js` therefore parses the PR body itself as a fallback. Side
+  > effect: the board moves, but GitHub will **not** auto-close the issue when the PR
+  > merges into `dev` — it closes when the change reaches `staging`, or you close it
+  > by hand.
 - Label issues correctly. Labels decide whether merged work gets a QA card.
 
 Everything else moves on its own.
@@ -66,7 +76,11 @@ and can be restored.
    The project number is the last part of the project URL:
    `https://github.com/orgs/<org-login>/projects/<number>`.
 
-4. **Check the column names resolve.** The script matches `Todo`, `In Progress`,
+4. **Merge the workflow to the default branch (`staging`).** `schedule` and
+   `workflow_dispatch` only register there, and `pull_request_target` always runs the
+   workflow file from the base branch. Until it lands on `staging`, nothing fires.
+
+5. **Check the column names resolve.** The script matches `Todo`, `In Progress`,
    `Review`, `Testing`, `Done` by name and fails loudly if one is renamed. Trigger a
    run with `gh workflow run "Project board sync"` and read the log.
 
