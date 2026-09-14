@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scope Change Control</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  li > ul, li > p { margin-top: .3rem; }
+  li .desc { display: block; color: var(--muted); font-size: .94rem; }
+  ol.flow {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+  }
+  ol.flow li {
+    counter-increment: step;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    padding: .45rem .7rem;
+    margin: 0;
+    font-size: .93rem;
+    font-weight: 600;
+  }
+  ol.flow li::before {
+    content: counter(step);
+    display: inline-block;
+    margin-right: .45rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>2.6 Scope Change Control</h1>
+  <p>After reviewing and approving the scope baseline, any significant changes to add or remove must not be made through an informal process.</p>
+
+  <p>Any change after the scope baseline is to go through the process of change control defined in the Master Project Brief (SEN381 Teaching Team, 2026a):</p>
+
+  <ol class="flow">
+    <li>Change Request</li>
+    <li>Impact Analysis</li>
+    <li>Decision</li>
+    <li>Authorisation</li>
+    <li>Implementation</li>
+    <li>Verification</li>
+    <li>Baseline Update</li>
+  </ol>
+
+  <h2>Impact Assessment Areas</h2>
+  <p>For the impact assessment, the following should be evaluated in regard to the change request:</p>
+  <ul>
+    <li>Requirements and Acceptance Criteria</li>
+    <li>Architecture and Design</li>
+    <li>User Interface and Information Architecture</li>
+    <li>Data and Persistence</li>
+    <li>API/Interface Contract</li>
+    <li>Security and Privacy</li>
+    <li>Scope, Schedule, Cost, and Resources</li>
+    <li>Quality, Testing and Regression</li>
+    <li>Deployment and Operations</li>
+    <li>Risks and Technical Debt</li>
+  </ul>
+
+  <div class="note">
+    <span class="label">Configurability changes</span>
+    <p>Change requests for further configurable elements should also go through the change control process, since increased configurability at the office level can have an influence on requirements, data structure, UI design, authorization, testing, and complexity of the entire project.</p>
+  </div>
+</main>
+</body>
+</html>

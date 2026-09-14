@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In-Scope Capabilities</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  li > ul, li > p { margin-top: .3rem; }
+  li .desc { display: block; color: var(--muted); font-size: .94rem; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>2.2 In-Scope Capabilities</h1>
+  <p>These capabilities make up some of the CivicConnect project scope. The exact same capabilities will be utilized in other office setups through configurable settings as opposed to custom coding for each individual organization.</p>
+
+  <h2>2.2.1 Requester Capabilities</h2>
+  <ul>
+    <li><strong>Submit a new service request</strong>
+      <span class="desc">The requesters can initiate a new service request with all the required details.</span></li>
+    <li><strong>Categorize the request using a controlled categorization process</strong>
+      <span class="desc">The requesters can choose the right category among the controlled categories provided by the system.</span></li>
+    <li><strong>See the status of a submitted request</strong>
+      <span class="desc">The requesters can check the status of those requests that have been submitted by them.</span></li>
+    <li><strong>See the history of the requests</strong>
+      <span class="desc">The requesters can see the history or the list of requests submitted by them.</span></li>
+    <li><strong>Get meaningful feedback</strong>
+      <span class="desc">The requesters get meaningful feedback on the acceptance, rejection, update or completion of their request.</span></li>
+  </ul>
+
+  <h2>2.2.2 Staff Capabilities</h2>
+  <ul>
+    <li><strong>See authorised service requests</strong>
+      <span class="desc">Staff can see service requests which they are authorised to see.</span></li>
+    <li><strong>Search, filter and sort service requests</strong>
+      <span class="desc">Staff can search service requests using useful parameters like status, category and more.</span></li>
+    <li><strong>See full request details</strong>
+      <span class="desc">Staff can see all the information related to a particular service request.</span></li>
+    <li><strong>Claim or accept responsibility for service requests</strong>
+      <span class="desc">Staff can claim the service request or assign responsibility on an authorised basis.</span></li>
+    <li><strong>Change status of a request via controlled transitions</strong>
+      <span class="desc">Staff can change the status of the service request according to the permitted process flow.</span></li>
+    <li><strong>Document actions, comments and resolutions</strong>
+      <span class="desc">Staff can document the work done, comments and resolutions of the request.</span></li>
+    <li><strong>Resolve or close requests</strong>
+      <span class="desc">Staff can resolve or close the service requests on an authorised basis.</span></li>
+  </ul>
+
+  <h2>2.2.3 Management and Oversight Capabilities</h2>
+  <ul>
+    <li><strong>See service activity details</strong>
+      <span class="desc">Management is able to see the details of the service activity.</span></li>
+    <li><strong>See requests according to their status</strong>
+      <span class="desc">Management is able to see open, overdue, resolved, and closed requests.</span></li>
+    <li><strong>Analyse requests according to appropriate dimensions</strong>
+      <span class="desc">Management can see the request details according to the categories, statuses, and other appropriate dimensions.</span></li>
+    <li><strong>See information about service performance</strong>
+      <span class="desc">Management is able to see all the necessary information to analyse service performance and accountability.</span></li>
+    <li><strong>See request history and audit details</strong>
+      <span class="desc">Management can see all the request details and history.</span></li>
+  </ul>
+
+  <h2>2.2.4 Configuration and Administration Capabilities</h2>
+  <ul>
+    <li><strong>Controlled request categories management</strong>
+      <span class="desc">Authorised administrative users can configure controlled service request categories &mdash; creation, modifications, activation or deactivation &mdash; without impacting the existing request data.</span></li>
+    <li><strong>Configurable request classifications management</strong>
+      <span class="desc">Authorised users can manage the selected classification information for requests where such is deemed necessary according to the ultimate requirement.</span></li>
+    <li><strong>Organisational request handling configuration</strong>
+      <span class="desc">The system allows requests to be assigned to relevant office department(s), operational area(s), team(s) or personnel without limiting the platform to only one defined service area.</span></li>
+    <li><strong>Management of authorised users and roles</strong>
+      <span class="desc">Authorised users can configure the roles for requesters, staff and managerial functionality.</span></li>
+    <li><strong>Ensure controlled configuration</strong>
+      <span class="desc">All changes to the configuration should be made by only authorised users and should not delete or overwrite historical request data that would provide accountability.</span></li>
+  </ul>
+
+  <div class="note">
+    <span class="label">Configuration boundary</span>
+    <p>The reason for these features is to offer controlled configurability at the office level instead of any system customization. The goal of CivicConnect is to be reusable in other offices, but CivicConnect was never meant to work as a generic no-code application building tool or multi-tenant service management tool for enterprises. The existing ticket management tools have used multiple configurable ticket forms to manage different requests in the same ticket management process (Zendesk, 2026).</p>
+  </div>
+
+  <p>These features are developed based on the minimum business capabilities from the CivicConnect Master Project Brief, with the office-ticket configuration boundary added to the project direction of the team (SEN381 Teaching Team, 2026a).</p>
+</main>
+</body>
+</html>

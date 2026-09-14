@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change Request Template</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --field: #ffffff;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --ok: #3f6b46;
+    --err: #a3452f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --field: #101014;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --ok: #8fbf99;
+      --err: #e08d76;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.9rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .lead { color: var(--muted); margin: 0 0 1.5rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; }
+  ol.flow {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+  }
+  ol.flow li {
+    counter-increment: step;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    padding: .45rem .7rem;
+    margin: 0;
+    font-size: .93rem;
+    font-weight: 600;
+  }
+  ol.flow li::before {
+    content: counter(step);
+    display: inline-block;
+    margin-right: .45rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 34rem; }
+  th, td {
+    text-align: left;
+    padding: .55rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; width: 16rem; }
+  input, select, textarea {
+    width: 100%;
+    font: inherit;
+    font-size: .95rem;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: .3rem;
+    padding: .35rem .5rem;
+  }
+  textarea { resize: vertical; min-height: 3.2rem; }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .invalid { border-color: var(--err); box-shadow: 0 0 0 2px rgba(163,69,47,.18); }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  button {
+    font: inherit;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--accent);
+    border: none;
+    border-radius: .35rem;
+    padding: .6rem 1.2rem;
+    cursor: pointer;
+  }
+  button.secondary {
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+  }
+  button:hover { opacity: .9; }
+  .status { font-size: .93rem; color: var(--muted); }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+  .auto {
+    background: var(--surface);
+    color: var(--muted);
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .auto.edited { background: var(--field); color: var(--text); }
+  .hint { display: block; font-size: .8rem; color: var(--muted); margin-top: .25rem; }
+  .val { white-space: pre-wrap; }
+  .val.empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Change Request Template</h1>
+  <p class="lead">Use this template for any change to an approved baseline. No significant addition or removal may be made through an informal process. Complete every section in order; a request may not proceed past a stage until the previous stage is signed off (SEN381 Teaching Team, 2026a).</p>
+
+  <ol class="flow">
+    <li>Change Request</li>
+    <li>Impact Analysis</li>
+    <li>Decision</li>
+    <li>Authorisation</li>
+    <li>Implementation</li>
+    <li>Verification</li>
+    <li>Baseline Update</li>
+  </ol>
+
+  <div class="note">
+    <span class="label">How this template is used</span>
+    <p>This form captures stages 1 and 2 only. Stages 3 to 7 are recorded by the team on the produced request during review.</p>
+    <p><strong>Link requests folder</strong> points the page at <code>docs/change/requests/</code>. The page then reads <code>pending-review/</code>, <code>approved/</code> and <code>denied/</code>, takes the highest CR number filed in any of them, and sets this request one step on from it. A browser cannot read a folder it has not been given, so this grant is needed once; it is remembered afterwards. <strong>Produce request</strong> writes the completed request into <code>pending-review/</code> and clears the form. Once the team has reached a decision, the file is moved manually into <code>approved/</code> or <code>denied/</code>.</p>
+  </div>
+
+  <form id="cr">
+
+  <h2>1. Change Request</h2>
+  <div class="scroll">
+  <table>
+    <tbody>
+      <tr><td class="name"><label for="f-id">CR ID</label></td><td><input id="f-id" class="auto"><span class="hint" id="id-hint">Calculated from the requests folder.</span></td></tr>
+      <tr><td class="name"><label for="f-title">Title</label></td><td><input id="f-title" placeholder="Short name for the change"></td></tr>
+      <tr><td class="name"><label for="f-raiser">Raised by</label></td><td><input id="f-raiser"></td></tr>
+      <tr><td class="name"><label for="f-date">Date raised</label></td><td><input id="f-date" type="date"></td></tr>
+      <tr><td class="name"><label for="f-baseline">Affected baseline</label></td><td><select id="f-baseline"><option value="">&mdash;</option><option>Scope</option><option>Requirements</option><option>Architecture</option><option>Other</option></select></td></tr>
+      <tr><td class="name"><label for="f-items">Affected items</label></td><td><input id="f-items" placeholder="IDs, e.g. STK-02, STK-CFL-03, scope 2.2.1"></td></tr>
+      <tr><td class="name"><label for="f-type">Change type</label></td><td><select id="f-type"><option value="">&mdash;</option><option>Addition</option><option>Removal</option><option>Modification</option></select></td></tr>
+      <tr><td class="name"><label for="f-priority">Priority</label></td><td><select id="f-priority"><option value="">&mdash;</option><option>Low</option><option>Medium</option><option>High</option></select></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3><label for="f-desc">Description of the change</label></h3>
+  <textarea id="f-desc" placeholder="What must change, stated precisely enough to be assessed."></textarea>
+
+  <h3><label for="f-reason">Reason and stakeholder value</label></h3>
+  <textarea id="f-reason" placeholder="Why the change is requested and which stakeholders benefit."></textarea>
+
+  <h3><label for="f-consequence">Consequence of not making the change</label></h3>
+  <textarea id="f-consequence"></textarea>
+
+  <h2>2. Impact Analysis</h2>
+  <p>Each area below must be assessed and given an impact rating with a short justification. An area assessed as "None" still requires a reason.</p>
+  <div class="scroll">
+  <table id="impact">
+    <thead>
+      <tr><th>Impact Area</th><th style="width:9rem">Impact</th><th>Assessment</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <span class="label">Configurability changes</span>
+    <p>A request for further configurable elements must also go through this process, since increased configurability at the office level can influence requirements, data structure, UI design, authorization, testing, and the complexity of the entire project.</p>
+  </div>
+
+  </form>
+
+  <div class="actions">
+    <button type="button" id="produce">Produce request</button>
+    <button type="button" class="secondary" id="link">Link requests folder</button>
+    <button type="button" class="secondary" id="clear">Clear form</button>
+    <span class="status" id="status"></span>
+  </div>
+</main>
+
+<script>
+  // Impact areas that every change request must be assessed against.
+  var AREAS = [
+    "Requirements and Acceptance Criteria",
+    "Architecture and Design",
+    "User Interface and Information Architecture",
+    "Data and Persistence",
+    "API/Interface Contract",
+    "Security and Privacy",
+    "Scope, Schedule, Cost, and Resources",
+    "Quality, Testing and Regression",
+    "Deployment and Operations",
+    "Risks and Technical Debt"
+  ];
+
+  var STATUS_DIRS = ["pending-review", "approved", "denied"];
+  var requestsDir = null;
+
+  // Builds the impact analysis rows from the fixed list of assessment areas.
+  function buildImpactRows() {
+    var body = document.querySelector("#impact tbody");
+    AREAS.forEach(function (area) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td class="name">' + area + '</td>' +
+        '<td><select><option value="">&mdash;</option><option>None</option><option>Low</option><option>Medium</option><option>High</option></select></td>' +
+        '<td><textarea></textarea></td>';
+      body.appendChild(tr);
+    });
+  }
+
+  // Escapes text so it can be embedded safely in the generated document.
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Turns a value into a filename-safe slug.
+  function slug(s) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  }
+
+  // Formats a request number as a padded CR ID.
+  function formatId(n) {
+    return "CR-" + String(n).padStart(3, "0");
+  }
+
+  // Returns today's date in the format a date input expects.
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  // Reports the result of the last action next to the buttons.
+  function setStatus(text, kind) {
+    var el = document.getElementById("status");
+    el.textContent = text;
+    el.className = kind ? "status " + kind : "status";
+  }
+
+  // Shows the calculated CR ID and where the number came from, unless it was typed over.
+  function setId(value, hint) {
+    var field = document.getElementById("f-id");
+    if (field.classList.contains("edited")) return;
+    field.value = value;
+    document.getElementById("id-hint").textContent = hint + " Click the field to type over it.";
+  }
+
+  // Replaces every form control in the cloned page with its entered value as static text.
+  function freeze(clone) {
+    var live = document.querySelectorAll("#cr input, #cr select, #cr textarea");
+    var copies = clone.querySelectorAll("input, select, textarea");
+    for (var i = 0; i < copies.length; i++) {
+      var value = (live[i].value || "").trim();
+      var span = document.createElement("span");
+      span.className = value ? "val" : "val empty";
+      span.textContent = value || "\u2014";
+      copies[i].parentNode.replaceChild(span, copies[i]);
+    }
+    var labels = clone.querySelectorAll("label");
+    for (var j = 0; j < labels.length; j++) {
+      labels[j].parentNode.replaceChild(document.createTextNode(labels[j].textContent), labels[j]);
+    }
+    var hints = clone.querySelectorAll(".hint");
+    for (var k = 0; k < hints.length; k++) { hints[k].parentNode.removeChild(hints[k]); }
+  }
+</script>
+<script>
+  // Minimal IndexedDB access, used to remember the linked folder between visits.
+  function idb(mode, run) {
+    return new Promise(function (resolve, reject) {
+      var open = indexedDB.open("change-request-template", 1);
+      open.onupgradeneeded = function () { open.result.createObjectStore("handles"); };
+      open.onerror = function () { reject(open.error); };
+      open.onsuccess = function () {
+        var db = open.result;
+        var request = run(db.transaction("handles", mode).objectStore("handles"));
+        request.onsuccess = function () { resolve(request.result); db.close(); };
+        request.onerror = function () { reject(request.error); db.close(); };
+      };
+    });
+  }
+
+  // Counts a folder's requests, tracking the highest CR number seen.
+  async function scanFolder(dir, state) {
+    for await (var entry of dir.values()) {
+      if (entry.kind !== "file") continue;
+      var match = /cr[-_ ]?(\d+)/i.exec(entry.name);
+      if (!match) continue;
+      state.found++;
+      state.highest = Math.max(state.highest, parseInt(match[1], 10));
+    }
+  }
+
+  // Reads every request already filed across the three folders and returns the next free number.
+  async function scanNextNumber(dir) {
+    var state = { highest: 0, found: 0 };
+    await scanFolder(dir, state);
+    for (var i = 0; i < STATUS_DIRS.length; i++) {
+      try {
+        var sub = await dir.getDirectoryHandle(STATUS_DIRS[i]);
+        await scanFolder(sub, state);
+      } catch (err) {
+        continue;
+      }
+    }
+    return state;
+  }
+
+  // Recalculates the CR ID from the linked folder, or from this browser's history as a fallback.
+  async function refreshId() {
+    if (requestsDir) {
+      try {
+        var scan = await scanNextNumber(requestsDir);
+        setId(formatId(scan.highest + 1), scan.found
+          ? "One step on from " + formatId(scan.highest) + ", the highest of " + scan.found + " request(s) in pending-review, approved and denied."
+          : "First request — no numbered requests found in pending-review, approved or denied.");
+        return;
+      } catch (err) {
+        requestsDir = null;
+      }
+    }
+    var last = parseInt(localStorage.getItem("cr-last-number") || "0", 10);
+    setId(formatId(last + 1), "Requests folder not linked — number continues from the last request produced in this browser.");
+  }
+
+  // Asks for the requests folder once and remembers it for later visits.
+  async function linkFolder() {
+    if (!window.showDirectoryPicker) {
+      setStatus("This browser cannot read folders. Chrome or Edge is needed for automatic numbering.", "err");
+      return;
+    }
+    try {
+      var stored = await idb("readonly", function (store) { return store.get("requests"); });
+      if (stored && await stored.requestPermission({ mode: "readwrite" }) === "granted") {
+        requestsDir = stored;
+      } else {
+        var picked = await window.showDirectoryPicker({ mode: "readwrite" });
+        requestsDir = picked;
+        await idb("readwrite", function (store) { return store.put(picked, "requests"); });
+      }
+      await refreshId();
+      setStatus("Linked to " + requestsDir.name + "/.", "ok");
+    } catch (err) {
+      if (!err || err.name !== "AbortError") setStatus("Folder could not be linked.", "err");
+    }
+  }
+
+  // Restores a previously linked folder if permission is still held.
+  async function restoreFolder() {
+    if (!window.indexedDB || !window.showDirectoryPicker) return;
+    try {
+      var dir = await idb("readonly", function (store) { return store.get("requests"); });
+      if (!dir) return;
+      var permission = await dir.queryPermission({ mode: "readwrite" });
+      if (permission === "granted") requestsDir = dir;
+    } catch (err) {
+      requestsDir = null;
+    }
+  }
+</script>
+<script>
+  // Assembles the standalone HTML document for one completed change request.
+  function buildDocument(id, title) {
+    var clone = document.querySelector("main").cloneNode(true);
+    freeze(clone);
+    var form = clone.querySelector("form");
+    if (form) form.removeAttribute("id");
+    var lead = clone.querySelector(".lead");
+    if (lead) lead.parentNode.removeChild(lead);
+    var howTo = clone.querySelector(".note");
+    if (howTo) howTo.parentNode.removeChild(howTo);
+    var actions = clone.querySelector(".actions");
+    if (actions) actions.parentNode.removeChild(actions);
+    var heading = clone.querySelector("h1");
+    heading.textContent = id + " \u2014 " + title;
+    var meta = document.createElement("p");
+    meta.className = "lead";
+    meta.textContent = "Change request \u00b7 produced " + new Date().toLocaleString() + " \u00b7 status: pending review";
+    heading.parentNode.insertBefore(meta, heading.nextSibling);
+    return "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n" +
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
+      "<title>" + esc(id + " " + title) + "</title>\n" +
+      document.querySelector("style").outerHTML + "\n</head>\n<body>\n" +
+      clone.outerHTML + "\n</body>\n</html>\n";
+  }
+
+  // Writes the request straight into pending-review when the folder is linked.
+  async function fileRequest(html, filename) {
+    var pending = await requestsDir.getDirectoryHandle("pending-review", { create: true });
+    var file = await pending.getFileHandle(filename, { create: true });
+    var writable = await file.createWritable();
+    await writable.write(new Blob([html], { type: "text/html" }));
+    await writable.close();
+  }
+
+  // Falls back to a browser download when no folder is linked.
+  function download(html, filename) {
+    var url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.parentNode.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  // Clears the form and prepares it for the next request.
+  async function resetForm() {
+    document.getElementById("cr").reset();
+    var injected = document.querySelectorAll("#impact select, #impact textarea");
+    for (var i = 0; i < injected.length; i++) { injected[i].value = ""; }
+    var flagged = document.querySelectorAll(".invalid");
+    for (var j = 0; j < flagged.length; j++) { flagged[j].classList.remove("invalid"); }
+    document.getElementById("f-date").value = today();
+    document.getElementById("f-id").classList.remove("edited");
+    await refreshId();
+  }
+</script>
+<script>
+  buildImpactRows();
+  document.getElementById("f-date").value = today();
+
+  var idField = document.getElementById("f-id");
+
+  idField.addEventListener("focus", function () {
+    if (idField.classList.contains("edited")) return;
+    setTimeout(function () { idField.setSelectionRange(idField.value.length, idField.value.length); }, 0);
+  });
+
+  idField.addEventListener("mouseup", function (event) {
+    if (idField.classList.contains("edited")) return;
+    event.preventDefault();
+    idField.setSelectionRange(idField.value.length, idField.value.length);
+  });
+
+  idField.addEventListener("input", function () {
+    idField.classList.add("edited");
+    idField.classList.remove("invalid");
+    document.getElementById("id-hint").textContent = "Typed in by hand — cleared and recalculated after the request is produced.";
+  });
+
+  document.getElementById("link").addEventListener("click", linkFolder);
+
+  document.getElementById("clear").addEventListener("click", function () {
+    resetForm().then(function () { setStatus("Form cleared."); });
+  });
+
+  document.getElementById("produce").addEventListener("click", async function () {
+    var titleField = document.getElementById("f-title");
+    var title = titleField.value.trim();
+    titleField.classList.toggle("invalid", !title);
+    if (!title) {
+      setStatus("A title is required before a request can be produced.", "err");
+      titleField.focus();
+      return;
+    }
+    var idField = document.getElementById("f-id");
+    var id = idField.value.trim();
+    idField.classList.toggle("invalid", !id);
+    if (!id) {
+      setStatus("A CR ID is required before a request can be produced.", "err");
+      idField.focus();
+      return;
+    }
+    var filename = slug(id) + "-" + slug(title) + ".html";
+    var html = buildDocument(id, title);
+    setStatus("Producing " + id + "\u2026");
+    try {
+      if (requestsDir) {
+        await fileRequest(html, filename);
+        setStatus("Filed " + filename + " in pending-review/.", "ok");
+      } else {
+        download(html, filename);
+        setStatus("Downloaded " + filename + " \u2014 move it into docs/change/requests/pending-review/.", "ok");
+      }
+      var number = parseInt((/(\d+)/.exec(id) || [0, 0])[1], 10);
+      localStorage.setItem("cr-last-number", String(number));
+      await resetForm();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setStatus("The request could not be saved: " + (err && err.message ? err.message : "unknown error"), "err");
+    }
+  });
+
+  restoreFolder().then(refreshId).then(function () {
+    if (!requestsDir && window.showDirectoryPicker) {
+      setStatus("Link the requests folder to number this request from the files already filed.");
+    }
+  });
+</script>
+</body>
+</html>
