@@ -1,0 +1,74 @@
+name: Project board sync
+
+# Thin triggers only. The logic is in board-sync-reusable.yml.
+#
+#   PR open        -> linked issues archived off the board, PR card in Review
+#   PR merged      -> PR card to Done, plus a Test issue in Testing when QA is needed
+#   PR closed      -> linked issues back to In Progress, PR card archived
+#   Issue opened   -> Todo (replaces the project's built-in auto-add rule)
+#   Every 15 min   -> reconcile open PRs, catching Development-sidebar links
+
+on:
+  # pull_request_target so secrets are available; the wide type list is what
+  # eventually catches PRs linked through the Development sidebar, which fires
+  # no webhook of its own.
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - edited
+      - ready_for_review
+      - synchronize
+      - labeled
+      - review_requested
+      - closed
+  issues:
+    types: [opened]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to sync (leave blank to reconcile all open PRs)"
+        required: false
+        default: ""
+
+concurrency:
+  group: board-sync-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  pull-request:
+    if: github.event_name == 'pull_request_target'
+    uses: ./.github/workflows/board-sync-reusable.yml
+    with:
+      mode: pr
+      pr_number: ${{ github.event.pull_request.number }}
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+
+  issue-opened:
+    if: github.event_name == 'issues'
+    uses: ./.github/workflows/board-sync-reusable.yml
+    with:
+      mode: issue-opened
+      issue_number: ${{ github.event.issue.number }}
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+
+  manual:
+    if: github.event_name == 'workflow_dispatch' && inputs.pr_number != ''
+    uses: ./.github/workflows/board-sync-reusable.yml
+    with:
+      mode: pr
+      pr_number: ${{ inputs.pr_number }}
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+
+  reconcile:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.pr_number == '')
+    uses: ./.github/workflows/board-sync-reusable.yml
+    with:
+      mode: reconcile
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
