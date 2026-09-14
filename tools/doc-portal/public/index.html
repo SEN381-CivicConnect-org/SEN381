@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CivicConnect Specification & Documentation Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <h1>
+          CivicConnect Doc Portal
+          <span class="badge">SEN381</span>
+        </h1>
+        <p class="sub">Automated Technical Documentation & Specification Tracking</p>
+      </div>
+      <div class="header-controls">
+        <div id="connection-status" class="status-pill connected" title="Connection mode">
+          <span class="status-dot"></span>
+          <span id="status-text">Connecting...</span>
+        </div>
+        <button id="btn-theme" class="icon-btn" type="button" title="Toggle color theme">
+          <span id="theme-icon">☀️</span>
+          <span id="theme-label">Theme</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main>
+      <!-- Step 1: Category & File Selection -->
+      <section class="card">
+        <div class="card-title">
+          <span>1. Select Documentation Category</span>
+          <span id="doc-badge" class="badge">FR</span>
+        </div>
+        <div class="category-picker">
+          <div class="picker-row">
+            <div class="form-group">
+              <label for="category-select">Specification Document / Target Table</label>
+              <select id="category-select">
+                <option value="functional_requirements">Functional Requirements (FR-)</option>
+                <option value="non_functional_requirements">Non-Functional Requirements (NFR-)</option>
+                <option value="risk_register">Risk Register (RSK-)</option>
+                <option value="stakeholder_register">Stakeholder Register (STK-)</option>
+                <option value="stakeholder_conflicts">Stakeholder Conflicts (STK-CFL-)</option>
+                <option value="assumptions">Assumptions (ASM-)</option>
+                <option value="rtm">Requirements Traceability Matrix (RTM)</option>
+                <option value="ai_usage">AI Usage Register (AI-USE)</option>
+                <option value="scope_constraints">Scope Constraints</option>
+              </select>
+            </div>
+            <div class="form-group" style="min-width: 140px;">
+              <label>Next Auto ID</label>
+              <div id="next-id-pill" class="status-pill connected" style="font-family: var(--font-mono); font-weight: bold; font-size: 0.95rem; justify-content: center;">
+                <span id="next-id-display">FR-02</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-info-strip">
+            <div class="info-item">
+              <span class="label">Target File:</span>
+              <span id="doc-path" class="path-val">docs/requirements/Functional Requirements/functional-requirements-V1.0.html</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Existing Entries:</span>
+              <span id="doc-count" class="val">1</span>
+            </div>
+            <div class="info-item">
+              <span class="label">ID Pattern:</span>
+              <span id="doc-prefix" class="val">FR-XX</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Dynamic Entry Form -->
+      <section class="card">
+        <div class="card-title">
+          <span id="form-heading">2. Entry Details</span>
+          <span id="form-sub-badge" class="label-hint">All fields marked with * are required</span>
+        </div>
+
+        <form id="entry-form" novalidate>
+          <div id="fields-container" class="form-grid">
+            <!-- Dynamically populated fields will be injected here -->
+          </div>
+
+          <!-- Optional Tracking & Integrations -->
+          <div class="optional-section">
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="ticket-ref">
+                  Ticket Reference / Tracking Link
+                  <span class="label-hint">Optional</span>
+                </label>
+                <input type="text" id="ticket-ref" placeholder="e.g. #14, GH-14, or https://github.com/..." />
+              </div>
+              <div class="form-group" style="justify-content: flex-end;">
+                <label class="checkbox-label" title="Uses local gh CLI to file a corresponding issue">
+                  <input type="checkbox" id="create-github-issue" />
+                  <span>Automatically create GitHub tracking issue via <code>gh CLI</code></span>
+                </label>
+                <span class="hint-text">Will create an issue linked to this specification entry.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="actions">
+            <button type="submit" id="btn-submit" class="btn-primary">
+              <span>⚡ Produce & Save to Document</span>
+            </button>
+            <button type="button" id="btn-preview" class="btn-secondary">
+              <span>👁️ Preview HTML Row</span>
+            </button>
+            <button type="button" id="btn-copy" class="btn-secondary">
+              <span>📋 Copy HTML</span>
+            </button>
+            <button type="button" id="btn-reset" class="btn-text">
+              <span>Clear Form</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Step 3: Live Document Table Preview -->
+      <section class="card">
+        <div class="card-title">
+          <span>Current Document Entries (Live View)</span>
+          <span class="label-hint">Auto-refreshes on every update</span>
+        </div>
+        <div class="preview-table-container">
+          <table id="live-table" class="doc-preview-table">
+            <thead id="live-table-head">
+              <!-- Dynamically populated headers -->
+            </thead>
+            <tbody id="live-table-body">
+              <!-- Dynamically populated existing rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Preview & Copy Drawer / Modal -->
+  <div id="preview-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">HTML Row Preview</h3>
+        <button type="button" id="btn-modal-close" class="icon-btn" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint-text" style="margin-bottom: 0.75rem;">
+          The following formatted row block matches the existing document's table columns, classes, and indentation:
+        </p>
+        <div class="code-block-wrapper">
+          <pre><code id="modal-code"></code></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-modal-copy" class="btn-primary">
+          <span>📋 Copy to Clipboard</span>
+        </button>
+        <button type="button" id="btn-modal-done" class="btn-secondary">
+          <span>Done</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
