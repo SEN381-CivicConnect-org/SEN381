@@ -1,0 +1,4 @@
+@page "/management/categories"
+@attribute [Authorize(Roles="Management")]
+<div class="page-head"><div><h1>Categories</h1><p>Configure the request categories available to your office.</p></div></div><div class="grid grid-2">@foreach(var c in categories){<div class="card settings-card"><h4>@c.Item1</h4><p>@c.Item2</p></div>}</div>
+@code{(string,string)[] categories=[("IT Support","Technology, accounts and connectivity"),("Facilities","Office, rooms, equipment and maintenance"),("HR Request","Employee and policy requests"),("Finance","Payments, invoices and finance queries"),("General Enquiry","Requests that do not fit another category")];}

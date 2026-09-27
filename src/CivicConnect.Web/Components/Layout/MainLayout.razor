@@ -1,0 +1,24 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+@if (Nav.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
+{
+    @Body
+}
+else
+{
+    <div class="app-shell">
+        <NavMenu />
+        <main class="main">
+            <header class="topbar">
+                <label class="search"><img class="icon" src="assets/icons/search.svg" alt=""/><input placeholder="Search tickets, people or categories"/></label>
+                <div class="top-actions">
+                    <AuthorizeView Context="auth"><Authorized><div class="profile-chip"><span class="avatar">@Initials(auth.User.Identity?.Name)</span><span class="profile-text"><strong>@auth.User.Identity?.Name</strong><small>@auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small></span></div></Authorized></AuthorizeView>
+                </div>
+            </header>
+            <section class="content">@Body</section>
+        </main>
+    </div>
+}
+
+@code { static string Initials(string? name) => string.IsNullOrWhiteSpace(name) ? "CC" : string.Join("", name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant(); }

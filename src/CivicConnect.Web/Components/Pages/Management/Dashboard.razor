@@ -1,0 +1,4 @@
+@page "/management"
+@attribute [Authorize(Roles="Management")]
+@inject TicketService Tickets
+<div class="page-head"><div><h1>Management Dashboard</h1><p>Monitor service performance, workload and ticket trends across the office.</p></div></div><div class="grid grid-4"><div class="card stat-card"><div class="stat-top">Total tickets</div><div class="stat-value">@Tickets.Tickets.Count</div></div><div class="card stat-card"><div class="stat-top">Open</div><div class="stat-value">@Tickets.Tickets.Count(t=>t.Status=="Open")</div></div><div class="card stat-card"><div class="stat-top">Resolution rate</div><div class="stat-value">78%</div></div><div class="card stat-card"><div class="stat-top">Avg. response</div><div class="stat-value">2.4h</div></div></div><div class="section"><TicketTable Tickets="Tickets.Tickets"/></div>
