@@ -1,0 +1,50 @@
+name: Database migrations
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+
+jobs:
+  migrate-up-down-up:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: civicconnect
+          POSTGRES_USER: civicconnect
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U civicconnect"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CONNECTION_STRING: "Host=localhost;Port=5432;Database=civicconnect;Username=civicconnect;Password=changeme"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Migrate up (empty -> current schema)
+        run: ./scripts/migrate-up.sh
+
+      - name: Migrate down (current schema -> empty)
+        run: ./scripts/migrate-down.sh
+
+      - name: Migrate up again (empty -> current schema)
+        run: ./scripts/migrate-up.sh
