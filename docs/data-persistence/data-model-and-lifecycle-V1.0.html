@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Model &amp; Lifecycle</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 64rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; white-space: nowrap; }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .88em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .25rem;
+    padding: .05rem .35rem;
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    margin: 0 0 1.5rem;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: .82rem;
+    line-height: 1.5;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Data Model &amp; Lifecycle</h1>
+  <p class="sub">PED v2.0 &sect;6.3.1&ndash;6.3.3. Aggregate boundaries, ownership, entity lifecycle, the merge/clustering mechanism, and schema conventions for the CivicConnect persistence baseline.</p>
+
+  <h2>1.1 Aggregates and Roots</h2>
+  <p>An aggregate here means one consistency boundary: one transaction, one root, and no write to an interior table except through that root&#039;s service. The boundaries below are drawn where invariants are: each aggregate owns exactly the set of tables that one transaction must write together, and nothing more. This buys the property the PostgreSQL manual states of a transaction: it &quot;bundles multiple steps into a single, all-or-nothing operation&quot;, and &quot;the intermediate states between the steps are not visible to other concurrent transactions&quot; (The PostgreSQL Global Development Group, 2026). Which tables fall inside which boundary is team judgement, unsourced, and is argued below rather than asserted.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Aggregate</th><th>Root</th><th>Tables Owned (writable only through root)</th><th>Referenced (but not owned)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Incident</td>
+        <td class="id">incident</td>
+        <td><code>incident</code>, <code>ticket</code>, <code>incident_subscription</code>, <code>incident_status_history</code>, <code>incident_note</code>, <code>resolution</code>, <code>submission_request</code></td>
+        <td><code>category</code>, <code>location</code>, <code>service_team</code>, <code>app_user</code>, <code>asset</code>, <code>resolution_code</code>, <code>priority_target</code></td>
+      </tr>
+      <tr>
+        <td class="name">User</td>
+        <td class="id">app_user</td>
+        <td><code>app_user</code>, <code>user_credential</code>, <code>user_role</code></td>
+        <td><code>role</code></td>
+      </tr>
+      <tr>
+        <td class="name">Service team</td>
+        <td class="id">service_team</td>
+        <td><code>service_team</code>, <code>team_member</code></td>
+        <td><code>app_user</code>, <code>team_role</code></td>
+      </tr>
+      <tr>
+        <td class="name">Category</td>
+        <td class="id">category</td>
+        <td><code>category</code></td>
+        <td><code>service_team</code></td>
+      </tr>
+      <tr>
+        <td class="name">Asset</td>
+        <td class="id">asset</td>
+        <td><code>asset</code></td>
+        <td><code>location</code></td>
+      </tr>
+      <tr>
+        <td class="name">Notification</td>
+        <td class="id">notification</td>
+        <td><code>notification</code></td>
+        <td><code>app_user</code>, <code>incident</code>, <code>ticket</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>1.2 Ownership</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Entity</th><th>Lifecycle owner</th><th>Create</th><th>Mutate</th><th>Deactivate / terminate</th><th>Read</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">app_user</td><td>ADMIN</td><td>ADMIN</td>
+        <td>Self (own name, own password); ADMIN</td>
+        <td>ADMIN (<code>is_active = false</code>)</td>
+        <td>Self; ADMIN; MANAGER</td>
+      </tr>
+      <tr>
+        <td class="name">user_role</td><td>ADMIN</td><td>ADMIN</td>
+        <td>None (grant/revoke only)</td>
+        <td>ADMIN</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td class="name">service_team, team_member</td><td>ADMIN</td><td>ADMIN</td>
+        <td>ADMIN; SUPERVISOR may change <code>team_role</code> within own team</td>
+        <td>ADMIN</td>
+        <td>Staff</td>
+      </tr>
+      <tr>
+        <td class="name">category, location, asset</td><td>ADMIN</td><td>ADMIN</td>
+        <td>ADMIN</td>
+        <td>ADMIN (<code>is_active = false</code>)</td>
+        <td>Staff</td>
+      </tr>
+      <tr>
+        <td class="name">ticket</td><td>REQUESTER</td><td>REQUESTER (own only)</td>
+        <td>Nobody; immutable</td>
+        <td>Never deleted</td>
+        <td>Own reporter; staff on the incident&#039;s team; MANAGER</td>
+      </tr>
+      <tr>
+        <td class="name">incident</td><td>TECHNICIAN / SUPERVISOR</td><td>System, during submission</td>
+        <td>TECHNICIAN on own team (claim, status, notes); SUPERVISOR (assign, override, merge, reopen)</td>
+        <td>SUPERVISOR closes or rejects</td>
+        <td>Subscribers see status only; staff see all fields; MANAGER reads all</td>
+      </tr>
+      <tr>
+        <td class="name">incident_subscription</td><td>System</td><td>System, during submission</td>
+        <td>Never</td><td>Never</td>
+        <td>Owner reporter; staff</td>
+      </tr>
+      <tr>
+        <td class="name">incident_status_history</td><td>System</td><td>System, inside the transition transaction</td>
+        <td>Never</td><td>Never</td>
+        <td>Staff; MANAGER</td>
+      </tr>
+      <tr>
+        <td class="name">incident_note</td><td>TECHNICIAN</td><td>TECHNICIAN, SUPERVISOR</td>
+        <td>&mdash;</td><td>Never</td>
+        <td>Staff</td>
+      </tr>
+      <tr>
+        <td class="name">resolution</td><td>TECHNICIAN</td><td>TECHNICIAN</td>
+        <td>Superseded, never edited</td>
+        <td>Superseded on re-open</td>
+        <td>Staff; FINANCE; MANAGER</td>
+      </tr>
+      <tr>
+        <td class="name">notification</td><td>System</td><td>System</td>
+        <td>Recipient sets <code>read_at</code> only</td>
+        <td>Pruned on retention</td>
+        <td>Recipient only</td>
+      </tr>
+      <tr>
+        <td class="name">audit_log</td><td>System</td><td>System</td>
+        <td>Never</td><td>Pruned on retention</td>
+        <td>MANAGER; ADMIN</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>1.3 Lifecycle per Entity</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Entity</th><th>Create</th><th>Mutate</th><th>Terminal state</th><th>Retention / disposal</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">app_user</td>
+        <td>ADMIN creates; <code>is_active = true</code></td>
+        <td>name, e-mail, <code>last_login_at</code></td>
+        <td><code>is_active = false</code>, plus <code>deactivated_at</code> and <code>deactivated_by</code></td>
+        <td>Retained while incidents reference it; de-identified on a valid request</td>
+      </tr>
+      <tr>
+        <td class="name">category / location / asset</td>
+        <td>ADMIN</td>
+        <td>name, description, levels</td>
+        <td><code>is_active = false</code></td>
+        <td>Retained indefinitely and never deleted</td>
+      </tr>
+      <tr>
+        <td class="name">ticket</td>
+        <td>Reporter submits</td>
+        <td>None</td>
+        <td>None (immutable)</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">submission_request</td>
+        <td>With the ticket</td>
+        <td><code>ticket_id</code> / <code>incident_id</code> back-fill</td>
+        <td><code>expires_at</code> reached</td>
+        <td>Hard-deleted after 7 days &mdash; the only deletion in the design</td>
+      </tr>
+      <tr>
+        <td class="name">incident</td>
+        <td>Created or attached during submission</td>
+        <td>status, assignee, priority, report_count, version</td>
+        <td>CLOSED, REJECTED or MERGED</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">incident_subscription</td>
+        <td>With the ticket</td><td>None</td><td>None</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">incident_status_history</td>
+        <td>One row per transition</td><td>None</td><td>None</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">incident_note</td>
+        <td>Technician adds</td><td>None</td><td>None</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">resolution</td>
+        <td>Technician resolves</td>
+        <td><code>superseded_at</code> set on re-open</td>
+        <td>Superseded</td>
+        <td>Never fully deleted</td>
+      </tr>
+      <tr>
+        <td class="name">notification</td>
+        <td>System</td><td><code>read_at</code></td><td>Read</td>
+        <td>Pruned at 6 months</td>
+      </tr>
+      <tr>
+        <td class="name">audit_log</td>
+        <td>System</td><td>None</td><td>None</td>
+        <td>Pruned at 3 years</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>1.4 Merge and Clustering Lifecycle</h2>
+  <p>Two separate mechanisms handle duplicate reports.</p>
+  <p><strong>Automatic clustering at submission.</strong> If a new submission matches an open incident on <code>(category_id, location_id)</code>, it attaches to that incident instead of creating one. <code>report_count</code> goes up by one, and the system adds a new <code>ticket</code> and a new <code>incident_subscription</code>. The partial unique composite key between <code>incident_id</code> and <code>reporter_id</code> enforces this, so no lookup is involved.</p>
+  <p><strong>Manual merge by a supervisor.</strong> Sometimes the clustering key misses two incidents that are really one event &mdash; a network fault might be reported under both &quot;Network outage / First Floor&quot; and &quot;Account access / First Floor&quot;. The supervisor merges the absorbed incident into the surviving one in a single transaction:</p>
+  <ul>
+    <li>The absorbed incident gets <code>status = 'MERGED'</code>, <code>merged_into_id</code> set to the survivor, <code>root_incident_id</code> set to the survivor&#039;s root, <code>closed_at = now()</code> and <code>version + 1</code>.</li>
+    <li>The survivor&#039;s <code>report_count</code> increases by the absorbed incident&#039;s <code>report_count</code>, and its <code>version</code> goes up by one.</li>
+    <li>One <code>incident_status_history</code> row is added to the absorbed incident.</li>
+    <li>Each subscriber of the absorbed incident gets one MERGED notification.</li>
+    <li>One <code>audit_log</code> row is written with <code>action = 'MERGE'</code>.</li>
+  </ul>
+  <p>Subscriptions are never re-pointed to the survivor. The primary key is <code>(incident_id, reporter_id)</code>, so moving a subscription can collide with a row that already exists on the survivor. The only fixes are to delete the losing row, which destroys history, or to write a guarded <code>UPDATE ... WHERE NOT EXISTS</code>, which is easy to get wrong. Instead, each subscription keeps pointing at the incident it was created against, and notifications resolve the target through <code>COALESCE(root_incident_id, incident_id)</code>:</p>
+  <pre><code>-- every reporter who must hear about incident :id, including via merge chains
+SELECT DISTINCT s.reporter_id
+FROM incident_subscription s
+JOIN incident i ON i.incident_id = s.incident_id
+WHERE COALESCE(i.root_incident_id, i.incident_id) = :id;</code></pre>
+  <p><code>root_incident_id</code> is a denormalised pointer set at merge time, so finding an incident&#039;s root takes one join instead of a recursive CTE. If A is merged into B and B was already merged into C, A&#039;s root is set to C, so chains stay flat.</p>
+  <p>Foreign keys make sure these pointers land on rows that exist. A foreign key constraint &quot;specifies that the values in a column (or a group of columns) must match the values appearing in some row of another table&quot;, which &quot;maintains the referential integrity between two related tables&quot; (The PostgreSQL Global Development Group, 2026). Without that check, <code>merged_into_id</code> and <code>root_incident_id</code> would be two unchecked pointers into the same table. One bad write would send the notification fan-out query to nobody, and no error would appear.</p>
+  <p><code>report_count</code> is a stored counter, not a <code>count(*)</code> over <code>ticket</code>. The same <code>INSERT ... ON CONFLICT DO UPDATE</code> that does the clustering also updates it. The row lock that serialises concurrent submissions is the same lock that protects the increment, so the counter adds no contention. Deriving the count would give the same answer, but every queue render would have to aggregate over <code>ticket</code> &mdash; the queue is the most frequent staff read.</p>
+
+  <h2>2.1 Conventions</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Convention</th><th>Value</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="name">Engine</td>
+        <td>PostgreSQL through the Npgsql EF Core provider. The first migration enables the <code>citext</code> extension.</td>
+        <td>E-mail matching needs to ignore case, and <code>citext</code> does that.</td>
+      </tr>
+      <tr>
+        <td class="name">Migration tool</td>
+        <td>EF Core migrations. Each file is named <code>&lt;timestamp&gt;_&lt;Description&gt;.cs</code> and has an <code>Up</code> method and a <code>Down</code> method that undoes it. Anything EF cannot express, such as extensions and grants, goes in <code>migrationBuilder.Sql()</code>.</td>
+        <td><code>Up</code> and <code>Down</code> list the tables, columns, keys and indexes in plain code, so a PR reviewer can read them. The generated <code>.Designer.cs</code> and model snapshot files are not reviewed line by line. The content of this section is the contract, not the tool.</td>
+      </tr>
+      <tr>
+        <td class="name">Location</td>
+        <td><code>src/CivicConnect.Data/Migrations/</code></td>
+        <td>Migrations sit next to the DbContext and entities they describe.</td>
+      </tr>
+      <tr>
+        <td class="name">Naming</td>
+        <td>Identity columns (<code>GENERATED BY DEFAULT AS IDENTITY</code>). <code>bigint</code> for high-volume tables (<code>team_member</code>), <code>integer</code> for configuration tables (<code>service_team</code>), <code>smallint</code> for small lookup tables (<code>role</code>, <code>team_role</code>). <code>app_user</code> uses <code>uuid</code> with <code>gen_random_uuid()</code>. <code>user_role</code> uses the composite key <code>(user_id, role_id)</code>.</td>
+        <td>Identity columns are standard SQL and avoid serial/sequence-ownership quirks. <code>app_user</code> keeps <code>uuid</code> because user ids appear in tokens and URLs. <code>BY DEFAULT</code> lets seed rows carry fixed ids.</td>
+      </tr>
+      <tr>
+        <td class="name">Timestamps</td>
+        <td><code>timestamptz</code> everywhere, mapped to <code>DateTimeOffset</code>, with <code>now()</code> as the database default.</td>
+        <td>PostgreSQL stores these values as UTC and converts them to the session zone on output.</td>
+      </tr>
+      <tr>
+        <td class="name">Text</td>
+        <td><code>text</code> for strings and <code>citext</code> for e-mail.</td>
+        <td>The current schema sets no length limits. If a limit matters to the business, it can be added as an explicit bound.</td>
+      </tr>
+      <tr>
+        <td class="name">Deletion</td>
+        <td><code>ON DELETE RESTRICT</code> on every foreign key (<code>ReferentialAction.Restrict</code>).</td>
+        <td>Prevents deletion of a referenced row.</td>
+      </tr>
+      <tr>
+        <td class="name">Audit columns</td>
+        <td><code>created_at</code> and <code>updated_at</code> on mutable tables, both defaulting to <code>now()</code>. Lookup tables have <code>created_at</code> only. <code>user_role</code> records <code>granted_at</code> and <code>granted_by_user_id</code>. <code>app_user</code> uses <code>is_active</code> and <code>team_member</code> uses <code>left_at</code>.</td>
+        <td>Edited rows need both timestamps. Seeded lookup rows change only in a migration, so an <code>updated_at</code> column there would never move. A role grant is never edited, so it records who granted it and when. Rows are never deleted, so <code>is_active</code> and <code>left_at</code> mark when a user or membership ends.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>2.3 Migration Artefacts</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Migration</th><th>Contents</th><th>Undo</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="id">20260927174717_InitialExtensions</td>
+        <td>Creates the <code>citext</code> extension with <code>migrationBuilder.Sql()</code>.</td>
+        <td>Down drops the extension.</td>
+      </tr>
+      <tr>
+        <td class="id">20260927202312_AddIdentityUsersRolesTeams</td>
+        <td>Six tables (<code>app_user</code>, <code>role</code>, <code>service_team</code>, <code>team_role</code>, <code>user_role</code>, <code>team_member</code>) with keys, defaults and NOT NULL constraints. Six RESTRICT foreign keys. Nine indexes: four plain unique, one partial unique (<code>team_member</code> where <code>left_at IS NULL</code>) and four non-unique lookups. Seed rows for 5 roles and 2 team roles.</td>
+        <td>Down drops the six tables in dependency order.</td>
+      </tr>
+      <tr>
+        <td class="id">&lt;Time&gt;IncidentAndReferenceTables</td>
+        <td><code>incident</code>, <code>ticket</code>, <code>resolution</code>, <code>category</code>, <code>location</code>, <code>asset</code> and the rest of the Incident, User, Service team, Category and Asset aggregates, with the invariants below.</td>
+        <td>Down in the same file.</td>
+      </tr>
+      <tr>
+        <td class="id">&lt;Time&gt;DatabaseRolesAndGrants</td>
+        <td>The least-privilege roles, the append-only grant on <code>incident_status_history</code> and <code>v_staff_directory</code>, written with <code>migrationBuilder.Sql()</code>.</td>
+        <td>Down in the same file.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Each migration covers one slice of the schema, so a reviewer can take one aggregate at a time. EF generates the tables and columns, and a reviewer checks them by reading the diff. The invariants EF cannot infer, such as partial unique indexes and CHECK constraints, need the real scrutiny. Each one gets an explicit name and a comment inside the migration, so a reviewer can find and challenge it without reading the whole schema. That supports the two-non-author-approval rule in the PED, because the partial unique index and the override constraint carry the stakeholder-conflict resolutions. EF applies migrations in timestamp order and records which ones have run in its history table, so the split is safe to rely on.</p>
+
+  <p>The three invariants that carry the design, as they would appear in the migration:</p>
+
+  <pre><code>// Clustering invariant (STK-CFL-02). Only one open incident can exist per
+// category and location. Submission relies on this: when a new report hits
+// the index, INSERT ... ON CONFLICT attaches it to the existing incident.
+migrationBuilder.CreateIndex(
+    name: "incident_one_open_per_scope_uq",
+    table: "incident",
+    columns: new[] { "category_id", "location_id" },
+    unique: true,
+    filter: "status IN ('NEW','ASSIGNED','IN_PROGRESS','ON_HOLD')");</code></pre>
+
+  <pre><code>// Override invariant (STK-CFL-01). A reason that can be null will be null.
+migrationBuilder.AddCheckConstraint(
+    name: "incident_override_ck",
+    table: "incident",
+    sql: @"(NOT priority_overridden
+              AND override_reason IS NULL AND override_by IS NULL AND override_at IS NULL
+              AND priority = computed_priority)
+        OR (priority_overridden
+              AND override_reason IS NOT NULL AND btrim(override_reason) &lt;&gt; ''
+              AND override_by IS NOT NULL AND override_at IS NOT NULL)");</code></pre>
+
+  <pre><code>// One current resolution per incident. Superseded resolutions are kept and
+// have no limit.
+migrationBuilder.CreateIndex(
+    name: "resolution_current_uq",
+    table: "resolution",
+    column: "incident_id",
+    unique: true,
+    filter: "superseded_at IS NULL");</code></pre>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.3.1&ndash;6.3.3. Access patterns and indexing are in <code>docs/access patterns/access-patterns-V1.0.html</code>; the persistence-technology decision, growth estimate, transactions and scalability are in <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>

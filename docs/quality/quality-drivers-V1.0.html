@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecturally Significant Requirements &amp; Quality Drivers</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  li > ul, li > p { margin-top: .3rem; }
+  li .desc { display: block; color: var(--muted); font-size: .94rem; }
+  .field { margin: 0 0 1.4rem; }
+  .field .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Architecturally Significant Requirements &amp; Quality Drivers</h1>
+  <p class="sub">PED v2.0 &sect;6.1. Six requirements that force a structural decision &mdash; an enforcement boundary, a transaction shape, a storage guarantee or a deployment constraint &mdash; rather than one component&#039;s internal logic.</p>
+
+  <h2>ASR-01 &mdash; Role-based authorisation and least privilege</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>The in-scope capabilities describe four capability groups (requester, staff, management and oversight, configuration and administration). Each has different authority over the same entities. Staff &quot;can see service requests which they are authorised to see&quot; and &quot;assign responsibility on an authorised basis&quot;. The PED says &quot;all changes to the configuration should be made by only authorised users&quot;. Information Regulators will &quot;oversee the lawful processing of staff personal information&quot;. The Security row in the scope constraints asks for &quot;authentication, authorisation, sensitive information, least privilege&quot;. NFR-01 already loads the JWT secrets and the database connection string from environment variables.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given a user in the requester group only, when they call the status-change endpoint, the call is rejected, the status is unchanged, and no history record is added.</li>
+      <li>Given a supervisor authorised for one service team, when they change the status of a request assigned to another team, the call is rejected. The response says whether the cause is the role or the team scope.</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>One enforcement point.</strong> Identity, roles and team scope are checked once at the API boundary, before domain logic runs. This is a single middleware, not a check in every handler. OWASP recommends application-wide configuration, a check on every request, deny by default, and server-side enforcement only (OWASP, 2026).</li>
+      <li><strong>Roles and teams as tables.</strong> Store them as relations, not a free-text role on the user. The staff- and management capabilities describe two scopes over the same rows.</li>
+      <li><strong>Least privilege in the database.</strong> The application&#039;s database account gets only the privileges it uses, per table, never <code>ALL PRIVILEGES</code>. PostgreSQL supports this through <code>GRANT</code>. It depends on FEC-01 choosing a relational database. It complements the application check but does not replace it, because a single connection cannot express per-user row access. That split is team judgement.</li>
+      <li><strong>Signed tokens.</strong> A JWT carries identity and role claims, so a request needs no extra database call. The signing key comes from an environment variable (NFR-01).</li>
+      <li><strong>RBAC is enough.</strong> OWASP prefers attribute-based or relationship-based control because RBAC suffers role explosion, but concedes it works for simple systems (OWASP, 2026). CivicConnect has six roles (reporter, technician, team leader, operations manager, finance, admin). The out-of-scope section excludes multi-tenancy. RBAC plus one team-scope check is enough, and a full attribute engine would strain Team Size and Schedule.</li>
+    </ul>
+  </div>
+
+  <h2>ASR-02 &mdash; Incident consolidation and subscriber notification</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>STK-CFL-01: &quot;if urgency is self-declared, everything will be declared urgent&quot;. Priority is instead &quot;calculated off impact and urgency, based on the reported location and category&quot;, with a supervisor override and &quot;a recorded reason&quot;. STK-CFL-02: every reporter expects acknowledgement, but &quot;technicians need to resolve just one incident&quot;. Related reports are grouped under one parent incident and every reporter subscribes to it. STK-02 says technicians will not get repeated alerts for the same issue. FEC-01 leaves the relational-versus-NoSQL choice open because the system needs &quot;transitions for request statuses and safe storage of user data&quot;.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given an open parent incident for &quot;Network outage&quot; at &quot;First Floor&quot;, when another reporter submits the same category and location, no new parent is created. The report count rises by exactly one, the reporter gets their own reference, and they appear in the subscriber list once, even if their client retries.</li>
+      <li>Given twenty reporters submit the same category and location in one second, there is exactly one open parent, each reporter appears in its subscriber list once, and technicians see one work item.</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>One transaction.</strong> &quot;At most one open parent per category and location, one subscription per reporter&quot; cannot survive replication lag, because a duplicate would mean a technician is notified twice. Submission therefore runs as one aggregate in one transaction, not across separate services or pipelines.</li>
+      <li><strong>Enforce it in the database.</strong> Check-then-insert is racy under PostgreSQL&#039;s default Read Committed isolation, where consecutive <code>SELECT</code> statements can see different data. A partial unique index on the clustering key, limited to open rows, plus an atomic <code>ON CONFLICT DO UPDATE</code> upsert guarantees one outcome even under high concurrency. The upsert needs the index as its conflict target, so the two are one decision. It depends on FEC-01.</li>
+      <li><strong>Observer pattern.</strong> Reporters subscribe to the parent incident, and each state change notifies every subscriber (Gamma et al., 1994). The subscriber list also backs each reporter&#039;s own reference, so acknowledgement and notification stay in sync.</li>
+      <li><strong>Safe retries.</strong> Submission is a create, so it is not idempotent by method (Fielding, Nottingham &amp; Reschke, 2022, &sect;9.2.2). A client-supplied submission key, stored server-side, with replays returning the stored result, is proposed &mdash; the PED says nothing about retries.</li>
+      <li><strong>Computed priority.</strong> Priority comes from category and location, not from the reporter. The supervisor override carries a recorded reason, so it is an auditable write. This links to ASR-05.</li>
+    </ul>
+  </div>
+
+  <h2>ASR-03 &mdash; Bounded configurability without a rules engine</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>The PED specified that administrators could create, update, activate or deactivate categories &quot;without impacting the existing request data&quot;. Changes &quot;should not delete or overwrite historical request data that would provide accountability&quot;. The aim is &quot;controlled configurability at the office level instead of any system customization&quot;, and CivicConnect &quot;was never meant to work as a generic no-code application building tool&quot;. The scope constraints repeat this: any office should be supported &quot;without becoming a no-code, workflow builder or multi-tenant platform&quot;. ASM-06 assumes that is &quot;achievable via a well-controlled combination of configurable components including categories, operational scope and role&quot;.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given an administrator creates a category with a default team and urgency, when it is saved, it is immediately selectable on the submission form and used in priority calculation for new requests, with no code change or redeployment.</li>
+      <li>Given an administrator deactivates a category that historical requests use, when they confirm, no historical request is changed or deleted, and past reports still show the category.</li>
+      <li>Given an administrator looks for a way to add a form field or a status transition outside the documented set, when they search the product, no such feature exists. This is intended under the out-of-scope section of the PED, not a bug.</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>Configuration is data, not code.</strong> Categories, areas, teams and roles are rows in one shared schema, with no office-specific code branches or schema variants. Deactivating a category changes its state and never deletes it, so configuration rows fall under ASR-05&#039;s accountability rules. This is our reading of ASM-06 and the admin capabilities.</li>
+      <li><strong>Strategy pattern, not a rules engine.</strong> Priority calculation (STK-CFL-01) is one named algorithm behind one interface, and administrators set only its inputs. The formula can be replaced without changing the code that calls it.</li>
+      <li><strong>No user-authored logic in the stack.</strong> No scripting runtime, expression interpreter or workflow-definition language. Adding a library for that purpose expands scope and needs a scope control impact assessment.</li>
+      <li><strong>Where variability lives.</strong> Configurability depends on whether variability sits in external data or in compiled logic, not on how much of it there is. ASR-03 applies that to CivicConnect.</li>
+    </ul>
+  </div>
+
+  <h2>ASR-04 &mdash; Cost-constrained, portable, container-deployable operability</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>The scope constraints Cost row says, &quot;free or low-cost services must be preferred when possible, and potential operational costs and platform capabilities must be known&quot;. ASM-03 assumes deployment technologies that &quot;will not cost too much&quot;. RSK-01 is the main risk: &quot;platform limitations may restrict deployment and cause unexpected downtime&quot;, caused by &quot;unanticipated operational costs or exceeding free-tier resource limitations&quot;. Its mitigation is to document &quot;resource limits for Docker containerisation deployments early&quot;, and its contingency is to &quot;migrate the chosen backend to an alternative low-cost hosting provider&quot;. FEC-02 says CivicConnect &quot;requires logging, monitoring, health checks and failure detection before staging and launching to production&quot;, and defers only the choice of tool. &sect;6.6 forbids committing secrets, and NFR-01 restates that as an acceptance criterion.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given the application is a container image with all environment-specific values in environment variables (NFR-01), when it is redeployed to a different low-cost host, it starts and serves requests with no source-code change.</li>
+      <li>Given the running application, when an operator or hosting probe queries the health endpoint, it reports within a bounded time whether the application and its database are healthy (FEC-02).</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>Stateless single deployable.</strong> No in-memory sessions, no server affinity, no reliance on host-local files. Changing provider is then a redeploy, not a rewrite. Containers contain everything needed to run the application and run on laptops, data-centre machines and clouds alike. That is why RSK-01 names Docker.</li>
+      <li><strong>Container plus external configuration.</strong> The container makes the runtime portable, and environment variables make the behaviour portable. The twelve-factor approach keeps config in environment variables, separate from code &mdash; NFR-01 covers secrets only. We propose applying it to every value that varies by environment, such as the database host and provider limits, as NFR-13.</li>
+      <li><strong>Observability as a seam.</strong> FEC-02 defers the tooling, not the obligation. We commit now to a health endpoint and a single logging abstraction, so a later tool choice is only a configuration change. OWASP says logs should record &quot;when, where, who and what&quot;, and that passwords, tokens and session identifiers &quot;should usually not be recorded directly in the logs&quot; (OWASP, 2026d). This links to ASR-06.</li>
+      <li><strong>Cost applies to the database too.</strong> Cheap application hosting with an always-on replicated database would break the same constraint. We propose one answer for both tiers: accept bounded downtime and protect data with backups.</li>
+    </ul>
+  </div>
+
+  <h2>ASR-05 &mdash; Concise-but-traceable capture with a system-generated audit trail</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>STK-CFL-03: technicians want &quot;to resolve a ticket as quickly as possible with minimal typing&quot;, while finance wants &quot;a detailed report with as much traceability to physical goods and hardware as possible&quot;. The resolution is to make &quot;the report a technician must fill in as concise as possible while retaining all relevant and important data&quot;. Technicians need minimal typing &quot;as to not impede ticket closure times&quot;, and finance &quot;will monitor data of broken equipment for claims and budgeting purposes&quot;. Management &quot;see request history and audit details&quot;. Configuration changes &quot;should not delete or overwrite historical request data that would provide accountability&quot;. STK-CFL-01 requires a supervisor&#039;s priority override to carry &quot;a recorded reason&quot;.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given a technician resolves a request by picking an outcome and an equipment identifier and typing a short summary, when finance runs a claims report, it lists the resolution against the correct equipment and supplier, using the structured selections.</li>
+      <li>Given any priority override, status change or configuration deactivation, when a manager opens the audit trail, an entry shows who acted, what changed, when, and the old and new values. The system writes it, and no user logs anything by hand.</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>Solve the conflict in the schema.</strong> Required structured fields (outcome, equipment link, short summary) sit apart from optional free text. The equipment link is mandatory only where finance needs it for claims. With free-text resolutions, finance would have to parse prose, and fixing that later means reprocessing history. This is our proposal.</li>
+      <li><strong>The write path creates the audit entry.</strong> The operation that makes a change also writes its audit entry. Users type less, and traceability still happens. Each entry records &quot;when, where, who and what&quot; (OWASP, 2026).</li>
+      <li><strong>Append-only through privileges.</strong> A coding convention cannot guarantee administrators &quot;should not delete or overwrite&quot;. We propose giving the application&#039;s database role <code>SELECT</code> and <code>INSERT</code> on the audit table but not <code>UPDATE</code> or <code>DELETE</code>, using PostgreSQL&#039;s per-privilege <code>GRANT</code>. This depends on FEC-01.</li>
+      <li><strong>Keep personal data out.</strong> Requests carry personal information, so OWASP&#039;s rule to &quot;never log data unless it is legally sanctioned&quot; applies to the audit payload too (OWASP, 2026).</li>
+    </ul>
+  </div>
+
+  <h2>ASR-06 &mdash; Access-controlled publication of unresolved incidents</h2>
+  <div class="field">
+    <span class="label">Evidence from the PED</span>
+    <p>STK-CFL-04: &quot;Users want reports that were already made to be visible, whereas the operations manager would prefer not to display a list of unresolved issues&quot;. It is resolved in favour of publication: &quot;the argument for publishing the data is stronger than against; however, it is also possible to publish resolution statistics per category&quot;. Requester capabilities let requesters see their own requests and history. Staff capabilities limit staff to &quot;service requests which they are authorised to see&quot;. STK-06 oversees &quot;the lawful processing of staff personal information&quot;.</p>
+  </div>
+  <div class="field">
+    <span class="label">Measurable expectation</span>
+    <ul>
+      <li>Given an unresolved incident, when any authenticated user views the published list, they see category, location, status and priority. Reporter identity, assignee identity and internal notes are absent from the response payload, not just hidden by the client.</li>
+      <li>Given the same incident, when a staff member on the assigned team views it, they also see the assignee, the notes and the full status history.</li>
+      <li>Given a request for per-category resolution statistics, only aggregate counts come back, with no identifiers.</li>
+    </ul>
+  </div>
+  <div class="field">
+    <span class="label">Design implications</span>
+    <ul>
+      <li><strong>One store, one projection per audience.</strong> The published list, own history, team queue and management analytics each expose different fields from the same data, gated by the ASR-01 enforcement point. A separate public copy would need its own sync, access control and privacy review, which the Team Size constraint cannot fund. A second read model would also bring back the staleness ASR-02 removed. The PED sets no read-throughput target that would justify it.</li>
+      <li><strong>Classify fields first.</strong> Every attribute a read path can reach is classified for personal information and recorded on the data model. Inclusion in the published projection is opt-in per column, so adding a column cannot widen exposure. POPIA is cited at Act level only, because its PDF could not be text-extracted. The Regulator&#039;s own mandate carries the enforcement claim.</li>
+      <li><strong>A separate endpoint, not a flag.</strong> The published list has its own endpoint and narrower response shape. OWASP says developers &quot;must never rely on client-side access control checks&quot; (OWASP, 2026), and a field hidden in the browser has already crossed the network.</li>
+      <li><strong>Statistics as the fallback.</strong> Per-category statistics are an aggregate query with no row identifiers. Kept as their own projection, they let us respond to a reversal of the publication decision by changing routing, not redesigning.</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>These six requirements are carried into the architecture (see <code>docs/architecture/architecture-V1.0.html</code>), the data/persistence baseline (<code>docs/data-persistence/</code> and <code>docs/access patterns/</code>) and the technology-stack and design decisions (<code>docs/decisions/</code>). See PED v2.0 &sect;6.1.</p>
+  </div>
+</main>
+</body>
+</html>
