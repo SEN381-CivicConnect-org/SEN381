@@ -120,6 +120,72 @@
           <td>Migrate the chosen backend to an alternative low-cost hosting provider.</td>
           <td class="rating">Open</td>
         </tr>
+        <tr>
+          <td class="name">RSK-02</td>
+          <td>Frontend, backend and database components may fail to integrate correctly.</td>
+          <td>Components are being developed separately and interfaces may change during implementation.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Define interfaces and data contracts, integrate components step-by-step, and test integration along the way.</td>
+          <td>Isolate or simplify affected integration points, roll back to the last known working version and focus on critical functionality within the system.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-03</td>
+          <td>Users may gain access to functions outside their authorised role.</td>
+          <td>Incorrect or incomplete role-based authentication and authorisation rules.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Test Requester, Staff, and Management permissions, secure routes and actions, and test role checks in integration testing.</td>
+          <td>Disable affected functionality until the access control problems have been fixed and tested.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-04</td>
+          <td>Database changes may break existing functionality or create inconsistent data.</td>
+          <td>Schema and data-access changes during ongoing implementation.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Manage database modifications, document schema changes, and test migrations and queries using development data.</td>
+          <td>Roll back to the old database structure or restore the backups to fix the failed migration or SQL.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-05</td>
+          <td>The project may fall behind schedule due to limited team capacity.</td>
+          <td>The system is being developed by a three-person team alongside academic deadlines.</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Focus on core requirements, divide tasks, monitor progress, and assess workload regularly.</td>
+          <td>Defer lower-priority or non-core features where permitted and focus effort on required deliverables.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-06</td>
+          <td>Architecture or technology changes may cause rework.</td>
+          <td>Design decisions are still being refined while development is underway.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td>Document design decisions, evaluate proposed architectural modifications before implementing, and ensure modules remain modular.</td>
+          <td>Put off less important or noncritical functionality where it is possible and concentrate on the needed deliverables.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-07</td>
+          <td>Insufficient testing may allow defects into the final system.</td>
+          <td>Time pressure may reduce functional, integration and security testing coverage.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Associate critical requirements with tests, and perform functional, integration, and security testing iteratively.</td>
+          <td>Roll back to the last approved design or change only the affected pieces of the software.</td>
+          <td class="rating">Open</td>
+        </tr>
       </tbody>
     </table>
   </div>
