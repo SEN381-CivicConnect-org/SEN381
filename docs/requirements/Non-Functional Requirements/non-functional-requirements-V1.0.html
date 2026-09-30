@@ -115,6 +115,76 @@
         <td>The system will ensure that sensitive credentials and application secrets are secured through the use of approved configuration mechanisms.</td>
         <td>Given the application deployment configuration, when the system starts, it will successfully load the database connection string and JWT secrets from secure environment variables instead of these keys being hardcoded into the source code.</td>
       </tr>
+      <tr>
+        <td class="id">NFR-02</td>
+        <td class="name">Durability and Recovery Point</td>
+        <td>RSK-08</td>
+        <td>The system will ensure that no more than 24 hours of committed request data can be lost in a database failure during Milestones 2 and 3, reducing to 15 minutes for the production baseline.</td>
+        <td>Given a backup taken according to the documented schedule, when the database is destroyed and rebuilt from the most recent backup, then the timestamp of the most recent recoverable incident is no more than 24 hours before the time of destruction, and the elapsed recovery time is recorded.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-03</td>
+        <td class="name">Verified Restore</td>
+        <td>RSK-08</td>
+        <td>The system&#039;s backups will be verified by a restore drill in every milestone, restoring into a clean instance and passing the integration test suite within the stated recovery time objective of four hours.</td>
+        <td>Given the most recent backup and role export, when a team member restores them into an empty PostgreSQL instance and runs the integration test suite, then every test passes, the elapsed wall-clock time from the start of the restore to the last passing test is four hours or less, and a drill record containing that elapsed time is committed to docs/deployment/.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-04</td>
+        <td class="name">Protection of Personal Information</td>
+        <td>POPIA s19(1); Information Regulators</td>
+        <td>The system will protect personal information in transit and restrict access to it by role, such that no reporting or analytics access can read credentials or contact details.</td>
+        <td>Given a session connected as the reporting database role, when it attempts to read the credential table or the user table directly, then permission is denied in both cases while the staff directory view remains readable; and given any database connection is established by the application, when the connection&#039;s encryption state is inspected, then TLS is in use.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-05</td>
+        <td class="name">Retention and Disposal of Personal Information</td>
+        <td>POPIA s14(1)</td>
+        <td>The system will retain personal information no longer than the agreed retention period for each record type, will dispose of it in a manner that prevents reconstruction, and will bound backup retention so that disposal becomes irreversible within 30 days.</td>
+        <td>Given idempotency records older than seven days and notifications read more than twelve months ago, when the retention job runs, then those rows are absent from the database and no error is raised for rows still within their period; and given a de-identification request for a user, when it is processed, then that user&#039;s name and e-mail no longer appear in the user table, their credential row is absent, and the incidents they reported remain readable with their reference numbers intact.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-06</td>
+        <td class="name">Concurrency Correctness Under Simultaneous Submission</td>
+        <td>STK-CFL-02</td>
+        <td>he system will produce a correct result when multiple reporters submit the same issue simultaneously and when multiple staff act on the same incident simultaneously, creating no duplicate incidents, no duplicate subscriptions, no partially written submissions and no silently overwritten updates.</td>
+        <td>Given twenty concurrent submissions for the same category and location, when they have all completed, then exactly one incident exists for that category and location, its report count is twenty, exactly twenty tickets exist, and each distinct reporter appears exactly once in the subscriber list; and given two technicians read the same unassigned incident and both claim it, when both claims have completed, then exactly one claim succeeds and the other receives a conflict response naming the current assignee.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-07</td>
+        <td class="name">Staff Queue Query Performance</td>
+        <td>Performance Standards</td>
+        <td>The system will return the first page of a service team&#039;s open incident queue within 500 ms at the 95th percentile, measured at the database, with a dataset representative of three years of operation.</td>
+        <td>Given a database seeded with 20 000 incidents of which 200 are open, when the team queue query for one team is executed 100 times, then the 95th-percentile execution time is 500 ms or less and the query plan shows the partial team-queue index being used rather than a sequential scan.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-08</td>
+        <td class="name">Management Dashboard Query Performance</td>
+        <td>Performance Standards</td>
+        <td>The system will return the management summary by status and by category for a one-month window within 2 seconds at the 95th percentile against the same representative dataset.</td>
+        <td>Given the seeded dataset of NFR-07, when the status summary and the category summary for a one-month window are each executed 100 times, then the 95th-percentile execution time of each is 2 seconds or less.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-09</td>
+        <td class="name">Availability</td>
+        <td>RSK-01</td>
+        <td>The system will be available during the client&#039;s working hours with a target of 99 % monthly availability, excluding scheduled maintenance announced at least 24 hours in advance, recovering from an unplanned database outage within the recovery time objective of NFR-03</td>
+        <td>Given a calendar month of health-check samples at five-minute intervals during working hours, when availability is computed, then successful samples are at least 99 % of the total and every window of consecutive failed samples is shorter than the recovery time objective.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-10</td>
+        <td class="name">Least-Privilege Database Access</td>
+        <td>Security Constraints</td>
+        <td>The system will connect to its database using a role that cannot perform schema changes, cannot delete operational records, and cannot modify audit or status-history records, with schema changes performed by a separate role used only by the deployment pipeline.</td>
+        <td>Given a session connected as the application database role, when it attempts to create a table, to delete a row from the incident table, and to update a row in the audit log, then all three attempts are denied while an insert into the audit log succeeds; and when the running application&#039;s configured database user is inspected, then it is not the migration role and it is not a superuser.</td>
+      </tr>
+      <tr>
+        <td class="id">NFR-11</td>
+        <td class="name">Password Storage</td>
+        <td>Security Constraints</td>
+        <td>The system will store user passwords only as Argon2id hashes using the documented parameters, with the algorithm and parameters recorded alongside each hash so they can be upgraded without a password reset.</td>
+        <td>Given a newly created user account, when the stored credential is inspected, then it is a PHC-format string identifying argon2id with memory 19456 KiB, two iterations and parallelism 1, and the plaintext password appears nowhere in the database or in any application log.</td>
+      </tr>
     </tbody>
   </table>
   </div>
