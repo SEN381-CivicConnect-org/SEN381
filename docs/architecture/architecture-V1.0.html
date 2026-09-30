@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Design</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  li > ul, li > p { margin-top: .3rem; }
+  li .desc { display: block; color: var(--muted); font-size: .94rem; }
+  .field { margin: 0 0 1.4rem; }
+  .field .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; }
+  blockquote {
+    margin: 0 0 1.5rem;
+    padding: .8rem 1.1rem;
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    font-weight: 600;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .figure {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: .4rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Architecture Design</h1>
+  <p class="sub">PED v2.0 &sect;6.2. The layered modular-monolith architecture selected for CivicConnect, the alternatives it was chosen over, and the responsibilities, trade-offs and confirmation items that follow from it.</p>
+
+  <h2>6.2.1 Architecture Context</h2>
+  <p>CivicConnect will be developed as a configurable service request management platform for an office environment. The approved M1 baseline requires provision of request submission and categorisation, status change control, assignment and accountability, audit/history details, authorised information access based on role, reporting and category configuration control. The project scope excludes enterprise multi-tenancy, a no-code workflow tool, a mobile application and any non-essential external integration in the current phase (CivicConnect Team, 2026).</p>
+  <p>The M2 brief requires the team to assess practical architectural options, choose an appropriate architecture based on the project&#039;s specific quality drivers and constraints, produce diagrams that show responsibilities and boundaries, differentiate architecture from technology decisions, and document decisions and consequences in Architecture Decision Records (SEN381 Teaching Team, 2026c).</p>
+  <p>Because the system is developed by a team of three students within a limited academic calendar, architectural complexity must be justified by the value it adds. The architecture segregates and maintains itself without the overhead of a distributed architecture (Bass, Clements and Kazman, 2021; Fowler, 2015).</p>
+
+  <h2>6.2.2 Architecture Alternatives Considered</h2>
+  <p>Three realistic architecture options were assessed. The comparison is an engineering judgement for this project on the basis of M1 and M2, not a technology-stack choice.</p>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Alternative</th>
+        <th>Strengths for CivicConnect</th>
+        <th>Weaknesses / Risks</th>
+        <th>Fit with Team &amp; Schedule</th>
+        <th>Decision</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Layered modular monolith</td>
+        <td>Independent layers for different concerns; single deployable application; facilitates modular growth; simple testing and deployment.</td>
+        <td>Discipline is needed to maintain boundaries, otherwise it may end up tightly coupled.</td>
+        <td>High &mdash; proportionate for a three-person team and current scope.</td>
+        <td><strong>Selected</strong></td>
+      </tr>
+      <tr>
+        <td class="name">Traditional tightly-coupled monolith</td>
+        <td>Simple initial setup; low deployment complexity.</td>
+        <td>Harder to keep business logic, UI and persistence code separate as configurability increases.</td>
+        <td>Medium &mdash; easy initially but higher maintainability risk.</td>
+        <td>Rejected</td>
+      </tr>
+      <tr>
+        <td class="name">Microservices / distributed services</td>
+        <td>Service boundaries and scalability help in large systems.</td>
+        <td>Introduces API, networking, deployment, observability, distributed-data and failure-handling complexity with no evidence of need (Fowler, 2015).</td>
+        <td>Low &mdash; excessive complexity for present scope and schedule.</td>
+        <td>Rejected</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6.2.3 Selected Architecture</h2>
+  <p>The architecture selected for CivicConnect is a layered, modular monolith. The system remains a single deployable entity, with responsibilities segregated into internal layers/modules (Bass, Clements and Kazman, 2021).</p>
+  <div class="figure">Figure 1: Proposed CivicConnect layered modular-monolith architecture &mdash; diagram in the source document, not reproduced in this conversion.</div>
+
+  <h2>6.2.4 Architectural Responsibilities and Boundaries</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Layer / Boundary</th>
+        <th>Primary Responsibility</th>
+        <th>CivicConnect Examples</th>
+        <th>Boundary Rule</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Presentation</td>
+        <td>Handles user interaction and role-appropriate views.</td>
+        <td>Tickets submitted by the requester; staff queues; management view; administration screens.</td>
+        <td>Should not contain core business rules or direct persistence logic.</td>
+      </tr>
+      <tr>
+        <td class="name">Application</td>
+        <td>Coordinates system use cases and application workflows.</td>
+        <td>Create request, assign request, alter status, update resolution, define category.</td>
+        <td>Coordinates domain behaviour; does not own database-specific implementation.</td>
+      </tr>
+      <tr>
+        <td class="name">Domain</td>
+        <td>Contains core business concepts, rules and state.</td>
+        <td>Ticket, Category, Status, Assignment, User/Role, transition control rules.</td>
+        <td>Core rules must be kept free from UI and database considerations wherever possible.</td>
+      </tr>
+      <tr>
+        <td class="name">Infrastructure</td>
+        <td>Implements technical concerns required by higher layers.</td>
+        <td>Adapters for authentication/authorisation, persistence, configuration, logging, and possible future external service adapters.</td>
+        <td>Technical details should support rather than define domain rules.</td>
+      </tr>
+      <tr>
+        <td class="name">Persistence boundary</td>
+        <td>Stores and retrieves controlled project data.</td>
+        <td>Tickets, ticket categories, assignments, ticket history, users/roles, and auditing information.</td>
+        <td>Final database technology/schema stays aligned with the persistence decision (see <code>docs/data-persistence/</code>).</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6.2.5 Key Module Direction</h2>
+  <p>The initial logical modules follow the approved business capabilities, not a technical split, and are refined further as M2 requirements and the ASR review settle.</p>
+  <ul>
+    <li><strong>Request Management</strong> &mdash; creation, view, assignment, status-change control, actions and resolution of requests.</li>
+    <li><strong>Configuration</strong> &mdash; controlled categories, organisational handling information and other approved office-level configuration.</li>
+    <li><strong>Identity and Access</strong> &mdash; user identity, role-based permissions and authorisation boundaries.</li>
+    <li><strong>Oversight and Reporting</strong> &mdash; management views, request status/activity information and accountability-focused reporting.</li>
+    <li><strong>Audit / History</strong> &mdash; traceable status/action history required for accountability and later verification.</li>
+  </ul>
+
+  <h2>6.2.6 Rationale Against Project Constraints and Quality Needs</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Driver / Constraint</th>
+        <th>Architecture Response</th>
+        <th>Reasoning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Maintainability / configurability</td>
+        <td>Separate modules and layered responsibilities.</td>
+        <td>Configuration may change without separate programs per office, while staying within the configuration boundary (ASR-03).</td>
+      </tr>
+      <tr>
+        <td class="name">Security / least privilege</td>
+        <td>Dedicated identity/access boundary and separation of presentation from protected application/domain operations.</td>
+        <td>Supports role-based access control and stops UI code from being the sole enforcement point (NIST, 2020; ASR-01).</td>
+      </tr>
+      <tr>
+        <td class="name">Traceability / accountability</td>
+        <td>Domain and audit/history responsibilities remain explicit.</td>
+        <td>Facilitates controlled state transitions and request/action history retention from the M1 baseline (ASR-05).</td>
+      </tr>
+      <tr>
+        <td class="name">Team size and schedule</td>
+        <td>Single deployable application.</td>
+        <td>Minimises deployment, integration, debugging and operations overhead for a three-student team.</td>
+      </tr>
+      <tr>
+        <td class="name">Testability</td>
+        <td>Business logic separated from infrastructure where practical.</td>
+        <td>Makes validation of rules like legitimate ticket transitions more straightforward.</td>
+      </tr>
+      <tr>
+        <td class="name">Deployment/cost</td>
+        <td>Avoid distributed services unless later evidence requires them.</td>
+        <td>Reduces hosting, network and observability complexity, staying inside the M1 budget constraint (ASR-04).</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6.2.7 Main Interactions</h2>
+  <p>Users use the CivicConnect interface via the presentation layer based on their authorised roles. The presentation layer invokes application use cases rather than manipulating stored data directly. Application services enforce domain policies such as making requests and their status changes. Domain logic expresses business rules independently of the chosen database where practical. Infrastructure elements facilitate persistence and configuration. Every request update needed to provide accountability generates audit/history information.</p>
+
+  <h2>6.2.8 Trade-offs and Risks</h2>
+  <p>The architecture is proportional, not distributed &mdash; the key consequence is that all modules end up using the same deployable application and the same persistence environment.</p>
+  <ul>
+    <li><strong>Risk:</strong> tight coupling of application modules. <strong>Mitigation:</strong> define module responsibilities, disallow shortcuts across layers, check dependencies on Pull Requests.</li>
+    <li><strong>Risk:</strong> business logic entangled with the chosen database or framework. <strong>Mitigation:</strong> keep business logic separate from database implementation where possible.</li>
+    <li><strong>Risk:</strong> the project becomes too large to develop cleanly. <strong>Mitigation:</strong> keep module boundaries clear and reconsider the architecture if real project evidence requires it.</li>
+    <li><strong>Risk:</strong> architecture design and implementation diverge. <strong>Mitigation:</strong> update architecture diagrams/ADRs/RTM whenever an architectural change is approved.</li>
+  </ul>
+
+  <h2>6.2.9 Architecture Decision Record Summary</h2>
+  <div class="scroll">
+  <table>
+    <tbody>
+      <tr><td class="name">Decision ID</td><td>ADR-ARCH-001</td></tr>
+      <tr><td class="name">Decision</td><td>Use a layered modular-monolith architecture for CivicConnect.</td></tr>
+      <tr><td class="name">Context</td><td>Configurable office ticket-management system developed by a three-person team with controlled requirements, security/accountability needs and a limited academic schedule.</td></tr>
+      <tr><td class="name">Alternatives</td><td>Tightly coupled monolith; layered modular monolith; microservices/distributed services.</td></tr>
+      <tr><td class="name">Rationale</td><td>Provides internal separation, maintainability and testability while retaining a single deployable application and avoiding unjustified distributed-system complexity.</td></tr>
+      <tr><td class="name">Main trade-off</td><td>Requires discipline to preserve module/layer boundaries; independent service deployment/scaling is not provided.</td></tr>
+      <tr><td class="name">Primary risks</td><td>Boundary erosion, framework/database coupling, architecture-documentation drift.</td></tr>
+      <tr><td class="name">Evidence to link</td><td>M1 scope/constraints; M2 ASRs (<code>docs/quality/quality-drivers-V1.0.html</code>); technology/persistence decisions (<code>docs/data-persistence/</code>, <code>docs/decisions/</code>); architecture diagram; RTM.</td></tr>
+      <tr><td class="name">Status</td><td>Proposed &mdash; validate with team ASRs, technology and persistence decisions before M2 baseline sign-off.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>6.2.10 Items to Confirm Before Baseline Sign-Off</h2>
+  <ul>
+    <li>Verify the final ASRs/quality drivers and map each key driver to this architectural choice. <em>(Done &mdash; see <code>docs/quality/quality-drivers-V1.0.html</code>.)</em></li>
+    <li>Ensure the chosen front-end/back-end/runtime combination can realise the proposed layer/module separation without redundant duplication.</li>
+    <li>Adopt a relational/NoSQL persistence strategy and update the infrastructure/persistence boundary accordingly. <em>(Done &mdash; PostgreSQL selected, see <code>docs/decisions/technology-stack-V1.0.html</code>.)</em></li>
+    <li>Validate the deployment direction and ensure the deployable application is compatible with the intended environment. <em>(See <code>docs/deployment/deployment-V1.0.html</code>.)</em></li>
+    <li>Develop/endorse ADR-ARCH-001 and add architecture/module citations to the RTM for the requirements that have been impacted.</li>
+  </ul>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.2. The quality drivers behind these choices are in <code>docs/quality/quality-drivers-V1.0.html</code>; the persistence boundary is detailed in <code>docs/data-persistence/</code>; the design decisions that refine module behaviour (DD-01, DD-02) are in <code>docs/decisions/design-decisions-V1.0.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>

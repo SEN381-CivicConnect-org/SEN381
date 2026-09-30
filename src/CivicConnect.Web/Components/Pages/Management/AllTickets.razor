@@ -1,0 +1,4 @@
+@page "/management/tickets"
+@attribute [Authorize(Roles="Management")]
+@inject TicketService Tickets
+<div class="page-head"><div><h1>All Tickets</h1><p>View requests across every team and category.</p></div></div><TicketTable Tickets="Tickets.Tickets"/>

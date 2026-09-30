@@ -1,0 +1,20 @@
+{
+  "name": "civicconnect-doc-portal",
+  "version": "1.0.0",
+  "description": "Automated technical documentation and requirement tracking portal for SEN381 CivicConnect",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "portal": "node server.js"
+  },
+  "keywords": [
+    "documentation",
+    "requirements",
+    "sen381",
+    "automation",
+    "html-updater"
+  ],
+  "author": "SEN381 CivicConnect Team",
+  "license": "ISC"
+}

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Initial Design Decisions</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  li > ul, li > p { margin-top: .3rem; }
+  .field { margin: 0 0 1.4rem; }
+  .field .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; }
+  td.todo { color: var(--muted); font-style: italic; }
+  .figure {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: .4rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Initial Design Decisions</h1>
+  <p class="sub">PED v2.0 &sect;6.5. Two CivicConnect design problems carried from Assignment 2 findings into concrete project decisions, each stating the problem, the alternatives, the decision, the rationale, and the software elements affected.</p>
+
+  <div class="note">
+    <span class="label">Evidence boundary</span>
+    <p>The current repository evidence reviewed for this work does not yet show implementation of these decisions in application code. This document states decisions and their rationale, not implementation evidence. Branch/class/PR/test references will be added once development reaches these areas.</p>
+  </div>
+
+  <h2>Design Context and Decision Principles</h2>
+  <p>The M1 baseline involves controlled transition of ticket statuses, recording actions, comments, resolutions, providing requester feedback, and having auditability over the request history. These needs present an architectural question: how to coordinate status-change behaviour without one service gaining unrelated responsibilities.</p>
+  <p>The M1 baseline also establishes CivicConnect as a configurable office ticket management system. Controlled categories, classification, organisational processing and roles are supported; a generic no-code workflow engine, arbitrary fields, scripting, and enterprise multi-tenancy are out of scope.</p>
+  <p>The decision lenses used were cohesion, controlled coupling, and SOLID principles. Patterns and interfaces were not assumed to automatically produce better design, and any added layer of indirection needed a reason grounded in some kind of expected change or variability (Budgen, 2021; Martin, 2003).</p>
+
+  <h2>DD-01 &mdash; Controlled Ticket Status Reactions</h2>
+  <div class="field">
+    <span class="label">Design problem</span>
+    <p>Changing the status of a ticket can be more than simply changing the status field. CivicConnect may require validation of the transition, storage of the new state, audit/history recording, and requester notification. Putting every existing and future reaction into one method of a <code>TicketService</code> class risks that service becoming an &quot;everything happens here&quot; class.</p>
+  </div>
+  <div class="field">
+    <span class="label">Alternatives considered</span>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Alternative</th><th>Strength for CivicConnect</th><th>Main trade-off / risk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Explicit orchestration</td>
+          <td>Required operations and sequencing remain visible and predictable. Strong fit for persistence, audit/history and other consistency-critical work.</td>
+          <td>The orchestrator can grow into an &quot;everything happens here&quot; service if independent reactions continue to accumulate.</td>
+        </tr>
+        <tr>
+          <td class="name">Observer</td>
+          <td>Separates independently changing reactions from core transition logic and allows new observers without directly editing the transition service (Gamma et al., 1994).</td>
+          <td>Introduces indirection, registration/dispatch complexity, possible uncertainty around order/failure handling, and additional integration-test needs.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="field">
+    <span class="label">Project-specific decision</span>
+    <p>For mandatory status transition behaviours, use explicit application-service orchestration. For observer-type event processing, apply it exclusively for confirmed secondary responses, which can independently vary and do not affect the primary transition outcome.</p>
+    <p>This ensures that transition validation, persistence, and mandatory audit/history behaviour stay explicit. If the transition is successful, it might publish a domain/application event internally after the consistency-sensitive part is done. Other secondary effects &mdash; like notifying the requester, if such functionality is present &mdash; could be made through subscription to that event.</p>
+  </div>
+  <div class="field">
+    <span class="label">Rationale, expected benefit and trade-off</span>
+    <p><strong>Rationale:</strong> the choice retains visibility of control for correctness-dependent ticket behaviour while defining the extension point only where variability exists independently.</p>
+    <p><strong>Expected benefit:</strong> cohesion in the ticket-transition logic, better coupling to the mandatory collaborators, and the option to append independent actions without constantly modifying the transition logic itself.</p>
+    <p><strong>Complexity introduced:</strong> Observer needs event dispatching/registration, failure semantics, ordering assumptions and integration tests. This extra complexity does not make sense if there are just a few reactions or if they are transactional (Gamma et al., 1994).</p>
+    <p><strong>SOLID/design link:</strong> SRP provides for the separation of independently varying reactions; OCP becomes applicable only where repeated extensions are demonstrated. Necessary dependencies are maintained explicitly without abstracting only for the purpose of applying a pattern (Martin, 2003).</p>
+  </div>
+  <div class="field">
+    <span class="label">Affected software elements</span>
+    <ul>
+      <li>Ticket application/service layer</li>
+      <li>Ticket status-transition validation/policy</li>
+      <li>Ticket repository or persistence boundary</li>
+      <li>Request history/audit recording</li>
+      <li>Optional internal event publisher/dispatcher</li>
+      <li>Secondary reaction handlers such as requester feedback/notifications when implemented</li>
+    </ul>
+  </div>
+  <div class="figure">Figure 1: Proposed collaboration for controlled status-transition reactions &mdash; diagram in the source document, not reproduced in this conversion.</div>
+
+  <h2>DD-02 &mdash; Controlled Office Configuration</h2>
+  <div class="field">
+    <span class="label">Design problem</span>
+    <p>CivicConnect needs to be configurable for offices without being separately coded for every office. Categories, classifications, organisational areas, and role-based configuration can differ, but the ticket management cycle stays the same. Hard-coding every office&#039;s values in controllers/services disperses the changes; a fully generic strategy for every configurable aspect would take CivicConnect out of its scope.</p>
+  </div>
+  <div class="field">
+    <span class="label">Alternatives considered</span>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Alternative</th><th>Strength for CivicConnect</th><th>Main trade-off / risk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Controlled configuration</td>
+          <td>Validates office differences through data and assigns a role to the configuration. The core ticket service uses supported configuration, not hard-coded office values.</td>
+          <td>Needs configuration validation, authorisation, persistence, and careful boundaries so invalid configuration does not adversely affect ticket operation or history.</td>
+        </tr>
+        <tr>
+          <td class="name">Strategy</td>
+          <td>Packs two very different algorithms under one contract, letting the program choose what it wants to do at runtime (Gamma et al., 1994).</td>
+          <td>Introduces a strategy interface and strategy selector; inappropriate when an office uses the same strategy with different data rather than different behaviour.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="field">
+    <span class="label">Project-specific decision</span>
+    <p>Use controlled data-driven configuration as the default strategy for office-specific differences. Do not use Strategy for Categories, Roles, Classifications or Organizational Areas unless further development shows different algorithms or policies which cannot be encoded as configuration data.</p>
+    <p>A specific configuration role is responsible for configuration validation and access to supported configuration. Components performing ticket processing use that controlled configuration but keep a single ticket workflow. This fits the M1 configuration boundary, since CivicConnect is reusable across offices but is not a generic workflow builder or no-code platform.</p>
+  </div>
+  <div class="field">
+    <span class="label">Rationale, expected benefit and trade-off</span>
+    <p><strong>Rationale:</strong> the current office differences identified are more about values in a controlled envelope than alternative algorithms, so treating them as configuration keeps the design balanced.</p>
+    <p><strong>Expected benefit:</strong> values for the office can be modified without altering the underlying ticket-processing program logic; configuration values stay consistent, and there are no redundant office-specific branches within the application.</p>
+    <p><strong>Complexity introduced:</strong> the team must provide validation, authorization, persistence, and proper history of configuration changes, with defined constraints so configuration cannot become a user-authored workflow.</p>
+    <p><strong>Strategy deferment:</strong> Strategy remains a viable future option provided there is evidence of significant variation of algorithms, like a different approach to prioritization or routing. Otherwise, the configuration approach is used (Gamma et al., 1994).</p>
+  </div>
+  <div class="field">
+    <span class="label">Affected software elements</span>
+    <ul>
+      <li>Administration/configuration UI or endpoints</li>
+      <li>Configuration service/module</li>
+      <li>Category and classification configuration</li>
+      <li>Role/authorisation configuration boundary</li>
+      <li>Organisational area/team configuration</li>
+      <li>Ticket services that consume validated configuration</li>
+      <li>Configuration persistence and audit/history rules</li>
+    </ul>
+  </div>
+  <div class="figure">Figure 2: Proposed separation of controlled office configuration from the common ticket workflow &mdash; diagram in the source document, not reproduced in this conversion.</div>
+
+  <h2>ADR and Traceability Evidence</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Decision record</th><th>Decision</th><th>Primary M1 link</th><th>M2 evidence to add</th><th>Implementation status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="id">ADR-DD-01</td>
+        <td>Mandatory explicit orchestration plus conditional Observer for individual responses</td>
+        <td>Status transition control; history/audit; constructive feedback</td>
+        <td>ADR, design diagram, RTM link, branch/classes/PR/tests once developed</td>
+        <td class="todo">Not yet evidenced in code</td>
+      </tr>
+      <tr>
+        <td class="id">ADR-DD-02</td>
+        <td>Controlled configuration; delayed Strategy until variation through algorithm is shown</td>
+        <td>Configurable categories/classifications/roles; configuration boundary</td>
+        <td>ADR, configuration design, RTM link, schema/classes/PR/tests once developed</td>
+        <td class="todo">Not yet evidenced in code</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Evidence Required Before M2 Baseline Sign-Off</h2>
+  <ul>
+    <li>Team evaluation shows that DD-01 and DD-02 conform to the selected architecture, ASRs, data/persistence architecture, and technology stack.</li>
+    <li>Create controlled ADR/design records for both decisions in the project decision evidence.</li>
+    <li>Update the RTM so the appropriate requirements reference the design decision, not just the &quot;Milestone 2&quot; placeholder.</li>
+    <li>When implementation is started, add the location of actual modules/interfaces along with branches, commits and Pull Request evidence.</li>
+    <li>Provide verification evidence for the behaviour that has been implemented, or mark it Planned/Not Yet Implemented.</li>
+    <li>If development proves any of these assumptions false &mdash; e.g. office variation turns out to be algorithmic rather than data-driven &mdash; revise the decision using the controlled ADR/change-control process.</li>
+  </ul>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.5. The related technology-stack decision (ADR-004) is at <code>docs/decisions/technology-stack-V1.0.html</code>; the architecture decision (ADR-ARCH-001) is at <code>docs/architecture/architecture-V1.0.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>

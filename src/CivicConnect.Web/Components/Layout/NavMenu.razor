@@ -1,0 +1,44 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject DemoAuthenticationStateProvider Auth
+
+<aside class="sidebar">
+    <div class="brand"><div class="brand-mark">CC</div><div><strong>CivicConnect</strong><span>Service Management</span></div></div>
+    <div class="nav-label">Workspace</div>
+    <nav class="nav-section">
+        <AuthorizeView Roles="Requester">
+            <NavLink class="nav-item" href="/requester/tickets"><img class="icon" src="assets/icons/tickets.svg" alt=""/>My Tickets</NavLink>
+            <NavLink class="nav-item" href="/requester/new"><img class="icon" src="assets/icons/create.svg" alt=""/>New Ticket</NavLink>
+        </AuthorizeView>
+        <AuthorizeView Roles="Staff">
+            <NavLink class="nav-item" href="/staff"><img class="icon" src="assets/icons/dashboard.svg" alt=""/>Dashboard</NavLink>
+            <NavLink class="nav-item" href="/staff/queue"><img class="icon" src="assets/icons/tickets.svg" alt=""/>Ticket Queue</NavLink>
+            <NavLink class="nav-item" href="/staff/assigned">My Assigned Tickets</NavLink>
+        </AuthorizeView>
+        <AuthorizeView Roles="Management">
+            <NavLink class="nav-item" href="/management"><img class="icon" src="assets/icons/dashboard.svg" alt=""/>Dashboard</NavLink>
+            <NavLink class="nav-item" href="/management/tickets"><img class="icon" src="assets/icons/tickets.svg" alt=""/>All Tickets</NavLink>
+            <NavLink class="nav-item" href="/management/users">Users &amp; Staff</NavLink>
+            <NavLink class="nav-item" href="/management/categories">Categories</NavLink>
+        </AuthorizeView>
+        <NavLink class="nav-item" href="/notifications">Notifications</NavLink>
+        <NavLink class="nav-item" href="/settings">Settings</NavLink>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-card"><div class="avatar">@Initials</div><div class="user-meta"><strong>@Name</strong><span>@Role</span></div></div>
+        <div class="workspace-panel"><span>Current workspace</span><strong>CivicConnect Office</strong></div>
+        <button class="btn btn-ghost" @onclick="SignOut">Sign out</button>
+    </div>
+</aside>
+
+@code {
+    string Name = "Signed in user", Role = "", Initials = "CC";
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        Name = state.User.Identity?.Name ?? "Signed in user";
+        Role = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        Initials = string.Join("", Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
+    }
+    void SignOut() { Auth.SignOut(); Nav.NavigateTo("/login"); }
+}

@@ -111,6 +111,10 @@
     <span class="label">Deferment Plan</span>
     <p>The final decision between using a NoSQL database and a traditional relational SQL database is deliberately deferred until the data structures and API contracts are fully designed in Milestone 2.</p>
   </div>
+  <div class="field">
+    <span class="label">Status (Milestone 2)</span>
+    <p><strong>Resolved.</strong> PostgreSQL 16+ is selected as ADR-004. See <code>docs/decisions/technology-stack-V1.0.html</code> and <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code> for the justification and the alternatives rejected.</p>
+  </div>
 
   <h2>FEC-02 &mdash; Operational Readiness</h2>
   <div class="field">
@@ -120,6 +124,10 @@
   <div class="field">
     <span class="label">Deferment Rationale</span>
     <p>Specific observability tools are not being configured for Milestone 1 because the exact telemetry stack will only be selected once the application architecture has been finalised.</p>
+  </div>
+  <div class="field">
+    <span class="label">Status (Milestone 2)</span>
+    <p><strong>Partially resolved.</strong> ASR-04 commits to a health endpoint and a single logging abstraction as a design seam now, so the later tool choice is a configuration change rather than a redesign. See <code>docs/quality/quality-drivers-V1.0.html</code> and <code>docs/deployment/deployment-V1.0.html</code>. The specific tool remains deferred.</p>
   </div>
 </main>
 </body>

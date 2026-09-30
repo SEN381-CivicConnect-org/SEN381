@@ -97,7 +97,7 @@
     font-weight: 600;
   }
   ol.flow li + li::before {
-    content: "92";
+    content: "\2192";
     position: absolute;
     left: -1.1rem;
     top: 50%;
@@ -144,21 +144,255 @@
     </thead>
     <tbody>
       <tr>
-        <td class="name">Minimum Business Capabilities</td>
+        <td class="name">Requested Capabilities</td>
         <td class="id">FR-01</td>
-        <td>Submit and categorise requests</td>
-        <td class="todo">Milestone 2</td>
-        <td class="todo">Milestone 3</td>
-        <td class="todo">Milestone 3</td>
+        <td>Submit and categorise a service request</td>
+        <td><code>SubmissionService.cs</code>; <code>TicketSubmissionForm.razor</code>; <code>20260927174717_InitialExtensions </code> (<code>ticket</code>, <code>incident</code>); <code>20260927202312_AddIdentityUsersRolesTeams </code> <code>ticket_text_ck</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-SUB-01 SubmitCreatesTicketAndIncident</code></td>
         <td class="todo">Milestone 4</td>
       </tr>
       <tr>
-        <td class="name">Security Engineering Standard</td>
+        <td class="name">Minimum Business Capabilities</td>
+        <td class="id">FR-02</td>
+        <td>Log into appropriate user portal</td>
+        <td><code>AuthService.cs</code>; <code>LoginForm.razor</code>; <code>20260927174717_InitialExtensions </code> (<code>app_user</code>, <code>user_credential</code>, <code>role</code>)</td>
+        <td class="todo">M3</td>
+        <td><code>IT-AUTH-01 LoginRedirectsByRole</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-02</td>
+        <td class="id">FR-03</td>
+        <td>Cluster duplicate reports &amp; reporter subscriptions</td>
+        <td><code>SubmissionService.cs</code>; <code>V002</code> <code>incident_one_open_per_scope_uq</code>; <code>incident_subscription</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-CONC-01 ConcurrentSubmissionsProduceOneIncident</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-04</td>
+        <td>Assign or claim request ownership</td>
+        <td><code>IncidentService.cs &rarr; Claim/Assign</code>; <code>StaffQueue.razor</code>; <code>incident.assignee_id</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-CLM-01 UnassignedClaimSucceeds</code>, <code>IT-CLM-02 DoubleClaimRejected</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-01</td>
+        <td class="id">FR-05</td>
+        <td>Calculate priority from impact and urgency</td>
+        <td><code>PriorityMatrix.cs</code>; <code>incident.impact_level</code>, <code>urgency_level</code>, <code>computed_priority</code></td>
+        <td class="todo">M3</td>
+        <td><code>UT-PRI-01 PriorityMatrix</code>, <code>IT-PRI-02 ConfigChangeDoesNotRewriteHistory</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-01</td>
+        <td class="id">FR-06</td>
+        <td>Supervisor priority override with reason</td>
+        <td><code>IncidentService.cs &rarr; OverridePriority</code>; <code>OverrideModal.razor</code>; <code>20260927202312_AddIdentityUsersRolesTeams </code> <code>incident_override_ck</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-OVR-01 OverrideWithoutReasonRejected</code>, <code>IT-CONC-02 StaleVersionOverrideRejected</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">FEC-01</td>
+        <td class="id">FR-07</td>
+        <td>Controlled status transitions with history</td>
+        <td><code>IncidentStateMachine.cs</code>; <code>20260927202312_AddIdentityUsersRolesTeams </code> <code>incident_resolved_at_ck</code>, <code>status_history_change_ck</code></td>
+        <td class="todo">M3</td>
+        <td><code>UT-SM-01 TransitionMatrix</code>, <code>IT-SM-02 IllegalTransitionRejectedAndNoHistoryRow</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; POPIA s17</td>
+        <td class="id">FR-08</td>
+        <td>Auditable record of changes</td>
+        <td><code>AuditService.cs</code>; <code>20260927174717_InitialExtensions </code> <code>audit_log</code>; <code><Time>IncidentAndReferenceTables </code> append-only database grant</td>
+        <td class="todo">M3</td>
+        <td><code>IT-AUD-01 OverrideProducesAuditEntry</code>, <code>UT-AUD-02 RedactorOmitsHashAndEmail</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2</td>
+        <td class="id">FR-09</td>
+        <td>Configuration deactivation preserves history</td>
+        <td><code>ConfigService.cs</code>; <code>20260927202312_AddIdentityUsersRolesTeams </code> <code>category_deactivation_ck</code>, <code>category_active_name_uq</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-CFG-01 DeactivateCategoryKeepsIncidents</code>, <code>IT-CFG-02 DeleteCategoryRefused</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-03</td>
+        <td class="id">FR-10</td>
+        <td>Asset linkage on resolution</td>
+        <td><code>ResolutionService.cs</code>; <code>V002</code> <code>resolution_replacement_needs_asset_ck</code>, <code>resolution_current_uq</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-RES-01 ReplacementWithoutAssetRejected</code>, <code>IT-RES-02 ReopenSupersedesResolution</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Requester</td>
+        <td class="id">FR-11</td>
+        <td>Reporter visibility of own requests</td>
+        <td><code>TicketService.cs</code>; <code>MyRequests.razor</code>; <code>v_ticket_status</code>; <code>ticket_reporter_submitted_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-VIS-01 OwnHistoryOnly</code>, <code>IT-VIS-02 ReadYourWritesAfterSubmit</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Management</td>
+        <td class="id">FR-12</td>
+        <td>Overdue request visibility</td>
+        <td><code>IncidentService.cs</code>; <code>priority_target</code>; <code>incident.due_at</code>; <code>incident_overdue_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-SLA-01 OverdueListMembership</code>, <code>IT-SLA-02 OverrideRecomputesDueAt</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Requester Capabilities</td>
+        <td class="id">FR-13</td>
+        <td>Automated notifications on status change</td>
+        <td><code>NotificationService.cs</code>; <code>NotificationBell.razor</code>; <code>notification.dedupe_key</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-NOTIF-01 StatusChangeDispatchesNotification</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-14</td>
+        <td>Role-specific staff request queue</td>
+        <td><code>QueueService.cs</code>; <code>StaffQueue.razor</code>; <code>incident_team_queue_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-QUEUE-01 DepartmentIsolationEnforced</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-15</td>
+        <td>Search, filter, and sort service requests</td>
+        <td><code>IncidentSearchFilter.cs</code>; <code>StaffQueue.razor</code>; <code>incident_category_opened_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-SRCH-01 FilterByCategoryAndSortPriority</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-16</td>
+        <td>Record ongoing actions and comments</td>
+        <td><code>IncidentNoteService.cs</code>; <code>TicketDetail.razor</code>; <code>V001</code> <code>incident_note</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-NOTE-01 AddCommentPreservesStatus</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Management Capabilities</td>
+        <td class="id">FR-17</td>
+        <td>Management dashboard &amp; categorical reporting</td>
+        <td><code>ReportingService.cs</code>; <code>ManagerDashboard.razor</code>; <code>incident_status_opened_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-REP-01 AggregateCountsByMonthAndCategory</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">Security Constraints</td>
         <td class="id">NFR-01</td>
-        <td>Protect system secrets</td>
-        <td class="todo">Milestone 2</td>
-        <td class="todo">Milestone 3</td>
-        <td class="todo">Milestone 3</td>
+        <td>Protection of system secrets</td>
+        <td><code>appsettings.json</code>; environment variable secrets; <code><Time>DatabaseRolesAndGrants </code> header</td>
+        <td class="todo">M3</td>
+        <td><code>IT-CFG-01 StartupFailsIfSecretsHardcoded</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(1)(a); RSK-08</td>
+        <td class="id">NFR-02</td>
+        <td>Durability and recovery point (RPO)</td>
+        <td>Automated logical dump scripts; continuous WAL archive specification</td>
+        <td class="todo">M3</td>
+        <td><code>OPS-BKP-01 RestoreFromNightlyDump</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(2)(c); RSK-08</td>
+        <td class="id">NFR-03</td>
+        <td>Verified restore and RTO</td>
+        <td>Milestone restore runbook (<code>docs/deployment/restore-drill-*.md</code>)</td>
+        <td class="todo">M3</td>
+        <td><code>OPS-BKP-02 RestoreDrillRecord</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(1); Regulators</td>
+        <td class="id">NFR-04</td>
+        <td>Protection of personal information</td>
+        <td>Column classification rules; TLS; <code>V004__database_roles_and_grants.sql</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-SEC-01 ReportRoleCannotReadCredentials</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s14</td>
+        <td class="id">NFR-05</td>
+        <td>Retention and disposal</td>
+        <td><code>RetentionSweepJob.cs</code>; soft de-identification script</td>
+        <td class="todo">M3</td>
+        <td><code>IT-RET-01 RetentionSweep</code>, <code>IT-RET-02 DeIdentifyKeepsIncidents</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-02; RSK-02/03/04</td>
+        <td class="id">NFR-06</td>
+        <td>Concurrency correctness</td>
+        <td><code>WHERE version = :v</code> optimistic concurrency token; single-statement upsert</td>
+        <td class="todo">M3</td>
+        <td><code>IT-CONC-01</code>, <code>IT-CONC-02</code>, <code>IT-TXN-01 RollbackLeavesNothing</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; §1</td>
+        <td class="id">NFR-07</td>
+        <td>Staff queue query performance</td>
+        <td>Partial composite index <code>incident_team_queue_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>PERF-Q-01 QueueP95AndPlan</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2</td>
+        <td class="id">NFR-08</td>
+        <td>Management dashboard query performance</td>
+        <td>Filtered composite index <code>incident_status_opened_idx</code></td>
+        <td class="todo">M3</td>
+        <td><code>PERF-D-01 DashboardP95</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; RSK-01</td>
+        <td class="id">NFR-09</td>
+        <td>System availability</td>
+        <td>ASP.NET Core <code>/health</code> endpoint; container health-check sampling in Docker</td>
+        <td class="todo">M3</td>
+        <td><code>OPS-AVL-01 HealthCheckSampling</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; POPIA s19(1)(b)</td>
+        <td class="id">NFR-10</td>
+        <td>Least-privilege database access</td>
+        <td><code><Time>DatabaseRolesAndGrants </code> roles (<code>civic_app</code>, <code>civic_report</code>, <code>civic_migrate</code>)</td>
+        <td class="todo">M3</td>
+        <td><code>IT-SEC-02 AppRoleCannotDdlOrDelete</code></td>
+        <td class="todo">Milestone 4</td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; NFR-01</td>
+        <td class="id">NFR-11</td>
+        <td>Password storage</td>
+        <td>Argon2id hashing implementation; <code>V002</code> <code>user_credential_hash_ck</code></td>
+        <td class="todo">M3</td>
+        <td><code>IT-SEC-03 StoredHashIsArgon2idWithParams</code></td>
         <td class="todo">Milestone 4</td>
       </tr>
     </tbody>

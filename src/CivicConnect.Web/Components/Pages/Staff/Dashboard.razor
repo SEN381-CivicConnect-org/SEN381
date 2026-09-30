@@ -1,0 +1,4 @@
+@page "/staff"
+@attribute [Authorize(Roles="Staff")]
+@inject TicketService Tickets
+<div class="page-head"><div><h1>Staff Dashboard</h1><p>Prioritise incoming requests and keep work moving.</p></div><button class="btn btn-secondary" @onclick='()=>Nav.NavigateTo("/staff/queue")'>Open Ticket Queue</button></div><div class="grid grid-4"><div class="card stat-card"><div class="stat-top">Open queue</div><div class="stat-value">@Tickets.Tickets.Count(t=>t.Status=="Open")</div></div><div class="card stat-card"><div class="stat-top">In progress</div><div class="stat-value">@Tickets.Tickets.Count(t=>t.Status=="In Progress")</div></div></div><div class="section"><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Status!="Resolved")'/></div>
