@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Technology-Stack Decision</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .field { margin: 0 0 1.2rem; }
+  .field .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Technology-Stack Decision</h1>
+  <p class="sub">PED v2.0 &sect;6.4 &mdash; ADR-004. Formally resolves FEC-01 and confirms the runtime the architecture (&sect;6.2) and persistence boundary (&sect;6.3) are built on.</p>
+
+  <p>After careful research, team discussion and evaluating the functional and non-functional requirements, the team has decided to use the ASP.NET tech stack, using Blazor, PostgreSQL and Docker. This stack keeps the project in one language instead of splitting it across many &mdash; such as JavaScript/React for the front end &mdash; which maximises team capability, maintainability and deployment consistency, and avoids licensing costs.</p>
+  <p>These technology selections, along with their associated ecosystem risks and version dependencies, are formally documented as ADR-004 (Technology Stack Selection). Risks regarding the container-orchestration learning curve and PostgreSQL migration management have been added to the Risk Register.</p>
+
+  <h2>Language: C# (.NET 10 LTS)</h2>
+  <p>C# (.NET 10 LTS) is the foundation of the CivicConnect platform. It is strongly typed and suits object-oriented programming, which works well for Blazor and ASP.NET Core, and removes the need for a fragmented, multi-language codebase.</p>
+  <div class="field">
+    <span class="label">Comparison</span>
+    <p>A unified C# stack was chosen over a multi-language stack that might have used a Python backend, JavaScript frontend and MongoDB database, to reduce context-switching and make the learning curve for Blazor and ASP.NET Core easier for the development team.</p>
+  </div>
+  <div class="field">
+    <span class="label">How C# fits into the project</span>
+    <ul>
+      <li><strong>Team capability and reduced context switching:</strong> the language fits the team&#039;s capability and the schedule constraint. Standardising on C# means the team does not switch languages for different features, which accelerates development and reduces the learning curve.</li>
+      <li><strong>Maintainability and code sharing:</strong> using C# end-to-end lets the team share domains, data transfer objects (DTOs) and validation rules directly between client and server, reducing duplicate code and increasing maintainability for future changes.</li>
+      <li><strong>Meaningful peer review:</strong> the project requires progressive, authentic collaboration with meaningful peer review for substantive changes. A single-language stack means any of the three team members can effectively review both frontend and backend Pull Requests, preventing knowledge silos where only one person understands a specific layer of the application.</li>
+    </ul>
+  </div>
+
+  <h2>Front-end: Blazor WebAssembly</h2>
+  <p>Blazor uses C# &mdash; the language of this tech stack &mdash; to run natively within the browser, eliminating the use of JavaScript. It runs on WebAssembly, so .NET runs directly on the client.</p>
+  <div class="field">
+    <span class="label">Comparison</span>
+    <p>Blazor was chosen over tools like React.js or Angular, because either would result in a mix of C# and JavaScript, introducing dependency-management overhead and a fractured toolchain.</p>
+  </div>
+  <div class="field">
+    <span class="label">How Blazor fits into the project</span>
+    <ul>
+      <li><strong>Immediate user feedback:</strong> when an incident is updated, the backend API commits the change to the database and publishes an asynchronous event to the message broker, then returns a 200 OK to Blazor. This decoupled, asynchronous approach lets all systems operate independently without waiting on each other.</li>
+      <li><strong>Usability through upfront validation:</strong> the frontend gives users an interactable platform. To prevent garbage-in-garbage-out, validation is set up on input fields, and Blazor handles this with drop-down boxes and inline validation that asks users to re-enter invalid input.</li>
+      <li><strong>Strict security boundaries:</strong> relying solely on client-side validation is a security risk, since a malicious actor could bypass client-side rules. Blazor therefore acts only as a user-experience tool, while the core service layer and database remain the final backstop for business rules and data constraints.</li>
+    </ul>
+  </div>
+
+  <h2>Backend/Runtime: ASP.NET Core</h2>
+  <p>ASP.NET Core integrates well with C#, provides a robust, cross-platform runtime for the APIs, and lets the team build a centralised, testable service layer that natively supports the Docker containerisation strategy.</p>
+  <div class="field">
+    <span class="label">Comparison</span>
+    <p>ASP.NET Core was chosen over database-level stored procedures or procedural SQL triggers, because it keeps domain rules in highly testable, version-controlled C# rather than hiding them in vendor-locked database logic.</p>
+  </div>
+  <div class="field">
+    <span class="label">How ASP.NET Core fits into the project</span>
+    <ul>
+      <li><strong>Centralised business logic:</strong> ASP.NET Core lets the team enforce complex, multi-entity business rules &mdash; priority calculations and parent-incident matching &mdash; at the application layer, keeping domain logic in memory where it is highly testable via service stubs, avoiding the complexity, poor reviewability and vendor lock-in of database-level stored procedures.</li>
+      <li><strong>Explicit orchestration:</strong> the API controller acts as a central orchestrator for mandatory status transitions, handling validation, writing the initial row, and the database transaction, so the core sequence of events and failure handling stays explicit, predictable and easy to trace (see DD-01).</li>
+      <li><strong>Transactional boundaries:</strong> the service executes operations as a single server-side transaction per submission, enforcing atomicity.</li>
+      <li><strong>Resilience under load:</strong> while the system is under significant strain from multiple users, the API protects its worker thread pool by offloading notification tasks to the message broker. Using asynchronous events instead of waiting for HTTP calls avoids an extended I/O wait state, so the API stays available to new citizen requests without crashing.</li>
+    </ul>
+  </div>
+
+  <h2>Database: PostgreSQL 16</h2>
+  <p>PostgreSQL provides robust transaction atomicity and rigorous schema-level constraint enforcement, serving as a reliable foundation for protecting data integrity against concurrent access, complementing the C# backend by handling strict data rules while leaving complex business logic to the application layer.</p>
+  <div class="field">
+    <span class="label">Comparison</span>
+    <p>PostgreSQL was selected over a NoSQL alternative (such as MongoDB) to formally resolve FEC-01. CivicConnect&#039;s data requires strict referential integrity, structured reporting, and complex ticket relationships that relational SQL handles best. See the full comparison against document-store, polyglot, SQLite, MySQL/MariaDB and SQL Server alternatives in <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code>.</p>
+  </div>
+  <div class="field">
+    <span class="label">How PostgreSQL fits into the project</span>
+    <ul>
+      <li><strong>Guaranteed atomicity:</strong> every ticket submission runs in one server-side transaction, so the whole transaction succeeds or fails completely, fulfilling the atomicity requirement.</li>
+      <li><strong>Schema-level constraints:</strong> PostgreSQL schema constraints enforce concurrency-access rules and second-writer conflicts.</li>
+      <li><strong>Idempotency protection:</strong> to resolve duplicate submissions from repeated clicks, PostgreSQL enforces unique constraints on the idempotency key, catching duplicate requests at write time and preventing redundant tickets from being processed.</li>
+      <li><strong>Optimistic concurrency:</strong> every mutable aggregate root carries a <code>version</code> column, checked and incremented on every update (see <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code> &sect;5, &quot;Standing rules&quot;). This closes the open item noted in the M2 source material.</li>
+      <li><strong>Referential integrity:</strong> foreign keys on every table ensure subscriptions, child tickets, and status histories always point to incident rows that actually exist, protecting the application from orphaned records.</li>
+    </ul>
+  </div>
+
+  <h2>Deployment &amp; Build: Docker</h2>
+  <p>Docker is the standard for containerisation and build tooling (free Docker Engine licence).</p>
+  <div class="field">
+    <span class="label">Comparison</span>
+    <p>Docker was chosen over bare-metal VM deployments because it packages the API, Blazor client, and PostgreSQL database into immutable images, eliminating &quot;it works on my machine&quot; discrepancies.</p>
+  </div>
+  <div class="field">
+    <span class="label">How Docker fits into the project</span>
+    <ul>
+      <li><strong>Deployment compatibility:</strong> Docker ensures complete environment parity between local development machines, automated testing pipelines, and remote staging environments.</li>
+      <li><strong>Configuration isolation:</strong> environment variables passed into the containers decouple sensitive configuration and secrets from the source code, adhering to the strict security constraints in NFR-01 and ASR-04.</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.4, which resolves FEC-01 (&sect;5.3). Deployment-specific operability detail is in <code>docs/deployment/deployment-V1.0.html</code>. Container-orchestration and migration-management risks are tracked in <code>docs/risk/Risk Register.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>

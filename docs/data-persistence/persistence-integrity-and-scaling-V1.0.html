@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persistence, Integrity &amp; Scaling</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 64rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .88em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .25rem;
+    padding: .05rem .35rem;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Persistence, Integrity &amp; Scaling</h1>
+  <p class="sub">PED v2.0 &sect;6.3.5&ndash;6.3.6. The persistence-technology decision, the ten-year growth estimate, the transaction and concurrency rules, and the bottleneck/backup posture for the CivicConnect database.</p>
+
+  <h2>4.1 Decision and Justification</h2>
+  <p>The system uses one PostgreSQL 16+ database as a single logical instance, with the schema enforcing the invariants and the service holding the business rules. The design has 21 tables with fixed columns, and the PED rules out user-defined fields, so configurability lives in rows and not in table shape. Thirty foreign keys keep related tables consistent. A foreign key &quot;specifies that the values in a column (or a group of columns) must match the values appearing in some row of another table&quot; (The PostgreSQL Global Development Group, 2026). Management reporting needs ad-hoc aggregation by status, category and age. Twenty-seven declarative constraints, six of them partial unique indexes, carry the stakeholder-conflict resolutions. Six multi-entity operations must be all-or-nothing, which single-node ACID with Read Committed plus constraints handles. The data is personal information under POPIA, so it needs table-level grants, a credential table the reporting role cannot read, TLS and a retention mechanism, and PostgreSQL documents all of these. Growth is predicted to be small (&sect;4.2 below), so retention and not size is the trigger for revisiting the design.</p>
+  <p>Five alternatives were rejected. A document store such as MongoDB, Firestore or DynamoDB loses its flexible schema advantage the moment the clustering invariant is written as a partial unique index. MongoDB&#039;s own manual says distributed transactions should not replace effective schema design (MongoDB, Inc., 2026), and without foreign keys <code>merged_into_id</code> and <code>root_incident_id</code> could break silently so that a fan-out query returns nobody. A polyglot split, with a document store for audit and notifications, adds a second system to back up and secure for a flexibility that <code>jsonb</code> already gives, and it breaks the guarantee that an audit row commits with the change it records. SQLite allows only one writer at a time per database file (SQLite, 2025), which fails the PED&#039;s mass-report scenario. MySQL and MariaDB have no partial indexes (Oracle, 2026), so six invariants, including the clustering rule, would become generated-column tricks that a reviewer can&#039;t read at a glance. SQL Server can do all of it, with filtered indexes, <code>rowversion</code> for optimistic concurrency (Microsoft, 2026) and range-locking serializable isolation, but it fails on cost and hosting under RSK-01 because none of the free tiers offers it.</p>
+
+  <h2>4.2 Growth Estimate</h2>
+  <p>These figures are estimates, and each assumption is stated so it can be challenged. The system serves 250 requesters in one office and 12 service staff. The team&#039;s judgement, with no client figure to back it, is 30 submissions per working day over 250 working days, which gives 7,500 tickets a year. Also by team judgement, tickets cluster at 1.25 per incident, which gives 6,000 incidents a year. Each incident goes through 5 status transitions on the typical path and collects 2 notes. Each ticket sends 4 notifications (acknowledgement, assigned, resolved, closed). Each incident writes 12 audit rows (create, cluster, claim, five transitions, override, resolve, close and merge), and login-driven configuration and auth events add another 5,000 audit rows a year.</p>
+  <p>Those assumptions put the yearly load at about 176,000 rows and 75 MB of table data. The audit log is by far the largest at 77,000 rows and 54 MB, because each row averages about 700 bytes with its two <code>jsonb</code> payloads. The next largest are notifications at 6 MB, notes at 4.3 MB, tickets at 4.2 MB and status history at 3.6 MB. Resolutions, incidents and subscriptions add about 3 MB between them, and <code>submission_request</code> is negligible at about 150 live rows. Indexes add about 45 MB, roughly 60 percent of the table data for this index set. With headroom for bloat, the total is 120 to 140 MB a year. Over ten years that is about 1.3 GB and 1.8 million rows, with the audit log making up about 72 percent of the bytes. If the submission rate is wrong by a factor of ten, the ten-year size is about 13 GB, which is still an ordinary PostgreSQL database.</p>
+
+  <h2>5. Integrity, Transactions, Concurrency</h2>
+  <p>A transaction &quot;bundles multiple steps into a single, all-or-nothing operation&quot;, so if one step fails &quot;none of the steps affect the database at all&quot; (The PostgreSQL Global Development Group, 2026). Everything runs at Read Committed, PostgreSQL&#039;s default, which the manual calls adequate for many applications.</p>
+
+  <h3>Standing rules</h3>
+  <p>Unique indexes prevent duplicates, not the isolation level, because an index stops every writer, including one that bypasses the service. One service operation is one transaction, and no repository commits on its own. Every <code>UPDATE incident</code> checks <code>version</code> and then increments it. The application retries serialization failures and deadlocks up to three times, but never a unique violation, which is a business outcome. Locks are taken in a fixed order to avoid deadlocks and no HTTP call or wait on a user happens inside a transaction.</p>
+
+  <h3>Submitting a request</h3>
+  <p>The submission is one transaction. It reads the chosen category and location with <code>FOR SHARE</code>, which blocks a concurrent deactivation, and answers 409 if either is inactive. It inserts into <code>submission_request</code>, and if that key already exists the request is a replay, so the stored result is returned. A single statement then clusters or creates the incident: <code>INSERT ... ON CONFLICT (category_id, location_id) WHERE status IN (open) DO UPDATE SET report_count = report_count + 1</code>. The transaction then adds the ticket, the subscription, an opening history row if it created the incident, an acknowledgement notification and an audit row.</p>
+  <p>The check and the write are one statement, so there is no gap for a second reporter to slip into. Any error rolls everything back, so a ticket never exists without its incident. A client that misses the response retries with the same <code>Idempotency-Key</code> and gets the original result.</p>
+
+  <h3>Claiming, transitions and overrides</h3>
+  <p>A claim is one conditional <code>UPDATE</code> that matches only if the version is current, the incident has no assignee and its status is NEW. If no row matches, someone else got there first, and the service answers 409 and does not retry.</p>
+  <p>A status change is checked before any SQL runs. The update then guards on the version and the from-status, and the history row is written in the same transaction. A priority override sets the priority, reason, actor and time in one update and recomputes <code>due_at</code>. Only a supervisor on the incident&#039;s team may do it. <code>incident_override_ck</code> rejects an override without a reason, and the version check stops a recalculation from silently reverting it.</p>
+
+  <h3>Resolving and deactivating</h3>
+  <p>Resolving is one transaction. It supersedes the current resolution, inserts the new one, moves the incident on, notifies every subscriber (including those attached by a merge) and writes an audit row. <code>resolution_current_uq</code> allows only one current resolution, and a replacement claim must name an asset. Deactivating a category is never blocked by open incidents.</p>
+
+  <h3>Validation layers</h3>
+  <p>The request schema checks that a request is well-formed. The service checks that it is the right business outcome, and owns the transition matrix, role authority and priority arithmetic. The database guards what must be true of the stored data whoever wrote it. Client-side checks are for usability only. The database enforces an invariant when it must never be false, can be written declaratively and could be broken by a race. That covers the clustering index, the idempotency key, one subscription per reporter and incident, one current resolution, the override and timestamp checks, the replacement-needs-asset rule, foreign keys, and append-only audit and history.</p>
+
+  <h2>6. Bottlenecks, SPOF, Scalability, Availability, Backup and Recovery</h2>
+  <p>For CivicConnect, scaling isn&#039;t a concern at the volume. What could hurt a small team on free services (RSK-01) is losing data, so backup and restore are the priority.</p>
+  <p>One PostgreSQL instance holds everything, and if it fails the whole system fails. This is accepted on purpose. A replica with automatic failover would prevent data loss, but it doubles the hosting bill and needs skills the team lacks. If availability requirements tighten, the first step will be a cheaper asynchronous standby. For now the control is a backup that has been tested by restoring it.</p>
+  <p>The other scaling risks are small. With 30 submissions a day, 10 to 20 application connections are enough. Every transaction is short, and the supervisor&#039;s override, the one human decision, uses a version check and not a held lock, so old row versions won&#039;t pile up. In a mass event, reports for the same category and location queue on one incident row. At 100 transactions a second, 200 reports clear in about two seconds. That lock is what prevents duplicates, so it stays (RSK-09). Read replicas are not needed, but if they are added, the reporter&#039;s history and the staff queue must stay on the primary &mdash; a reporter who can&#039;t see their ticket will submit it again, and a stale queue can send two technicians to the same fault.</p>
+  <p>The audit log is about 70 percent of the bytes, so retention sweeps come first, followed by monthly partitions if deletion slows down. Every index slows writes, so before adding one to <code>incident</code>, usage of the existing ones should be checked.</p>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.3.5&ndash;6.3.6, and ADR-004 in <code>docs/decisions/technology-stack-V1.0.html</code>. Aggregates, ownership, lifecycle and migrations are in <code>docs/data-persistence/data-model-and-lifecycle-V1.0.html</code>; access patterns are in <code>docs/access patterns/access-patterns-V1.0.html</code>; RSK-01 and RSK-09 are in <code>docs/risk/Risk Register.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>

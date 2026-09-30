@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment &amp; Operability</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .field { margin: 0 0 1.2rem; }
+  .field .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Deployment &amp; Operability</h1>
+  <p class="sub">PED v2.0 &sect;6.1 (ASR-04) and &sect;6.4. How CivicConnect stays cost-constrained, portable and container-deployable, and how restore-drill and deployment evidence is recorded here.</p>
+
+  <h2>Why this is architecturally significant</h2>
+  <p>The scope constraints Cost row says &quot;free or low-cost services must be preferred when possible, and potential operational costs and platform capabilities must be known&quot;. RSK-01, the project&#039;s main risk, is caused by &quot;unanticipated operational costs or exceeding free-tier resource limitations&quot;, mitigated by documenting &quot;resource limits for Docker containerisation deployments early&quot;, with contingency to &quot;migrate the chosen backend to an alternative low-cost hosting provider&quot;. FEC-02 requires logging, monitoring, health checks and failure detection before staging and production, deferring only the tool choice.</p>
+
+  <h2>Measurable expectation</h2>
+  <ul>
+    <li>Given the application is a container image with all environment-specific values in environment variables (NFR-01), when it is redeployed to a different low-cost host, it starts and serves requests with no source-code change.</li>
+    <li>Given the running application, when an operator or hosting probe queries the health endpoint, it reports within a bounded time whether the application and its database are healthy (FEC-02).</li>
+  </ul>
+
+  <h2>Design commitments</h2>
+  <div class="field">
+    <span class="label">Stateless single deployable</span>
+    <p>No in-memory sessions, no server affinity, no reliance on host-local files. Changing provider is then a redeploy, not a rewrite. A Docker container holds everything needed to run the application and runs on laptops, data-centre machines and clouds alike &mdash; why RSK-01 names Docker.</p>
+  </div>
+  <div class="field">
+    <span class="label">Container plus external configuration</span>
+    <p>The container makes the runtime portable; environment variables make the behaviour portable. The twelve-factor approach keeps configuration in environment variables, separate from code. NFR-01 covers secrets; the same mechanism is proposed for every value that varies by environment, such as the database host and provider limits.</p>
+  </div>
+  <div class="field">
+    <span class="label">Observability as a seam</span>
+    <p>FEC-02 defers the tooling, not the obligation. A health endpoint and a single logging abstraction are committed now, so a later tool choice is only a configuration change, not a redesign. OWASP says logs should record &quot;when, where, who and what&quot;, and that passwords, tokens and session identifiers &quot;should usually not be recorded directly in the logs&quot; (OWASP, 2026). This links to ASR-06&#039;s access-controlled publication design.</p>
+  </div>
+  <div class="field">
+    <span class="label">Cost applies to the database too</span>
+    <p>Cheap application hosting with an always-on replicated database would break the same constraint. One answer covers both tiers: accept bounded downtime and protect data with backups &mdash; see &quot;Bottlenecks, SPOF and scalability&quot; in <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code>.</p>
+  </div>
+
+  <h2>Docker containerisation</h2>
+  <p>Docker packages the API, Blazor client, and PostgreSQL database into immutable images, giving environment parity between local development, automated testing pipelines and staging (see <code>docs/decisions/technology-stack-V1.0.html</code> for the full ADR-004 rationale). Environment variables passed into the containers decouple secrets and environment-specific configuration from source code, satisfying NFR-01 and the repository secrets rule.</p>
+
+  <h2>Restore-drill and deployment evidence</h2>
+  <p>NFR-03 requires backups to be verified by a restore drill every milestone: restoring into a clean PostgreSQL instance, passing the integration test suite within a four-hour recovery time objective, and committing a drill record with the elapsed time to this folder. No drill has been recorded yet at the time of this baseline.</p>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.1 (ASR-04), &sect;5.3 (FEC-02) and NFR-01/NFR-03/NFR-09 in <code>docs/requirements/Non-Functional Requirements/</code>.</p>
+  </div>
+</main>
+</body>
+</html>

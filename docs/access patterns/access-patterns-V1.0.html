@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access Patterns &amp; Index Justification</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 66rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  p { margin: 0 0 1rem; }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .25rem;
+    padding: .05rem .3rem;
+  }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 56rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; }
+  td.query code { white-space: pre-wrap; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Access Patterns &amp; Index Justification</h1>
+  <p class="sub">PED v2.0 &sect;6.3.4. Each capability is broken down into the query it implies. Frequency is measured against the volume assumptions in ASM-07 (30 submissions per working day, 12 service staff, 250 requesters). Selectivity is the fraction of the table that the predicate keeps. An index appears only when a named query pattern needs it &mdash; the PostgreSQL manual says indexes &quot;seldom or never used in queries should be removed&quot;, and that every index &quot;adds overhead to data manipulation operations&quot; (The PostgreSQL Global Development Group, 2026).</p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="id">ID</th>
+        <th>Access Pattern</th>
+        <th>Query</th>
+        <th>Frequency</th>
+        <th>Index</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="id">AP-01</td>
+        <td class="name">Render the submission form (active categories, active location tree)</td>
+        <td>Two small scans over 200 rows or fewer</td>
+        <td>About 30 a day plus page loads</td>
+        <td><code>category_active_idx</code>, <code>location_parent_idx</code>, <code>location_root_name_uq</code> (partial, active rows only)</td>
+      </tr>
+      <tr>
+        <td class="id">AP-02</td>
+        <td class="name">&quot;My requests&quot;, newest first</td>
+        <td><code>WHERE reporter_id = ? ORDER BY submitted_at DESC LIMIT 20</code></td>
+        <td>High, every reporter session</td>
+        <td><code>ticket_reporter_submitted_idx (reporter_id, submitted_at DESC)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-03</td>
+        <td class="name">Idempotent replay check</td>
+        <td><code>WHERE reporter_id = ? AND idempotency_key = ?</code></td>
+        <td>Once per submission, including retries</td>
+        <td>The primary key of <code>submission_request</code>, no extra index</td>
+      </tr>
+      <tr>
+        <td class="id">AP-04</td>
+        <td class="name">Staff queue (open incidents for my team, by priority then age)</td>
+        <td><code>WHERE assigned_team_id = ? AND status IN (open) ORDER BY priority, opened_at</code></td>
+        <td>The most frequent read in the system</td>
+        <td><code>incident_team_queue_idx (assigned_team_id, priority, opened_at) WHERE status IN (...)</code>, partial because the predicate skips the growing pile of closed incidents</td>
+      </tr>
+      <tr>
+        <td class="id">AP-05</td>
+        <td class="name">&quot;My work&quot; (what this technician holds)</td>
+        <td><code>WHERE assignee_id = ? AND status IN ('ASSIGNED','IN_PROGRESS','ON_HOLD')</code></td>
+        <td>High</td>
+        <td><code>incident_assignee_open_idx (assignee_id) WHERE status IN (...)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-06</td>
+        <td class="name">Incident detail (child reports)</td>
+        <td><code>WHERE incident_id = ?</code></td>
+        <td>Per detail view</td>
+        <td><code>ticket_incident_idx (incident_id)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-07</td>
+        <td class="name">Dashboard by status over a window</td>
+        <td><code>WHERE status = ? AND opened_at &gt;= ?, GROUP BY status</code></td>
+        <td>Low (a handful of managers)</td>
+        <td><code>incident_status_opened_idx (status, opened_at DESC)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-07b</td>
+        <td class="name">Overdue list</td>
+        <td><code>WHERE status IN (open) AND due_at &lt; now() ORDER BY due_at</code></td>
+        <td>Low, but managers rely on it</td>
+        <td><code>incident_overdue_idx (due_at) WHERE status IN (...)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-07c</td>
+        <td class="name">Analysis by category</td>
+        <td><code>GROUP BY category_id</code> over a date window</td>
+        <td>Low</td>
+        <td><code>incident_category_opened_idx (category_id, opened_at DESC)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-08</td>
+        <td class="name">Team membership and supervisor lookup</td>
+        <td><code>WHERE user_id = ? AND left_at IS NULL</code></td>
+        <td>Every authorisation check that is not cached</td>
+        <td><code>team_member_user_idx (user_id) WHERE left_at IS NULL</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-09</td>
+        <td class="name">Incident timeline</td>
+        <td><code>WHERE incident_id = ? ORDER BY changed_at</code></td>
+        <td>Per detail view</td>
+        <td><code>status_history_incident_idx (incident_id, changed_at)</code>, <code>incident_note_incident_idx (incident_id, created_at)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-10</td>
+        <td class="name">Replacements by asset over a period</td>
+        <td><code>WHERE asset_id IS NOT NULL AND resolved_at &gt;= ?</code></td>
+        <td>Monthly</td>
+        <td><code>resolution_asset_idx (asset_id, resolved_at DESC) WHERE asset_id IS NOT NULL</code>, <code>asset_location_idx</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-11</td>
+        <td class="name">Subscriber fan-out through the merge chain</td>
+        <td><code>WHERE COALESCE(root_incident_id, incident_id) = ?</code></td>
+        <td>Per status change</td>
+        <td><code>incident_root_idx (root_incident_id) WHERE root_incident_id IS NOT NULL</code>, plus the <code>incident_subscription</code> primary key prefix</td>
+      </tr>
+      <tr>
+        <td class="id">AP-11b</td>
+        <td class="name">&quot;What am I subscribed to&quot;</td>
+        <td><code>WHERE reporter_id = ?</code></td>
+        <td>Per reporter session</td>
+        <td><code>incident_subscription_reporter_idx (reporter_id)</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-12</td>
+        <td class="name">Unread notification bell</td>
+        <td><code>WHERE recipient_id = ? AND read_at IS NULL</code></td>
+        <td>Every page load</td>
+        <td><code>notification_unread_idx (recipient_id, created_at DESC) WHERE read_at IS NULL</code>, the best fit for a partial index in the schema</td>
+      </tr>
+      <tr>
+        <td class="id">AP-13</td>
+        <td class="name">This incident&#039;s audit trail</td>
+        <td><code>WHERE incident_id = ? ORDER BY occurred_at DESC</code></td>
+        <td>Low</td>
+        <td><code>audit_incident_idx (incident_id, occurred_at DESC) WHERE incident_id IS NOT NULL</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-14</td>
+        <td class="name">&quot;What did this actor do&quot; and generic entity lookup</td>
+        <td><code>WHERE actor_id = ?</code>, or <code>WHERE entity_type = ? AND entity_id = ?</code></td>
+        <td>Rare, but it is how investigations start</td>
+        <td><code>audit_actor_idx</code>, <code>audit_entity_idx</code></td>
+      </tr>
+      <tr>
+        <td class="id">AP-15</td>
+        <td class="name">Submit (cluster or create)</td>
+        <td><code>INSERT ... ON CONFLICT (category_id, location_id) WHERE status IN (open)</code></td>
+        <td>30 a day, in bursts</td>
+        <td><code>incident_one_open_per_scope_uq</code>, an invariant that doubles as the lookup index</td>
+      </tr>
+      <tr>
+        <td class="id">AP-16</td>
+        <td class="name">Claim, transition, override, resolve</td>
+        <td><code>UPDATE incident ... WHERE incident_id = ? AND version = ?</code></td>
+        <td>About 5 per incident</td>
+        <td>Primary key</td>
+      </tr>
+      <tr>
+        <td class="id">AP-17</td>
+        <td class="name">Login</td>
+        <td><code>WHERE email = ?</code></td>
+        <td>Per session</td>
+        <td><code>app_user_email_uq</code> &mdash; <code>citext</code> makes the match case-insensitive, so no <code>lower(email)</code> expression index is needed</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <span class="label">Traceability</span>
+    <p>See PED v2.0 &sect;6.3.4. The aggregates, ownership and schema these indexes sit on are in <code>docs/data-persistence/data-model-and-lifecycle-V1.0.html</code>; the persistence decision and growth estimate that justify keeping the index set this small are in <code>docs/data-persistence/persistence-integrity-and-scaling-V1.0.html</code>.</p>
+  </div>
+</main>
+</body>
+</html>
