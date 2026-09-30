@@ -120,6 +120,160 @@
           <td>Migrate the chosen backend to an alternative low-cost hosting provider.</td>
           <td class="rating">Open</td>
         </tr>
+        <tr>
+          <td class="name">RSK-02</td>
+          <td>Frontend, backend and database components may fail to integrate correctly.</td>
+          <td>Components are being developed separately and interfaces may change during implementation.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Define interfaces and data contracts, integrate components step-by-step, and test integration along the way.</td>
+          <td>Isolate or simplify affected integration points, roll back to the last known working version and focus on critical functionality within the system.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-03</td>
+          <td>Users may gain access to functions outside their authorised role.</td>
+          <td>Incorrect or incomplete role-based authentication and authorisation rules.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Test Requester, Staff, and Management permissions, secure routes and actions, and test role checks in integration testing.</td>
+          <td>Disable affected functionality until the access control problems have been fixed and tested.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-04</td>
+          <td>Database changes may break existing functionality or create inconsistent data.</td>
+          <td>Schema and data-access changes during ongoing implementation.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Manage database modifications, document schema changes, and test migrations and queries using development data.</td>
+          <td>Roll back to the old database structure or restore the backups to fix the failed migration or SQL.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-05</td>
+          <td>The project may fall behind schedule due to limited team capacity.</td>
+          <td>The system is being developed by a three-person team alongside academic deadlines.</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Focus on core requirements, divide tasks, monitor progress, and assess workload regularly.</td>
+          <td>Defer lower-priority or non-core features where permitted and focus effort on required deliverables.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-06</td>
+          <td>Architecture or technology changes may cause rework.</td>
+          <td>Design decisions are still being refined while development is underway.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td>Document design decisions, evaluate proposed architectural modifications before implementing, and ensure modules remain modular.</td>
+          <td>Put off less important or noncritical functionality where it is possible and concentrate on the needed deliverables.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-07</td>
+          <td>Insufficient testing may allow defects into the final system.</td>
+          <td>Time pressure may reduce functional, integration and security testing coverage.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Associate critical requirements with tests, and perform functional, integration, and security testing iteratively.</td>
+          <td>Roll back to the last approved design or change only the affected pieces of the software.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-08</td>
+          <td>Though there is a backup available, it has never been retrieved, and hence failure translates to data loss.</td>
+          <td>Free-tier hosts do not guarantee automated backups (Supabase free tier requires self-export; Neon free tier keeps a 6-hour history window); no restore procedure is documented.</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Independent nightly pg_dump plus pg_dumpall --roles-only to off-site encrypted storage; restore drill once per milestone with a committed record; RPO/RTO targets as NFR-02/NFR-03.</td>
+          <td>Rebuild from migrations plus the most recent export, accept the data gap, notify affected data subjects if POPIA s22 is engaged</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-09</td>
+          <td>The Mass-Report event serializes all reports on a single incident row, which reduces acknowledgment during the actual event that the system is supposed to address.</td>
+          <td>ON CONFLICT DO UPDATE on the clustering row is both the duplicate defence and the counter increment.</td>
+          <td class="rating">Low</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td>Keep transactions short and free of external calls. Measure with a concurrent-submission load test before M4.</td>
+          <td>Shard the counter or move the report count to a timed aggregate; both add a second source of truth and need an ADR.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-10</td>
+          <td>Personal information is retained indefinitely because no retention period was ever agreed with the client, breaching POPIA s14(1).</td>
+          <td>The 7-year figure in the research note is team judgement; the client is the responsible party and has not been asked.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Confirm retention periods with the client before writing any retention job (OQ-12); implement the sweeps whose periods are defensible now.</td>
+          <td>Freeze deletion, document the position, and disclose the gap to the client as responsible party.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-11</td>
+          <td>Free-text request descriptions and incident notes contain third parties&#039; personal information that survives de-identification of the named user.</td>
+          <td>POPIA s1(g)/(h): free text names people the schema cannot classify.</td>
+          <td class="rating">High</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td>Classify these columns as personal information unconditionally; exclude them from the reporting role; redact them in audit payloads; UI guidance not to name colleagues.</td>
+          <td>Manual review and redaction on each s24 request; record the manual step in the procedure.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-12</td>
+          <td>The developer writes an incident report without the version predicate and thereby introduces lost updates again.</td>
+          <td>Optimistic concurrency is a discipline, not a mechanism.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>A single repository update method is the only place the predicate is written; integration test IT-CONC-02; code-review checklist item under PED §6.3.</td>
+          <td>Switch the token to xmin, which the server maintains and nobody can forget — at the cost of exposing an internal.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-13</td>
+          <td>The increase in audit logs uses up the free storage allocation before the creation of any retention task.</td>
+          <td>Audit log is roughly 70 % of projected bytes; the Neon free plan allows 0.5 GB per project.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td class="rating">Medium</td>
+          <td>Implement the 3-year audit sweep and the 12-month notification sweep at M3, not M4; monitor table size each milestone.</td>
+          <td>Partition by month and drop partitions, or move to a paid tier, which is RSK-01&#039;s contingency.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-14</td>
+          <td>The SQL for migration has not yet run, so a syntax or ordering issue is identified during a demo and not through CI.</td>
+          <td>As there was no execution of the migration SQL before, any kind of syntax error or error in the order will be detected only during the demo phase.</td>
+          <td class="rating">High</td>
+          <td class="rating">Low</td>
+          <td class="rating">Medium</td>
+          <td>The PR that merges the migrations must show a green CI job applying V001–V004 and U004–U001 against a clean PostgreSQL 16 container; blocking, not advisory.</td>
+          <td>Fix forward in a follow-up migration; never edit an applied migration in place.</td>
+          <td class="rating">Open</td>
+        </tr>
+        <tr>
+          <td class="name">RSK-15</td>
+          <td>An administrator who is not part of any contract is used as a POPIA operator, violating s21(1).</td>
+          <td>Provider selection has been postponed (RSK-01), and operator obligation has not been mentioned to the customer.</td>
+          <td class="rating">Medium</td>
+          <td class="rating">High</td>
+          <td class="rating">High</td>
+          <td>Verify the operator agreement and the at-rest encryption of the provider and the sub-processor strategy from the provider documentation prior to selection (OQ-09).</td>
+          <td>Use Docker to self-host with team backups, eliminating the operator association completely</td>
+          <td class="rating">Open</td>
+        </tr>
       </tbody>
     </table>
   </div>
