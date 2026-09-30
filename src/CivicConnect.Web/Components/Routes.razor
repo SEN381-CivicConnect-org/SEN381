@@ -1,0 +1,19 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using CivicConnect.Web.Services
+@inject DemoAuthenticationStateProvider Auth
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="typeof(Layout.MainLayout)"><h1>Page not found</h1></LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

@@ -1,0 +1,4 @@
+@page "/staff/assigned"
+@attribute [Authorize(Roles="Staff")]
+@inject TicketService Tickets
+<div class="page-head"><div><h1>My Assigned Tickets</h1><p>Tickets currently assigned to you.</p></div></div><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Assignee=="Daniel Jacobs"&&t.Status!="Resolved")'/>

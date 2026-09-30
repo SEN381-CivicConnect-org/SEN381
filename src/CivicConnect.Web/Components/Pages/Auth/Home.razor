@@ -1,0 +1,13 @@
+@page "/"
+@attribute [AllowAnonymous]
+@inject DemoAuthenticationStateProvider Auth
+@inject AuthenticationStateProvider StateProvider
+<p>Opening CivicConnect…</p>
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var state = await StateProvider.GetAuthenticationStateAsync();
+        Nav.NavigateTo(state.User.Identity?.IsAuthenticated == true ? Auth.HomeForCurrentRole() : "/login", replace: true);
+    }
+}

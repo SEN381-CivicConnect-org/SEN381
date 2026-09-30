@@ -1,0 +1,13 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<p>Checking access…</p>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        Nav.NavigateTo(state.User.Identity?.IsAuthenticated == true ? "/access-denied" : "/login", replace: true);
+    }
+}
