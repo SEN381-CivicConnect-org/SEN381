@@ -138,6 +138,11 @@
         <td>Supporting various offices is achievable via a well-controlled combination of configurable components including categories, operational scope and role, as opposed to a generic ticket-system building tool or multi-tenant software as a service offering.</td>
         <td>Where there is need for a large number of custom forms, arbitrary fields, user-created workflow, organization logic, and concurrent hosting of many different organizations, there may be significant changes needed to the scope, requirements, design, timeline, security and testing process.</td>
       </tr>
+      <tr>
+        <td class="id">ASM-07</td>
+        <td>CivicConnect serves one office with about 250 requesters and 12 service staff. The team expects 30 submissions per working day, or about 7,500 tickets a year over 250 working days. Tickets cluster at roughly 1.25 per incident, so about 6,000 incidents a year. Each incident has about 5 status changes, 2 notes and 12 audit rows, and each ticket sends 4 notifications. The 30-a-day and 1.25 figures are the team&#039;s own estimates, not client figures.</td>
+        <td>If the volumes are wrong, storage, indexing, connection limits and the free-tier caps (RSK-01) would need another look, along with the estimate for many people reporting at once. A tenfold error would put the database at about 13 GB after ten years, which PostgreSQL handles without trouble. The risk is to capacity planning and hosting, not to the choice of database.</td>
+      </tr>
     </tbody>
   </table>
   </div>
