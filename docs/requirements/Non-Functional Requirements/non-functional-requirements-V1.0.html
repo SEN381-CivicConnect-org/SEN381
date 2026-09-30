@@ -147,7 +147,7 @@
         <td class="id">NFR-06</td>
         <td class="name">Concurrency Correctness Under Simultaneous Submission</td>
         <td>STK-CFL-02</td>
-        <td>he system will produce a correct result when multiple reporters submit the same issue simultaneously and when multiple staff act on the same incident simultaneously, creating no duplicate incidents, no duplicate subscriptions, no partially written submissions and no silently overwritten updates.</td>
+        <td>The system will produce a correct result when multiple reporters submit the same issue simultaneously and when multiple staff act on the same incident simultaneously, creating no duplicate incidents, no duplicate subscriptions, no partially written submissions and no silently overwritten updates.</td>
         <td>Given twenty concurrent submissions for the same category and location, when they have all completed, then exactly one incident exists for that category and location, its report count is twenty, exactly twenty tickets exist, and each distinct reporter appears exactly once in the subscriber list; and given two technicians read the same unassigned incident and both claim it, when both claims have completed, then exactly one claim succeeds and the other receives a conflict response naming the current assignee.</td>
       </tr>
       <tr>
