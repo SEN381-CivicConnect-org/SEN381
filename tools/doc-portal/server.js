@@ -290,7 +290,7 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`====================================================`);
   console.log(`  SEN381 CivicConnect Documentation Portal running!`);
   console.log(`  Local URL:   http://localhost:${PORT}`);
