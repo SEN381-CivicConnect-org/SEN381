@@ -122,6 +122,111 @@
         <td>The user should enter their details into a login screen, which should redirect them to their user portal if their credentials were correct, where they can now access their user functions</td>
         <td>Given they enter the correct credentials, a request to the backend should be made to check their entered credentials in the database; if their details are found, a success response should be sent back, and finally the user should be redirected to their portal</td>
       </tr>
+      <tr>
+        <td class="id">FR-03</td>
+        <td class="name">Cluster Duplicate Reports and Subscribe Every Reporter</td>
+        <td>Stakeholder conflict (STK-CFL-02)</td>
+        <td>The system will attach a new service request to the existing open incident for the same category and location where one exists, create that incident where none exists, and subscribe the reporter to the incident in either case, while preserving the reporter&#039;s own request reference.</td>
+        <td>Given an open incident already exists for category &quot;Network outage&quot; and location &quot;First Floor&quot;, when a second user submits a request for the same category and location, then no second incident is created, the existing incident&#039;s report count increases by one, the second user receives their own distinct request reference, and the second user appears exactly once in the subscriber list for that incident.</td>
+      </tr>
+     <tr>
+        <td class="id">FR-04</td>
+        <td class="name">Assign or Claim Request Ownership</td>
+        <td>Staff capabilities</td>
+        <td>The system will allow an authorised staff member to explicitly claim an unassigned request, or a supervisor to assign a request to a specific staff member, establishing a recorded owner for the incident.</td>
+        <td>Given an unassigned request in the active queue, when a staff member clicks &quot;Claim&quot;, then the request is assigned to them and moves to their personal queue; and given an unassigned request, when a supervisor selects &quot;Technician B&quot; from the assignment dropdown, then the system records Technician B as the owner and an entry is added to the audit history.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-05</td>
+        <td class="name">Calculate Priority from Impact and Urgency</td>
+        <td>Stakeholder conflict (STK-CFL-01)</td>
+        <td>The system will calculate incident priority from the impact level of the reported location and the urgency level of the selected category, and will record the impact and urgency values used at the time of calculation.</td>
+        <td>Given category &quot;Electrical&quot; has urgency level 1 and location &quot;Ground Floor&quot; has impact level 2, when a request is submitted for that category and location, then the incident stores priority as the value produced by the documented calculation for (impact 2, urgency 1), and stores impact level 2 and urgency level 1 alongside it; and given an administrator subsequently changes the category&#039;s urgency level to 4, when the incident is retrieved, then its stored priority, impact level and urgency level are unchanged.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-06</td>
+        <td class="name">Supervisor Priority Override with a Recorded Reason</td>
+        <td>Stakeholder conflict (STK-CFL-01)</td>
+        <td>The system will allow a team supervisor to override a calculated incident priority, and will reject any override that does not carry a reason, recording the reason, the supervisor and the time of the override.</td>
+        <td>Given an incident with calculated priority 3, when a team supervisor sets priority 1 with the reason &quot;Board meeting in this room at 14:00&quot;, then the incident shows priority 1, the calculated priority remains visible as 3, and the reason, the supervisor&#039;s identity and the override timestamp are stored and displayed; and when a supervisor attempts an override with an empty reason, then the request is rejected and the priority is unchanged.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-07</td>
+        <td class="name">Controlled Status Transitions with a Complete History</td>
+        <td>FEC-01; Staff capabilities</td>
+        <td>The system will permit only the documented status transitions for an incident, will reject every other transition, and will record one history entry per accepted transition identifying the previous status, the new status, the actor and the time.</td>
+        <td>Given an incident with status &quot;NEW&quot;, when an authorised technician claims it, then its status becomes &quot;ASSIGNED&quot; and exactly one history entry is recorded showing NEW → ASSIGNED with the technician&#039;s identity and a timestamp; and given an incident with status &quot;NEW&quot;, when any user attempts to set its status directly to &quot;RESOLVED&quot;, then the request is rejected with an explanatory message, the status remains &quot;NEW&quot;, and no history entry is created.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-08</td>
+        <td class="name">Auditable Record of Changes</td>
+        <td>Management and oversight capabilities (PED §2); POPIA s17</td>
+        <td>The system will record an audit entry for every create, update, status change, priority override, merge, configuration deactivation and role grant, identifying the actor, the entity, the action, the time and the changed values, excluding credentials and personal contact details from the recorded values.</td>
+        <td>Given a supervisor overrides an incident&#039;s priority, when a manager opens that incident&#039;s audit trail, then an entry with action &quot;OVERRIDE&quot; is listed showing the supervisor, the time, the previous priority and the new priority; and given any audit entry for a user record, when its stored values are inspected, then no password hash and no e-mail address appear in them.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-09</td>
+        <td class="name">Configuration Deactivation Preserves History</td>
+        <td>Configuration and administration capabilities (PED §2)</td>
+        <td>The system will allow an authorised administrator to deactivate a category, location, service team or asset so that it can no longer be selected on new requests, while leaving all existing requests, incidents and history that reference it unchanged and readable.</td>
+        <td>Given category &quot;Printing&quot; is referenced by 12 existing incidents, when an administrator deactivates it, then the deactivation is recorded with the administrator&#039;s identity and the time, the category no longer appears in the submission form&#039;s category list, all 12 incidents still display &quot;Printing&quot; as their category, and their history and audit entries are unchanged; and when the administrator attempts to delete the category outright, then the request is refused.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-10</td>
+        <td class="name">Asset Linkage on Resolution</td>
+        <td>Stakeholder conflict STK-CFL-03 (PED §1.3.3); finance department (PED §1)</td>
+        <td>The system will capture a resolution as a resolution code, a concise summary and, where the resolution indicates that equipment must be replaced, a reference to the specific asset, and will reject a replacement resolution that does not identify an asset.</td>
+        <td>Given a technician resolves an incident with code &quot;REPLACED&quot; and does not select an asset, when the resolution is submitted, then it is rejected with a message requiring an asset and the incident&#039;s status is unchanged; and given the technician selects asset tag &quot;IT-00421&quot;, when the resolution is submitted, then the incident becomes &quot;RESOLVED&quot; and a finance report for the period lists that resolution against asset IT-00421 together with its supplier and purchase date.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-11</td>
+        <td class="name">Reporter Visibility of Own Requests</td>
+        <td>Requester capabilities (PED §2)</td>
+        <td>The system will show an authenticated reporter the list of requests they submitted, each with its own reference and its current status, and will show no other reporter&#039;s requests.</td>
+        <td>Given reporter A has submitted three requests and reporter B has submitted two, when reporter A opens their request history, then exactly three requests are listed, each with reporter A&#039;s own reference and the current status of the incident it belongs to, and none of reporter B&#039;s requests appears; and given reporter A submits a fourth request, when reporter A&#039;s history is reloaded immediately afterwards, then the fourth request is present.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-12</td>
+        <td class="name">Overdue Request Visibility</td>
+        <td>Management and oversight capabilities (PED §2)</td>
+        <td>The system will assign each incident a resolution due time derived from its priority at the time it is opened, will recalculate it when the priority is overridden, and will allow management to list incidents that are still open past that time.</td>
+        <td>Given the response target for priority 2 is one working day and an incident was opened with priority 2 more than one working day ago and is still open, when a manager opens the overdue list, then that incident appears with its due time and the elapsed overrun; and given a supervisor then overrides its priority to 1 whose target is four hours, when the incident is reloaded, then its due time is four hours after the original opening time, not four hours after the override.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-13</td>
+        <td class="name">Automated Notifications on Status Change</td>
+        <td>Requester capabilities</td>
+        <td>The system will dispatch a notification to the original requester whenever their service request transitions to an accepted, rejected, updated, or completed state</td>
+        <td>Given a service request currently in the &quot;ASSIGNED&quot; status, when an authorised staff member changes the status to &quot;RESOLVED&quot;, then a notification containing the resolution summary, the new status, and the request reference is successfully dispatched to the reporter.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-14</td>
+        <td class="name">Role-Specific Staff Request Queue</td>
+        <td>Staff capabilities</td>
+        <td>The system will restrict the default request queue for authenticated staff members to only show service requests relevant to their authorised department, team, or direct assignments.</td>
+        <td>Given an IT support technician logs in, when they access the active request queue, then they only see requests categorized under &quot;IT Support&quot; or requests explicitly assigned to them, and do not see requests routed to &quot;Facilities&quot; or &quot;Security&quot;.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-15</td>
+        <td class="name">Search, Filter, and Sort Service Requests</td>
+        <td>Staff capabilities</td>
+        <td>The system will allow authorised staff to search requests by keyword, filter the list by category or status, and sort the results by priority or date.</td>
+        <td>Given a queue of 50 active requests, when a staff member applies a filter for the &quot;Electrical&quot; category and sorts by &quot;Priority (High to Low)&quot;, then the interface updates to display only Electrical requests, with priority 1 requests appearing at the top of the list.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-16</td>
+        <td class="name">Record Ongoing Actions and Comments</td>
+        <td>Staff capabilities</td>
+        <td>The system will allow authorised staff to append timestamped comments and action logs to an active ticket without requiring a formal status transition</td>
+        <td>Given an open service request, when an assigned staff member submits the comment &quot;Awaiting parts delivery&quot;, then the comment is appended to the ticket&#039;s detailed history alongside the staff member&#039;s identity and a timestamp, and the ticket&#039;s status remains unchanged.</td>
+      </tr>
+      <tr>
+        <td class="id">FR-17</td>
+        <td class="name">Management Dashboard and Categorical Reporting</td>
+        <td>Management/oversight capabilities</td>
+        <td>The system will provide management with an aggregated view of service activity, identifying open, overdue, resolved, and closed requests, filterable by category and time period.</td>
+        <td>Given a manager accesses the oversight dashboard, when they filter by the current month, then the system displays a numerical breakdown of total requests grouped by category, alongside a summary of their current aggregate statuses (e.g., 10 Open, 5 Resolved, 20 Closed).</td>
+      </tr>
     </tbody>
   </table>
   </div>
