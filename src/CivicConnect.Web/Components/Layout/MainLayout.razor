@@ -13,6 +13,7 @@ else
             <header class="topbar">
                 <label class="search"><img class="icon" src="assets/icons/search.svg" alt=""/><input placeholder="Search tickets, people or categories"/></label>
                 <div class="top-actions">
+                    <ThemeToggle />
                     <AuthorizeView Context="auth"><Authorized><div class="profile-chip"><span class="avatar">@Initials(auth.User.Identity?.Name)</span><span class="profile-text"><strong>@auth.User.Identity?.Name</strong><small>@auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small></span></div></Authorized></AuthorizeView>
                 </div>
             </header>
