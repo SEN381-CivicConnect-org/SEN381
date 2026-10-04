@@ -8,6 +8,8 @@
     {
         if (!firstRender) return;
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        Nav.NavigateTo(state.User.Identity?.IsAuthenticated == true ? "/access-denied" : "/login", replace: true);
+        var requested = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        var page = state.User.Identity?.IsAuthenticated == true ? "/access-denied" : "/login";
+        Nav.NavigateTo(page + "?returnUrl=" + Uri.EscapeDataString(requested), replace: true);
     }
 }

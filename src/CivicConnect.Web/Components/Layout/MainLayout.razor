@@ -14,7 +14,7 @@ else
         <main class="main">
             <header class="topbar">
                 <button @ref="menuButton" type="button" class="icon-btn mobile-menu-toggle" aria-label="@(menuOpen ? "Close workspace menu" : "Open workspace menu")" aria-expanded="@(menuOpen ? "true" : "false")" aria-controls="workspace-navigation" @onclick="ToggleMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
-                <label class="search"><img class="icon" src="assets/icons/search.svg" alt=""/><input placeholder="Search tickets, people or categories"/></label>
+                <label class="search"><img class="icon" src="assets/icons/search.svg" alt=""/><input readonly aria-label="Search unavailable in this demo" placeholder="Search unavailable"/></label>
                 <div class="top-actions">
                     <ThemeToggle />
                     <AuthorizeView Context="auth"><Authorized><div class="profile-chip"><span class="avatar">@Initials(auth.User.Identity?.Name)</span><span class="profile-text"><strong>@auth.User.Identity?.Name</strong><small>@auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small></span></div></Authorized></AuthorizeView>

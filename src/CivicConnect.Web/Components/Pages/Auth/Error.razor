@@ -1,0 +1,6 @@
+@page "/Error"
+@attribute [AllowAnonymous]
+@inject WorkspaceNavigation Workspace
+<PageTitle>Unable to open page | CivicConnect</PageTitle>
+<div class="page-head"><div><h1>Unable to open this page</h1><p>The page could not be loaded. Return to your workspace and try again.</p></div></div>
+<button type="button" class="btn btn-primary" @onclick="Workspace.GoBack">Return to my workspace</button>

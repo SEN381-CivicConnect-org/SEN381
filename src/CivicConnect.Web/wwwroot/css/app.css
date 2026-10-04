@@ -225,7 +225,7 @@ button, input, select, textarea { max-width: 100%; }
 .search input:focus-visible { outline: none; }
 .top-actions { margin-left: auto; gap: 18px; }
 .profile-menu { position: relative; }
-.profile-chip { gap: 10px; padding: 0 0 0 4px; border: 0; background: transparent; border-radius: 0; cursor: pointer; list-style: none; }
+.profile-chip { gap: 10px; padding: 0 0 0 4px; border: 0; background: transparent; border-radius: 0; cursor: default; list-style: none; }
 .profile-chip::-webkit-details-marker { display: none; }
 .profile-chip .avatar, .avatar { width: 38px; height: 38px; flex: 0 0 38px; background: var(--navy); font-size: 12.8px; font-weight: 750; }
 .profile-text strong { display: block; font-size: 13.44px; line-height: 19.488px; white-space: nowrap; }
