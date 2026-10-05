@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Authorization
 
 @if (Nav.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
@@ -7,12 +9,14 @@
 }
 else
 {
-    <div class="app-shell">
-        <NavMenu />
+    <div class="app-shell @(menuOpen ? "menu-open" : "")" @onkeydown="HandleKey">
+        <NavMenu @ref="navigation" />
         <main class="main">
             <header class="topbar">
+                <button @ref="menuButton" type="button" class="icon-btn mobile-menu-toggle" aria-label="@(menuOpen ? "Close workspace menu" : "Open workspace menu")" aria-expanded="@(menuOpen ? "true" : "false")" aria-controls="workspace-navigation" @onclick="ToggleMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
                 <label class="search"><img class="icon" src="assets/icons/search.svg" alt=""/><input placeholder="Search tickets, people or categories"/></label>
                 <div class="top-actions">
+                    <ThemeToggle />
                     <AuthorizeView Context="auth"><Authorized><div class="profile-chip"><span class="avatar">@Initials(auth.User.Identity?.Name)</span><span class="profile-text"><strong>@auth.User.Identity?.Name</strong><small>@auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small></span></div></Authorized></AuthorizeView>
                 </div>
             </header>
@@ -21,4 +25,21 @@ else
     </div>
 }
 
-@code { static string Initials(string? name) => string.IsNullOrWhiteSpace(name) ? "CC" : string.Join("", name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant(); }
+@code {
+    bool menuOpen;
+    bool focusNavigation;
+    NavMenu? navigation;
+    ElementReference menuButton;
+    protected override void OnInitialized() => Nav.LocationChanged += CloseOnNavigation;
+    void ToggleMenu() { menuOpen = !menuOpen; focusNavigation = menuOpen; }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusNavigation && navigation is not null) { focusNavigation = false; await navigation.FocusNavigationAsync(); }
+    }
+    void CloseOnNavigation(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(() => { menuOpen = false; StateHasChanged(); });
+    async Task HandleKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && menuOpen) { menuOpen = false; await menuButton.FocusAsync(); }
+    }
+    public void Dispose() => Nav.LocationChanged -= CloseOnNavigation;
+    static string Initials(string? name) => string.IsNullOrWhiteSpace(name) ? "CC" : string.Join("", name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant(); }
