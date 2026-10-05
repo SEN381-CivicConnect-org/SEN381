@@ -2,10 +2,10 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject AppAuthenticationStateProvider Auth
 
-<aside class="sidebar">
+<aside class="sidebar" id="workspace-navigation">
     <div class="brand"><div class="brand-mark">CC</div><div><strong>CivicConnect</strong><span>Service Management</span></div></div>
     <div class="nav-label">Workspace</div>
-    <nav class="nav-section">
+    <nav @ref="navigationElement" tabindex="-1" class="nav-section" aria-label="Workspace">
         <AuthorizeView Roles="Requester">
             <NavLink class="nav-item" href="/requester/tickets"><img class="icon" src="assets/icons/tickets.svg" alt=""/>My Tickets</NavLink>
             <NavLink class="nav-item" href="/requester/new"><img class="icon" src="assets/icons/create.svg" alt=""/>New Ticket</NavLink>
@@ -32,6 +32,8 @@
 </aside>
 
 @code {
+    ElementReference navigationElement;
+    public Task FocusNavigationAsync() => navigationElement.FocusAsync().AsTask();
     string Name = "Signed in user", Role = "", Initials = "CC";
     protected override async Task OnInitializedAsync()
     {
