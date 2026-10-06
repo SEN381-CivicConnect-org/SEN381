@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
+
 // 1. Service Registration & Dependency Injection
-// ==========================================
+
 
 // Swagger / OpenAPI documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -55,9 +55,9 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 
 var app = builder.Build();
 
-// ==========================================
+
 // 2. HTTP Request Pipeline
-// ==========================================
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -71,9 +71,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("CivicConnectCorsPolicy");
 
-// ==========================================
+
 // 3. Basic System Endpoints
-// ==========================================
+
 
 // Platform Root Info
 app.MapGet("/", () => Results.Ok(new
@@ -116,9 +116,9 @@ app.MapGet("/health", async (CivicConnectDbContext dbContext) =>
 .WithName("HealthCheck")
 .WithTags("System");
 
-// ==========================================
+
 // 4. Reference Data Endpoints
-// ==========================================
+
 
 // Get all active request categories
 app.MapGet("/api/categories", async (CivicConnectDbContext dbContext) =>
