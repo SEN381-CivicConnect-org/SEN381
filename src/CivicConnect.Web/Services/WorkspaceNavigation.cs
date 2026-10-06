@@ -32,12 +32,22 @@ public sealed class WorkspaceNavigation : IDisposable
     {
         if (_auth.CurrentUser is null || string.IsNullOrWhiteSpace(destination) ||
             !destination.StartsWith('/') || destination.StartsWith("//") ||
-            destination.Contains('\\') || destination.Any(char.IsControl)) return false;
+            destination.Contains('\\') || destination.Any(char.IsControl))
+        {
+            return false;
+        }
 
         var path = destination.Split('?', '#')[0];
-        if (path is "/notifications" or "/settings") return true;
+        if (path is "/notifications" or "/settings")
+        {
+            return true;
+        }
+
         if (path.StartsWith("/tickets/", StringComparison.Ordinal) &&
-            path.Length > "/tickets/".Length && !path["/tickets/".Length..].Contains('/')) return true;
+            path.Length > "/tickets/".Length && !path["/tickets/".Length..].Contains('/'))
+        {
+            return true;
+        }
 
         return _auth.CurrentUser.Role switch
         {
@@ -49,20 +59,30 @@ public sealed class WorkspaceNavigation : IDisposable
     }
 
     public string AfterSignIn(string? requested) => IsAllowed(requested) ? requested! : Home;
+
     public void GoBack() => _navigation.NavigateTo(ReturnToWorkspace);
 
     private void LocationChanged(object? sender, LocationChangedEventArgs e) => Remember(e.Location);
+
     private void Remember(string absolute)
     {
         var relative = "/" + _navigation.ToBaseRelativePath(absolute);
-        if (!IsAllowed(relative) || relative.StartsWith("/tickets/", StringComparison.Ordinal)) return;
+        if (!IsAllowed(relative) || relative.StartsWith("/tickets/", StringComparison.Ordinal))
+        {
+            return;
+        }
+
         // Completing a new request returns to its list, never to a fresh submission form.
         _lastWorkspace = relative.Split('?', '#')[0] == "/requester/new" ? "/requester/tickets" : relative;
     }
 
     private void AccountChanged(Task<AuthenticationState> state)
     {
-        if (_account == _auth.CurrentUser?.Email) return;
+        if (_account == _auth.CurrentUser?.Email)
+        {
+            return;
+        }
+
         _account = _auth.CurrentUser?.Email;
         _lastWorkspace = null;
         RequesterFilter = "All";

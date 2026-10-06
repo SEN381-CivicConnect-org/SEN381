@@ -8,10 +8,12 @@ var navigation = new TestNavigation();
 var auth = new DemoAuthenticationStateProvider();
 using var workspace = new WorkspaceNavigation(navigation, auth);
 Assert(workspace.ReturnToWorkspace == "/login", "Anonymous recovery must lead to sign-in.");
-foreach (var (email, origin, otherRole) in new[] {
+foreach (var (email, origin, otherRole) in new[]
+{
     ("requester@civicconnect.demo", "/requester/tickets", "/staff"),
     ("staff@civicconnect.demo", "/staff/assigned", "/requester/tickets"),
-    ("manager@civicconnect.demo", "/management/tickets", "/staff/queue") })
+    ("manager@civicconnect.demo", "/management/tickets", "/staff/queue")
+})
 {
     Assert(auth.SignIn(email, "password"), "Demo account sign-in.");
     navigation.NavigateTo(origin);
@@ -24,8 +26,22 @@ foreach (var (email, origin, otherRole) in new[] {
     navigation.NavigateTo("/access-denied");
     Assert(workspace.ReturnToWorkspace == origin, "Denied routes must not replace safe context.");
     Assert(!workspace.IsAllowed(otherRole), "Role-invalid return URL must be rejected.");
-    foreach (var bad in new[] { "https://example.com", "//example.com", "/\\example.com", "/unknown", "/login", "/access-denied", "/staff\n", "", "tickets/CC-014" })
+    foreach (var bad in new[]
+    {
+        "https://example.com",
+        "//example.com",
+        "/\\example.com",
+        "/unknown",
+        "/login",
+        "/access-denied",
+        "/staff\n",
+        "",
+        "tickets/CC-014"
+    })
+    {
         Assert(workspace.AfterSignIn(bad) == workspace.Home, "Unsafe or unknown return must fall back to role home.");
+    }
+
     Assert(workspace.AfterSignIn("/tickets/CC-014") == "/tickets/CC-014", "Sign-in must resume a local shared ticket.");
     workspace.GoBack();
     Assert(navigation.ToBaseRelativePath(navigation.Uri) == origin.TrimStart('/'), "Back destination must be safe.");
@@ -33,6 +49,7 @@ foreach (var (email, origin, otherRole) in new[] {
     Assert(workspace.ReturnToWorkspace == "/login", "Sign-out clears role context.");
     Assert(workspace.RequesterFilter == "All", "Account change clears list state.");
 }
+
 auth.SignIn("requester@civicconnect.demo", "password");
 navigation.NavigateTo("/requester/new");
 navigation.NavigateTo("/tickets/CC-015");
@@ -58,7 +75,14 @@ await handler.HandleAsync(_ => throw new Exception("Forbidden endpoint executed.
 Assert(context.Response.StatusCode == 403, "Forbidden POST must keep authorization enforced.");
 Console.WriteLine("All navigation and authorization recovery checks passed.");
 
-static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
+static void Assert(bool condition, string message)
+{
+    if (!condition)
+    {
+        throw new Exception(message);
+    }
+}
+
 sealed class TestNavigation : NavigationManager
 {
     public TestNavigation() => Initialize("http://localhost/", "http://localhost/login");

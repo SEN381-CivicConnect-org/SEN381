@@ -3,10 +3,15 @@
 
 <p>Checking access…</p>
 
-@code {
+@code
+{
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (!firstRender)
+        {
+            return;
+        }
+
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var requested = "/" + Nav.ToBaseRelativePath(Nav.Uri);
         var page = state.User.Identity?.IsAuthenticated == true ? "/access-denied" : "/login";

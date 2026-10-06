@@ -1,4 +1,11 @@
 @page "/staff/queue"
-@attribute [Authorize(Roles="Staff")]
+@attribute [Authorize(Roles = "Staff")]
 @inject TicketService Tickets
-<div class="page-head"><div><h1>Ticket Queue</h1><p>View active requests. Assignment and status changes are not available in this demo.</p></div></div><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Status!="Resolved"&&t.Status!="Closed")'/>
+
+<div class="page-head">
+    <div>
+        <h1>Ticket Queue</h1>
+        <p>View active requests. Assignment and status changes are not available in this demo.</p>
+    </div>
+</div>
+<TicketTable Tickets='Tickets.Tickets.Where(t => t.Status != "Resolved" && t.Status != "Closed")' />
