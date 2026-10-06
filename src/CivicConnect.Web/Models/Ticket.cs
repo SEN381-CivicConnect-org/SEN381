@@ -1,1 +1,17 @@
-namespace CivicConnect.Web.Models; public sealed class Ticket { public string Id {get;set;}=""; public string Title {get;set;}=""; public string Category {get;set;}=""; public string Priority {get;set;}="Medium"; public string Status {get;set;}="Open"; public string Updated {get;set;}="Just now"; public string Requester {get;set;}="Bernard Small"; public string Assignee {get;set;}="Unassigned"; public string Description {get;set;}=""; public string Created {get;set;}=""; }
+namespace CivicConnect.Web.Models;
+
+public sealed class Ticket
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string Priority { get; set; } = "Medium";
+    public string Status { get; set; } = "Open";
+    public string Updated { get; set; } = "Just now";
+    public string ReporterId { get; set; } = "";
+    public DateTimeOffset SubmittedAt { get; set; }
+    public string Requester { get; set; } = "";
+    public string Assignee { get; set; } = "Unassigned";
+    public string Description { get; set; } = "";
+    public string Created { get; set; } = "";
+}

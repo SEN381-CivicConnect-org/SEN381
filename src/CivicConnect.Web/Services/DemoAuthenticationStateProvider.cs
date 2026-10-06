@@ -31,6 +31,8 @@ public sealed class DemoAuthenticationStateProvider : AuthenticationStateProvide
         CurrentUser = account.User;
         var identity = new ClaimsIdentity(new[]
         {
+            // Demo account emails are unique and serve as stable user IDs.
+            new Claim(ClaimTypes.NameIdentifier, account.User.Email),
             new Claim(ClaimTypes.Name, account.User.Name),
             new Claim(ClaimTypes.Email, account.User.Email),
             new Claim(ClaimTypes.Role, account.User.Role)

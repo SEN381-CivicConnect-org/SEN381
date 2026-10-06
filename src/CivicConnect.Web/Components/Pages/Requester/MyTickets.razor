@@ -1,5 +1,18 @@
 @attribute [Authorize(Roles="Requester")]
 @page "/requester/tickets"
 @inject TicketService Tickets
+@inject AuthenticationStateProvider Authentication
 <PageTitle>My Tickets | CivicConnect</PageTitle><div class="page-head"><div><p class="eyebrow">Requester workspace</p><h1>My Tickets</h1><p>View and track every request you have submitted.</p></div><button class="btn btn-primary" @onclick='()=>Nav.NavigateTo("/requester/new")'>New Ticket</button></div><div class="filters">@foreach(var f in new[]{"All","Open","In Progress","Resolved"}){<button class="filter-btn @(filter==f?"active":"")" @onclick="()=>filter=f">@f</button>}</div><TicketTable Tickets="Filtered"/>
-@code{string filter="All";IEnumerable<Ticket> Filtered=>Tickets.Tickets.Where(t=>t.Requester=="Bernard Small"&&(filter=="All"||t.Status==filter));}
+@code
+{
+    string filter = "All";
+    IReadOnlyList<Ticket> history = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await Authentication.GetAuthenticationStateAsync();
+        history = Tickets.GetReporterHistory(state.User);
+    }
+
+    IEnumerable<Ticket> Filtered => history.Where(ticket => filter == "All" || ticket.Status == filter);
+}
