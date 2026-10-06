@@ -1,4 +1,71 @@
 @page "/staff/queue"
 @attribute [Authorize(Roles="Staff")]
 @inject TicketService Tickets
-<div class="page-head"><div><h1>Ticket Queue</h1><p>Review and manage all active requests.</p></div></div><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Status!="Resolved"&&t.Status!="Closed")'/>
+
+<div class="page-head"><div><h1>Ticket Queue</h1><p>Review and manage all active requests.</p></div></div>
+<div class="filters queue-controls">
+    <div class="field">
+        <label for="queue-search">Search requests</label>
+        <input id="queue-search" type="search" placeholder="Search requests" @bind="search" @bind:event="oninput" @bind:after="Reload" />
+    </div>
+    <div class="field">
+        <label for="queue-category">Category</label>
+        <select id="queue-category" @bind="category" @bind:after="Reload">
+            <option value="">All categories</option>
+            @foreach (var value in categories)
+            {
+                <option value="@value">@value</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="queue-status">Status</label>
+        <select id="queue-status" @bind="status" @bind:after="Reload">
+            <option value="">All active statuses</option>
+            @foreach (var value in statuses)
+            {
+                <option value="@value">@value</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="queue-sort">Sort by</label>
+        <select id="queue-sort" @bind="sort" @bind:after="Reload">
+            <option value="@TicketSort.NewestFirst">Date: newest first</option>
+            <option value="@TicketSort.OldestFirst">Date: oldest first</option>
+            <option value="@TicketSort.PriorityHighFirst">Priority: high to low</option>
+            <option value="@TicketSort.PriorityLowFirst">Priority: low to high</option>
+        </select>
+    </div>
+</div>
+<TicketTable Tickets="queue" />
+@if (queue.Count == 0)
+{
+    <p role="status">No active requests match your search or filters.</p>
+}
+
+@code
+{
+    string search = "";
+    string category = "";
+    string status = "";
+    TicketSort sort = TicketSort.NewestFirst;
+    IReadOnlyList<string> categories = [];
+    IReadOnlyList<string> statuses = [];
+    IReadOnlyList<Ticket> queue = [];
+
+    protected override void OnInitialized()
+    {
+        categories = Tickets.GetStaffQueueCategories();
+        statuses = Tickets.GetStaffQueueStatuses();
+        Reload();
+    }
+
+    void Reload() => queue = Tickets.GetStaffQueue(new TicketQuery
+    {
+        Search = search,
+        Category = category,
+        Status = status,
+        Sort = sort
+    });
+}

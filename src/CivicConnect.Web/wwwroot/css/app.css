@@ -392,3 +392,11 @@ select { appearance: none; background-image: url('assets/icons/chevron.svg') !im
  .sidebar .nav-item { overflow-wrap: anywhere; }
 }
 .login-error{margin:10px 0;color:#b42318;font-size:.9rem}.demo-note p{margin:.3rem 0}.sidebar-footer .btn{width:100%;margin-top:10px}
+
+.queue-controls .field {
+    flex: 1 1 160px;
+}
+
+.queue-controls .field:first-child {
+    flex: 2 1 240px;
+}
