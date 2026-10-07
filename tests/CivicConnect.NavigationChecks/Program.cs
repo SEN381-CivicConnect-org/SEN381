@@ -39,12 +39,18 @@ foreach (var (email, origin, otherRole) in new[]
         "tickets/CC-014"
     })
     {
-        Assert(workspace.AfterSignIn(bad) == workspace.Home, "Unsafe or unknown return must fall back to role home.");
+        Assert(
+            workspace.AfterSignIn(bad) == workspace.Home,
+            "Unsafe or unknown return must fall back to role home.");
     }
 
-    Assert(workspace.AfterSignIn("/tickets/CC-014") == "/tickets/CC-014", "Sign-in must resume a local shared ticket.");
+    Assert(
+        workspace.AfterSignIn("/tickets/CC-014") == "/tickets/CC-014",
+        "Sign-in must resume a local shared ticket.");
     workspace.GoBack();
-    Assert(navigation.ToBaseRelativePath(navigation.Uri) == origin.TrimStart('/'), "Back destination must be safe.");
+    Assert(
+        navigation.ToBaseRelativePath(navigation.Uri) == origin.TrimStart('/'),
+        "Back destination must be safe.");
     auth.SignOut();
     Assert(workspace.ReturnToWorkspace == "/login", "Sign-out clears role context.");
     Assert(workspace.RequesterFilter == "All", "Account change clears list state.");
@@ -53,7 +59,9 @@ foreach (var (email, origin, otherRole) in new[]
 auth.SignIn("requester@civicconnect.demo", "password");
 navigation.NavigateTo("/requester/new");
 navigation.NavigateTo("/tickets/CC-015");
-Assert(workspace.ReturnToWorkspace == "/requester/tickets", "New ticket must return to list rather than another submission form.");
+Assert(
+    workspace.ReturnToWorkspace == "/requester/tickets",
+    "New ticket must return to list rather than another submission form.");
 workspace.RequesterFilter = "Resolved";
 navigation.NavigateTo("/requester/tickets");
 navigation.NavigateTo("/tickets/CC-012");
@@ -66,12 +74,22 @@ var context = new DefaultHttpContext();
 context.Request.Method = "GET";
 context.Request.Path = "/staff/assigned";
 context.Request.QueryString = new QueryString("?filter=open");
-await handler.HandleAsync(_ => throw new Exception("Unauthorized endpoint executed."), context, policy, PolicyAuthorizationResult.Challenge());
+await handler.HandleAsync(
+    _ => throw new Exception("Unauthorized endpoint executed."),
+    context,
+    policy,
+    PolicyAuthorizationResult.Challenge());
 Assert(context.Response.StatusCode == 302, "Direct protected GET must redirect rather than throw.");
-Assert(context.Response.Headers.Location.ToString() == "/login?returnUrl=%2Fstaff%2Fassigned%3Ffilter%3Dopen", "Challenge must preserve local requested URL.");
+Assert(
+    context.Response.Headers.Location.ToString() == "/login?returnUrl=%2Fstaff%2Fassigned%3Ffilter%3Dopen",
+    "Challenge must preserve local requested URL.");
 context = new DefaultHttpContext();
 context.Request.Method = "POST";
-await handler.HandleAsync(_ => throw new Exception("Forbidden endpoint executed."), context, policy, PolicyAuthorizationResult.Forbid());
+await handler.HandleAsync(
+    _ => throw new Exception("Forbidden endpoint executed."),
+    context,
+    policy,
+    PolicyAuthorizationResult.Forbid());
 Assert(context.Response.StatusCode == 403, "Forbidden POST must keep authorization enforced.");
 await ReporterVisibilityChecks.RunAsync();
 Console.WriteLine("All navigation, authorization recovery, and FR-11 checks passed.");
@@ -86,7 +104,11 @@ static void Assert(bool condition, string message)
 
 sealed class TestNavigation : NavigationManager
 {
-    public TestNavigation() => Initialize("http://localhost/", "http://localhost/login");
+    public TestNavigation()
+    {
+        Initialize("http://localhost/", "http://localhost/login");
+    }
+
     protected override void NavigateToCore(string uri, bool forceLoad)
     {
         Uri = ToAbsoluteUri(uri).AbsoluteUri;
