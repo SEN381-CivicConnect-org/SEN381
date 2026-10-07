@@ -20,6 +20,9 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<PriorityTarget> PriorityTargets => Set<PriorityTarget>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<LocationKind> LocationKinds => Set<LocationKind>();
+    public DbSet<Location> Locations => Set<Location>();
+    public DbSet<Asset> Assets => Set<Asset>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
