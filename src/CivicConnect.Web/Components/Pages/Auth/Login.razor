@@ -1,7 +1,6 @@
 @page "/login"
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-@inject DemoAuthenticationStateProvider Auth
-@inject WorkspaceNavigation Workspace
+@inject AppAuthenticationStateProvider Auth
 
 <PageTitle>Sign in | CivicConnect</PageTitle>
 <div class="login-page">
@@ -66,23 +65,12 @@
     string password = "password";
     string? error;
 
-    void SignIn()
+    async Task SignIn()
     {
-        if (!Auth.SignIn(email, password))
-        {
-            error = "Incorrect email address or password.";
-            return;
-        }
-
+        if (!await Auth.SignInAsync(email, password)) { error = "Incorrect email address or password."; return; }
         error = null;
         Nav.NavigateTo(Workspace.AfterSignIn(ReturnUrl), replace: true);
     }
 
-    void HandleKey(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            SignIn();
-        }
-    }
+    async Task HandleKey(KeyboardEventArgs e) { if (e.Key == "Enter") await SignIn(); }
 }

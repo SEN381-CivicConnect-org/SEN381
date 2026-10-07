@@ -1,16 +1,8 @@
 @page "/access-denied"
-@attribute [AllowAnonymous]
-@inject WorkspaceNavigation Workspace
-@inject DemoAuthenticationStateProvider Auth
-
-<PageTitle>Access denied | CivicConnect</PageTitle>
-<div class="page-head">
-    <div>
-        <h1>Access denied</h1>
-        <p>Your account does not have permission to open that workspace. You can return to a page available to your role.</p>
-    </div>
-</div>
-<button
-    type="button"
-    class="btn btn-primary"
-    @onclick="Workspace.GoBack">@(Auth.CurrentUser is null ? "Sign in" : "Return to my workspace")</button>
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+<div class="page-head"><div><h1>Access denied</h1><p>Your account does not have permission to open that workspace.</p></div></div>
+<div class="card form-card"><button class="btn btn-primary" @onclick="GoHome">Return to my workspace</button></div>
+@code {
+    [Inject] CivicConnect.Web.Services.AppAuthenticationStateProvider Auth { get; set; } = default!;
+    void GoHome() => Nav.NavigateTo(Auth.HomeForCurrentRole());
+}
