@@ -1,13 +1,14 @@
-@page "/access-denied"
+@page "/not-found"
 @attribute [AllowAnonymous]
+@layout CivicConnect.Web.Components.Layout.MainLayout
 @inject WorkspaceNavigation Workspace
 @inject DemoAuthenticationStateProvider Auth
 
-<PageTitle>Access denied | CivicConnect</PageTitle>
+<PageTitle>Page not found | CivicConnect</PageTitle>
 <div class="page-head">
     <div>
-        <h1>Access denied</h1>
-        <p>Your account does not have permission to open that workspace. You can return to a page available to your role.</p>
+        <h1>Page not found</h1>
+        <p>This address does not match a CivicConnect page. Return to your workspace to continue.</p>
     </div>
 </div>
 <button
