@@ -1,0 +1,17 @@
+@page "/not-found"
+@attribute [AllowAnonymous]
+@layout CivicConnect.Web.Components.Layout.MainLayout
+@inject WorkspaceNavigation Workspace
+@inject DemoAuthenticationStateProvider Auth
+
+<PageTitle>Page not found | CivicConnect</PageTitle>
+<div class="page-head">
+    <div>
+        <h1>Page not found</h1>
+        <p>This address does not match a CivicConnect page. Return to your workspace to continue.</p>
+    </div>
+</div>
+<button
+    type="button"
+    class="btn btn-primary"
+    @onclick="Workspace.GoBack">@(Auth.CurrentUser is null ? "Sign in" : "Return to my workspace")</button>

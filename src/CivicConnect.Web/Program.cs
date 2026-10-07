@@ -2,6 +2,7 @@ using CivicConnect.Web.Components;
 using CivicConnect.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Npgsql;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();

@@ -3,7 +3,7 @@
 @inject AppAuthenticationStateProvider Auth
 
 <CascadingAuthenticationState>
-    <Router AppAssembly="typeof(Program).Assembly">
+    <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.Auth.NotFound)">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
                 <NotAuthorized>
@@ -12,8 +12,5 @@
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="routeData" Selector="h1" />
         </Found>
-        <NotFound>
-            <LayoutView Layout="typeof(Layout.MainLayout)"><h1>Page not found</h1></LayoutView>
-        </NotFound>
     </Router>
 </CascadingAuthenticationState>
