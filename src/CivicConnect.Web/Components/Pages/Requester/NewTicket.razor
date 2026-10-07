@@ -1,6 +1,7 @@
 @page "/requester/new"
 @attribute [Authorize(Roles = "Requester")]
 @inject TicketService Tickets
+@inject AuthenticationStateProvider AuthState
 
 <PageTitle>New Ticket | CivicConnect</PageTitle>
 <div class="page-head">
@@ -68,9 +69,10 @@
         Priority = "Medium"
     };
 
-    void Submit()
+    async Task Submit()
     {
-        var id = Tickets.Create(model);
+        var state = await AuthState.GetAuthenticationStateAsync();
+        var id = Tickets.Create(model, state.User);
         Nav.NavigateTo($"/tickets/{id}");
     }
 }

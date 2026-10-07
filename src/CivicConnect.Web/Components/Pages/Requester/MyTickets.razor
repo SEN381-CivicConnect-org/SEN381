@@ -1,6 +1,7 @@
 @attribute [Authorize(Roles = "Requester")]
 @page "/requester/tickets"
 @inject TicketService Tickets
+@inject AuthenticationStateProvider AuthState
 @inject WorkspaceNavigation Workspace
 
 <PageTitle>My Tickets | CivicConnect</PageTitle>
@@ -28,6 +29,13 @@
         set => Workspace.RequesterFilter = value;
     }
 
-    IEnumerable<Ticket> Filtered => Tickets.Tickets.Where(t =>
-        t.Requester == "Bernard Small" && (filter == "All" || t.Status == filter));
+    IEnumerable<Ticket> history = Array.Empty<Ticket>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        history = Tickets.GetReporterHistory(state.User);
+    }
+
+    IEnumerable<Ticket> Filtered => history.Where(t => filter == "All" || t.Status == filter);
 }

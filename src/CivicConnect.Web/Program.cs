@@ -15,6 +15,7 @@ builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddSingleton<TicketService>();
+builder.Services.AddScoped<WorkspaceNavigation>();
 
 var app = builder.Build();
 

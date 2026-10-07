@@ -1,6 +1,7 @@
 @page "/tickets/{Id}"
 @attribute [Authorize]
 @inject TicketService Tickets
+@inject AuthenticationStateProvider AuthState
 @inject WorkspaceNavigation Workspace
 
 @if (ticket is null)
@@ -99,5 +100,9 @@ else
 
     Ticket? ticket;
 
-    protected override void OnParametersSet() => ticket = Tickets.Find(Id);
+    protected override async Task OnParametersSetAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        ticket = Tickets.FindVisible(Id, state.User);
+    }
 }

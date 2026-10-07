@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
 
 var navigation = new TestNavigation();
-var auth = new DemoAuthenticationStateProvider();
-using var workspace = new WorkspaceNavigation(navigation, auth);
+using var auth = new AuthFixture();
+using var workspace = new WorkspaceNavigation(navigation, auth.Provider);
 Assert(workspace.ReturnToWorkspace == "/login", "Anonymous recovery must lead to sign-in.");
 foreach (var (email, origin, otherRole) in new[]
 {
@@ -73,7 +73,8 @@ context = new DefaultHttpContext();
 context.Request.Method = "POST";
 await handler.HandleAsync(_ => throw new Exception("Forbidden endpoint executed."), context, policy, PolicyAuthorizationResult.Forbid());
 Assert(context.Response.StatusCode == 403, "Forbidden POST must keep authorization enforced.");
-Console.WriteLine("All navigation and authorization recovery checks passed.");
+await ReporterVisibilityChecks.RunAsync();
+Console.WriteLine("All navigation, authorization recovery, and FR-11 checks passed.");
 
 static void Assert(bool condition, string message)
 {
