@@ -8,4 +8,96 @@
         <p>View active requests. Assignment and status changes are not available in this demo.</p>
     </div>
 </div>
-<TicketTable Tickets='Tickets.Tickets.Where(t => t.Status != "Resolved" && t.Status != "Closed")' />
+
+<div class="staff-queue-controls">
+    <div class="field queue-search">
+        <label for="queue-search">Search tickets</label>
+        <input id="queue-search"
+               type="search"
+               placeholder="Search tickets..."
+               @bind="search"
+               @bind:event="oninput" />
+    </div>
+    <div class="field">
+        <label for="queue-category">Category</label>
+        <select id="queue-category" @bind="category">
+            <option value="">All categories</option>
+            @foreach (var option in AvailableCategories)
+            {
+                <option value="@option">@option</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="queue-status">Status</label>
+        <select id="queue-status" @bind="status">
+            <option value="">All statuses</option>
+            @foreach (var option in AvailableStatuses)
+            {
+                <option value="@option">@option</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="queue-sort">Sort (date uses last updated)</label>
+        <select id="queue-sort" @bind="sort">
+            <option value="priority-high">Priority: High to Low</option>
+            <option value="priority-low">Priority: Low to High</option>
+            <option value="date-newest">Date: Newest First</option>
+            <option value="date-oldest">Date: Oldest First</option>
+        </select>
+    </div>
+    <button type="button" class="btn btn-secondary" @onclick="Reset">
+        Clear filters
+    </button>
+</div>
+
+@{
+    var results = TicketQueueFilter
+        .Apply(ActiveTickets, search, category, status, sort, DateTime.Now)
+        .ToList();
+}
+
+@if (results.Count == 0)
+{
+    <div class="card empty" role="status">
+        No tickets match your search or filters.
+    </div>
+}
+else
+{
+    <TicketTable Tickets="results" />
+}
+
+@code
+{
+    private string search = "";
+    private string category = "";
+    private string status = "";
+    private string sort = "date-newest";
+
+    // Apply FR-15 only after the existing Staff Queue visibility restriction.
+    private IEnumerable<Ticket> ActiveTickets =>
+        Tickets.Tickets
+            .Where(ticket => ticket.Status != "Resolved" && ticket.Status != "Closed");
+
+    private IEnumerable<string> AvailableCategories =>
+        ActiveTickets
+            .Select(ticket => ticket.Category)
+            .Distinct()
+            .OrderBy(category => category);
+
+    private IEnumerable<string> AvailableStatuses =>
+        ActiveTickets
+            .Select(ticket => ticket.Status)
+            .Distinct()
+            .OrderBy(status => status);
+
+    private void Reset()
+    {
+        search = "";
+        category = "";
+        status = "";
+        sort = "date-newest";
+    }
+}
