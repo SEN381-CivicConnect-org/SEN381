@@ -1,6 +1,6 @@
 @page "/settings"
 @attribute [Authorize]
-@inject DemoAuthenticationStateProvider Auth
+@inject AppAuthenticationStateProvider Auth
 
 <div class="page-head">
     <div>
@@ -22,7 +22,10 @@
         <h3>Profile</h3>
         <div class="field">
             <label for="display-name">Display name</label>
-            <input id="display-name" value="@Auth.CurrentUser?.Name" readonly aria-describedby="profile-note" />
+            <input id="display-name"
+                   value="@Auth.CurrentUser?.Name"
+                   readonly
+                   aria-describedby="profile-note" />
             <small id="profile-note">Your signed-in name. Profile editing is not available in this demo.</small>
         </div>
     </div>

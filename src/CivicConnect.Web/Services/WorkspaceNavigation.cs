@@ -8,13 +8,15 @@ namespace CivicConnect.Web.Services;
 public sealed class WorkspaceNavigation : IDisposable
 {
     private readonly NavigationManager _navigation;
-    private readonly DemoAuthenticationStateProvider _auth;
+    private readonly AppAuthenticationStateProvider _auth;
     private string? _lastWorkspace;
     private string? _account;
 
     public string RequesterFilter { get; set; } = "All";
 
-    public WorkspaceNavigation(NavigationManager navigation, DemoAuthenticationStateProvider auth)
+    public WorkspaceNavigation(
+        NavigationManager navigation,
+        AppAuthenticationStateProvider auth)
     {
         _navigation = navigation;
         _auth = auth;

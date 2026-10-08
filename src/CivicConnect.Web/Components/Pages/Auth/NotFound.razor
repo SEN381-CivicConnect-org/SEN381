@@ -2,7 +2,7 @@
 @attribute [AllowAnonymous]
 @layout CivicConnect.Web.Components.Layout.MainLayout
 @inject WorkspaceNavigation Workspace
-@inject DemoAuthenticationStateProvider Auth
+@inject AppAuthenticationStateProvider Auth
 
 <PageTitle>Page not found | CivicConnect</PageTitle>
 <div class="page-head">
@@ -14,4 +14,6 @@
 <button
     type="button"
     class="btn btn-primary"
-    @onclick="Workspace.GoBack">@(Auth.CurrentUser is null ? "Sign in" : "Return to my workspace")</button>
+    @onclick="Workspace.GoBack">
+    @(Auth.CurrentUser is null ? "Sign in" : "Return to my workspace")
+</button>
