@@ -27,6 +27,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<SubmissionRequest> SubmissionRequests => Set<SubmissionRequest>();
     public DbSet<IncidentSubscription> IncidentSubscriptions => Set<IncidentSubscription>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
@@ -53,5 +54,51 @@ public sealed class CivicConnectDbContext : DbContext
             new[] { "NEW", "ASSIGNED", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED", "REJECTED", "MERGED" });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
+
+        // Fluent API configuration for ServiceRequest priority override and SLA properties
+        modelBuilder.Entity<ServiceRequest>(entity =>
+        {
+            entity.ToTable("service_requests");
+
+            entity.HasKey(sr => sr.Id);
+
+            entity.Property(sr => sr.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(sr => sr.Description)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(sr => sr.Priority)
+                .IsRequired()
+                .HasConversion<int>();
+
+            entity.Property(sr => sr.Status)
+                .IsRequired()
+                .HasConversion<int>();
+
+            entity.Property(sr => sr.DueAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired(false);
+
+            entity.Property(sr => sr.IsSupervisorOverridden)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(sr => sr.OverrideReason)
+                .HasMaxLength(500)
+                .IsRequired(false);
+
+            entity.Property(sr => sr.OverriddenBySupervisorId)
+                .HasMaxLength(128)
+                .IsRequired(false);
+
+            entity.Property(sr => sr.OverriddenAt)
+                .HasColumnType("timestamp with time zone")
+                .IsRequired(false);
+
+            entity.Ignore(sr => sr.IsOverdue);
+        });
     }
 }
