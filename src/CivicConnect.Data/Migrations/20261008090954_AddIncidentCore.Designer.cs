@@ -4,6 +4,7 @@ using CivicConnect.Data;
 using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CivicConnect.Data.Migrations
 {
     [DbContext(typeof(CivicConnectDbContext))]
-    partial class CivicConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008090954_AddIncidentCore")]
+    partial class AddIncidentCore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -330,31 +333,6 @@ namespace CivicConnect.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.IncidentSubscription", b =>
-                {
-                    b.Property<long>("IncidentId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("incident_id");
-
-                    b.Property<Guid>("ReporterId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reporter_id");
-
-                    b.Property<DateTimeOffset>("SubscribedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("subscribed_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.HasKey("IncidentId", "ReporterId")
-                        .HasName("pk_incident_subscription");
-
-                    b.HasIndex("ReporterId")
-                        .HasDatabaseName("ix_incident_subscription_reporter_id");
-
-                    b.ToTable("incident_subscription", (string)null);
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.Location", b =>
                 {
                     b.Property<int>("Id")
@@ -628,47 +606,6 @@ namespace CivicConnect.Data.Migrations
                     b.ToTable("service_team", (string)null);
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.SubmissionRequest", b =>
-                {
-                    b.Property<Guid>("ReporterId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reporter_id");
-
-                    b.Property<string>("IdempotencyKey")
-                        .HasColumnType("text")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("RequestFingerprint")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("request_fingerprint");
-
-                    b.Property<DateTimeOffset>("RequestedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("requested_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<long>("TicketId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ticket_id");
-
-                    b.HasKey("ReporterId", "IdempotencyKey")
-                        .HasName("pk_submission_request");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_submission_request_expires_at");
-
-                    b.HasIndex("TicketId")
-                        .HasDatabaseName("ix_submission_request_ticket_id");
-
-                    b.ToTable("submission_request", (string)null);
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.TeamMember", b =>
                 {
                     b.Property<long>("Id")
@@ -771,76 +708,6 @@ namespace CivicConnect.Data.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Name = "supervisor"
                         });
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Ticket", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("integer")
-                        .HasColumnName("category_id");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<long>("IncidentId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("incident_id");
-
-                    b.Property<int>("LocationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("location_id");
-
-                    b.Property<string>("ReferenceNumber")
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("text")
-                        .HasColumnName("reference_number")
-                        .HasComputedColumnSql("'TKT-' || lpad(id::text, 6, '0')", true);
-
-                    b.Property<Guid>("ReporterId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reporter_id");
-
-                    b.Property<DateTimeOffset>("SubmittedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("submitted_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.HasKey("Id")
-                        .HasName("pk_ticket");
-
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_ticket_category_id");
-
-                    b.HasIndex("IncidentId")
-                        .HasDatabaseName("ix_ticket_incident_id");
-
-                    b.HasIndex("LocationId")
-                        .HasDatabaseName("ix_ticket_location_id");
-
-                    b.HasIndex("ReferenceNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ix_ticket_reference_number");
-
-                    b.HasIndex("ReporterId")
-                        .HasDatabaseName("ix_ticket_reporter_id");
-
-                    b.ToTable("ticket", (string)null);
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.UserRole", b =>
@@ -953,27 +820,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("PriorityTarget");
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.IncidentSubscription", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.Incident", "Incident")
-                        .WithMany()
-                        .HasForeignKey("IncidentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_incident_subscription_incident_incident_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "Reporter")
-                        .WithMany()
-                        .HasForeignKey("ReporterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_incident_subscription_app_user_reporter_id");
-
-                    b.Navigation("Incident");
-
-                    b.Navigation("Reporter");
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.Location", b =>
                 {
                     b.HasOne("CivicConnect.Data.Entities.LocationKind", "LocationKind")
@@ -992,27 +838,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("LocationKind");
 
                     b.Navigation("ParentLocation");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.SubmissionRequest", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "Reporter")
-                        .WithMany()
-                        .HasForeignKey("ReporterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_submission_request_app_user_reporter_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_submission_request_tickets_ticket_id");
-
-                    b.Navigation("Reporter");
-
-                    b.Navigation("Ticket");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.TeamMember", b =>
@@ -1043,45 +868,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("TeamRole");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Ticket", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_ticket_category_category_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Incident", "Incident")
-                        .WithMany()
-                        .HasForeignKey("IncidentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_ticket_incident_incident_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_ticket_location_location_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "Reporter")
-                        .WithMany()
-                        .HasForeignKey("ReporterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_ticket_app_user_reporter_id");
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Incident");
-
-                    b.Navigation("Location");
-
-                    b.Navigation("Reporter");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.UserRole", b =>
