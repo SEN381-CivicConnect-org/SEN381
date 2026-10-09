@@ -28,6 +28,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<SubmissionRequest> SubmissionRequests => Set<SubmissionRequest>();
     public DbSet<IncidentSubscription> IncidentSubscriptions => Set<IncidentSubscription>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
@@ -55,7 +56,7 @@ public sealed class CivicConnectDbContext : DbContext
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
 
-        // Fluent API configuration for ServiceRequest priority override and SLA properties
+        // Fluent API configuration for ServiceRequest priority override, SLA, and status properties (FR-06, FR-12, FR-13)
         modelBuilder.Entity<ServiceRequest>(entity =>
         {
             entity.ToTable("service_requests");
@@ -78,6 +79,9 @@ public sealed class CivicConnectDbContext : DbContext
                 .IsRequired()
                 .HasConversion<int>();
 
+            entity.Property(sr => sr.RequesterId)
+                .IsRequired();
+
             entity.Property(sr => sr.DueAt)
                 .HasColumnType("timestamp with time zone")
                 .IsRequired(false);
@@ -98,7 +102,47 @@ public sealed class CivicConnectDbContext : DbContext
                 .HasColumnType("timestamp with time zone")
                 .IsRequired(false);
 
+            entity.Property(sr => sr.LastModified)
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAddOrUpdate();
+
+            entity.HasOne(sr => sr.Requester)
+                .WithMany()
+                .HasForeignKey(sr => sr.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.Ignore(sr => sr.IsOverdue);
+        });
+
+        // Fluent API configuration for Notification entity (FR-13)
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications");
+
+            entity.HasKey(n => n.Id);
+
+            entity.Property(n => n.UserId)
+                .IsRequired();
+
+            entity.Property(n => n.Message)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.Property(n => n.IsRead)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(n => n.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAdd();
+
+            entity.HasIndex(n => n.UserId);
+            entity.HasIndex(n => new { n.UserId, n.IsRead });
+
+            entity.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

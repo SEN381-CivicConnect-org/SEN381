@@ -21,6 +21,17 @@ public sealed class OverridePriorityRequestDto
 }
 
 /// <summary>
+/// Data Transfer Object for changing the status of a service request (FR-13).
+/// </summary>
+public sealed class ChangeStatusRequestDto
+{
+    public RequestStatus? NewStatus { get; set; }
+    public RequestStatus? Status { get; set; }
+
+    public RequestStatus TargetStatus => NewStatus ?? Status ?? RequestStatus.New;
+}
+
+/// <summary>
 /// Data Transfer Object representing an overdue service request.
 /// </summary>
 public sealed class OverdueServiceRequestDto
@@ -48,6 +59,72 @@ public sealed class ServiceRequestsController : ControllerBase
     public ServiceRequestsController(CivicConnectDbContext context)
     {
         _context = context;
+    }
+
+    /// <summary>
+    /// [FR-13] Automated Notifications on Status Change.
+    /// Updates the status of a service request and creates an automated notification for the original requester.
+    /// </summary>
+    /// <param name="id">The unique identifier of the service request.</param>
+    /// <param name="dto">The payload containing the new status.</param>
+    /// <returns>HTTP 200 OK with the updated service request details.</returns>
+    [HttpPut("{id}/status")]
+    [HttpPatch("{id}/status")]
+    [Authorize]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] ChangeStatusRequestDto dto)
+    {
+        if (dto is null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (dto.NewStatus is null && dto.Status is null)
+        {
+            return BadRequest(new { message = "A valid target status is required." });
+        }
+
+        var serviceRequest = await _context.ServiceRequests.FindAsync(id);
+        if (serviceRequest is null)
+        {
+            return NotFound(new { message = $"Service request with ID '{id}' was not found." });
+        }
+
+        var previousStatus = serviceRequest.Status;
+        var targetStatus = dto.TargetStatus;
+
+        // Execute rich domain method updating status and LastModified timestamp
+        serviceRequest.ChangeStatus(targetStatus);
+
+        // Address automated notification to ticket's original Requester
+        var recipientId = serviceRequest.RequesterId != Guid.Empty
+            ? serviceRequest.RequesterId
+            : (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var callerId) ? callerId : Guid.Empty);
+
+        if (recipientId != Guid.Empty)
+        {
+            var friendlyStatus = FormatStatusName(targetStatus);
+            var notification = new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = recipientId,
+                Message = $"Your request status has changed to {friendlyStatus}",
+                IsRead = false,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            await _context.Notifications.AddAsync(notification);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Service request status updated successfully.",
+            serviceRequestId = serviceRequest.Id,
+            previousStatus = previousStatus,
+            status = serviceRequest.Status,
+            lastModified = serviceRequest.LastModified
+        });
     }
 
     /// <summary>
@@ -152,4 +229,15 @@ public sealed class ServiceRequestsController : ControllerBase
 
         return Ok(overdueRequests);
     }
+
+    private static string FormatStatusName(RequestStatus status) => status switch
+    {
+        RequestStatus.New => "New",
+        RequestStatus.Assigned => "Assigned",
+        RequestStatus.InProgress => "In Progress",
+        RequestStatus.OnHold => "On Hold",
+        RequestStatus.Resolved => "Resolved",
+        RequestStatus.Closed => "Closed",
+        _ => status.ToString()
+    };
 }

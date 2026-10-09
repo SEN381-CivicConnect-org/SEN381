@@ -19,7 +19,8 @@ public enum RequestStatus
 }
 
 /// <summary>
-/// Core domain entity representing a service request with DDD priority override and SLA overdue behavior.
+/// Core domain entity representing a service request with DDD priority override, SLA overdue behavior,
+/// and automated status notification tracking (FR-06, FR-12, FR-13).
 /// </summary>
 public class ServiceRequest
 {
@@ -28,6 +29,10 @@ public class ServiceRequest
     public string Description { get; set; } = string.Empty;
     public PriorityLevel Priority { get; private set; } = PriorityLevel.Medium;
     public RequestStatus Status { get; set; } = RequestStatus.New;
+
+    public Guid RequesterId { get; set; }
+    public AppUser? Requester { get; set; }
+
     public DateTimeOffset? DueAt { get; set; }
     public bool IsSupervisorOverridden { get; private set; }
     public string? OverrideReason { get; private set; }
@@ -35,6 +40,7 @@ public class ServiceRequest
     public DateTimeOffset? OverriddenAt { get; private set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset LastModified { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
     /// Read-only computed property indicating whether the service request is overdue against its SLA.
@@ -48,12 +54,25 @@ public class ServiceRequest
     {
     }
 
-    public ServiceRequest(string title, string description, PriorityLevel priority)
+    public ServiceRequest(string title, string description, PriorityLevel priority, Guid requesterId = default)
     {
         Title = title;
         Description = description;
         Priority = priority;
+        RequesterId = requesterId;
+        LastModified = DateTimeOffset.UtcNow;
         CalculateDueDate();
+    }
+
+    /// <summary>
+    /// Rich domain method to transition the request lifecycle status and update timestamps (FR-13).
+    /// </summary>
+    /// <param name="newStatus">The target lifecycle status.</param>
+    public void ChangeStatus(RequestStatus newStatus)
+    {
+        Status = newStatus;
+        LastModified = DateTimeOffset.UtcNow;
+        UpdatedAt = LastModified;
     }
 
     /// <summary>
@@ -71,6 +90,7 @@ public class ServiceRequest
             PriorityLevel.Low => now.AddDays(7),
             _ => now.AddDays(3)
         };
+        LastModified = now;
         UpdatedAt = now;
     }
 
@@ -98,6 +118,7 @@ public class ServiceRequest
         OverriddenBySupervisorId = supervisorId.Trim();
         OverriddenAt = DateTimeOffset.UtcNow;
         CalculateDueDate();
-        UpdatedAt = DateTimeOffset.UtcNow;
+        LastModified = DateTimeOffset.UtcNow;
+        UpdatedAt = LastModified;
     }
 }
