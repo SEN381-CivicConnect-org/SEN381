@@ -19,6 +19,7 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.Name).IsRequired();
         builder.Property(c => c.Description).IsRequired();
         builder.Property(c => c.IsActive).HasDefaultValue(true);
+        builder.Property(c => c.DefaultUrgency).HasConversion<int>().HasDefaultValue(CivicConnect.Domain.Enums.UrgencyLevel.Medium);
         builder.Property(c => c.UrgencyLevel).IsRequired();
 
         // A name is unique only among active categories, so a retired name can be reused.

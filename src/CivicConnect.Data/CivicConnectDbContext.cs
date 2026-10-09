@@ -1,5 +1,6 @@
 using CivicConnect.Data.Entities;
 using CivicConnect.Data.Interceptors;
+using CivicConnect.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CivicConnect.Data;
@@ -20,6 +21,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<PriorityTarget> PriorityTargets => Set<PriorityTarget>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<LocationKind> LocationKinds => Set<LocationKind>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<Asset> Assets => Set<Asset>();

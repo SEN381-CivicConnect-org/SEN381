@@ -1,3 +1,5 @@
+using CivicConnect.Domain.Enums;
+
 namespace CivicConnect.Data.Entities;
 
 /// A selectable request category: its urgency level and the team it routes to by default.

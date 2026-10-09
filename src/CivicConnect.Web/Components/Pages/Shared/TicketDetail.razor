@@ -44,6 +44,29 @@ else
                     <strong>@ticket.Updated</strong>
                 </div>
             </div>
+
+            <!-- FR-05 Domain-Driven Priority Snapshot Breakdown -->
+            <div style="margin: 20px 0; padding: 14px 16px; background: var(--surface-subtle, #f8fafc); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Domain Priority Calculation (FR-05 / STK-CFL-01)</span>
+                    <span style="font-size: 10.5px; font-weight: normal; color: var(--muted);">Encapsulated Entity</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12.5px;">
+                    <div>
+                        <span style="color: var(--muted); display: block;">Reported Impact</span>
+                        <strong>@ticket.Impact Impact (Level @((int)ticket.Impact))</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--muted); display: block;">Category Urgency</span>
+                        <strong>@ticket.Urgency Urgency (Level @((int)ticket.Urgency))</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--muted); display: block;">Calculated Priority</span>
+                        <strong>@ticket.PriorityLevel (Level @((int)ticket.PriorityLevel))</strong>
+                    </div>
+                </div>
+            </div>
+
             <div class="description">
                 <strong>Description</strong>
                 <p>@ticket.Description</p>
@@ -62,12 +85,13 @@ else
                 <div class="timeline-item">
                     <div class="dot"></div>
                     <div>
-                        <strong>Ticket created</strong>
-                        <p>Request submitted by @ticket.Requester.</p>
+                        <strong>Ticket created with Priority: @ticket.Priority</strong>
+                        <p>Request submitted by @ticket.Requester (Impact: @ticket.Impact, Urgency: @ticket.Urgency).</p>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="side-stack">
             <div class="card side-card">
                 <h3>Ticket information</h3>
@@ -80,8 +104,16 @@ else
                     <strong>@ticket.Category</strong>
                 </div>
                 <div class="kv">
+                    <span>Location Impact</span>
+                    <strong>@ticket.Impact</strong>
+                </div>
+                <div class="kv">
+                    <span>Category Urgency</span>
+                    <strong>@ticket.Urgency</strong>
+                </div>
+                <div class="kv">
                     <span>Priority</span>
-                    <strong>@ticket.Priority</strong>
+                    <strong class="badge @GetPriorityBadgeClass(ticket.PriorityLevel)">@ticket.Priority</strong>
                 </div>
                 <div class="kv">
                     <span>Status</span>
@@ -92,12 +124,19 @@ else
     </div>
 }
 
-@code
-{
+@code {
     [Parameter]
     public string Id { get; set; } = "";
 
-    Ticket? ticket;
+    private Ticket? ticket;
 
     protected override void OnParametersSet() => ticket = Tickets.Find(Id);
+
+    private string GetPriorityBadgeClass(PriorityLevel priority) => priority switch
+    {
+        PriorityLevel.Critical => "badge-critical",
+        PriorityLevel.High => "badge-high",
+        PriorityLevel.Medium => "badge-medium",
+        _ => "badge-low"
+    };
 }
