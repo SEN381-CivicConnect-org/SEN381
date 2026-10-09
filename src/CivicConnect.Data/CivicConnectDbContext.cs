@@ -1,5 +1,6 @@
 using CivicConnect.Data.Entities;
 using CivicConnect.Data.Interceptors;
+using CivicConnect.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CivicConnect.Data;
@@ -27,6 +28,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<SubmissionRequest> SubmissionRequests => Set<SubmissionRequest>();
     public DbSet<IncidentSubscription> IncidentSubscriptions => Set<IncidentSubscription>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
@@ -53,5 +55,51 @@ public sealed class CivicConnectDbContext : DbContext
             new[] { "NEW", "ASSIGNED", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED", "REJECTED", "MERGED" });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
+
+        // [FR-04] Fluent API configuration for ServiceRequest
+        modelBuilder.Entity<ServiceRequest>(entity =>
+        {
+            entity.ToTable("service_request");
+
+            entity.HasKey(sr => sr.Id);
+
+            entity.Property(sr => sr.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(sr => sr.Description)
+                .IsRequired();
+
+            entity.Property(sr => sr.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("Open");
+
+            // [FR-04] Nullable assigned staff ID mapped to PostgreSQL foreign key
+            entity.Property(sr => sr.AssignedStaffId)
+                .HasColumnName("assigned_staff_id")
+                .IsRequired(false);
+
+            entity.HasOne(sr => sr.AssignedStaff)
+                .WithMany()
+                .HasForeignKey(sr => sr.AssignedStaffId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(sr => sr.AssignedStaffId);
+
+            // [FR-04] LastModified timestamp mapping
+            entity.Property(sr => sr.LastModified)
+                .HasColumnName("last_modified")
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAddOrUpdate();
+
+            entity.Property(sr => sr.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(sr => sr.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAdd();
+        });
     }
 }
