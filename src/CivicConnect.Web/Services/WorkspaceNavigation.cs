@@ -14,9 +14,7 @@ public sealed class WorkspaceNavigation : IDisposable
 
     public string RequesterFilter { get; set; } = "All";
 
-    public WorkspaceNavigation(
-        NavigationManager navigation,
-        AppAuthenticationStateProvider auth)
+    public WorkspaceNavigation(NavigationManager navigation, AppAuthenticationStateProvider auth)
     {
         _navigation = navigation;
         _auth = auth;
