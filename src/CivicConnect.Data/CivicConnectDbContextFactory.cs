@@ -9,8 +9,7 @@ public sealed class CivicConnectDbContextFactory : IDesignTimeDbContextFactory<C
     public CivicConnectDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
-            ?? throw new InvalidOperationException(
-                "CONNECTION_STRING environment variable is not set. Copy .env.example to .env and fill it in.");
+            ?? "Host=localhost;Port=5432;Database=civicconnect;Username=civicconnect;Password=civicconnect_secure_dev_pass";
 
         var optionsBuilder = CivicConnectDbContext.Configure(
             new DbContextOptionsBuilder<CivicConnectDbContext>(),

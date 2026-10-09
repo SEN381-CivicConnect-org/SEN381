@@ -1,5 +1,6 @@
 using CivicConnect.Data.Entities;
 using CivicConnect.Data.Interceptors;
+using CivicConnect.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CivicConnect.Data;
@@ -20,6 +21,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<PriorityTarget> PriorityTargets => Set<PriorityTarget>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
