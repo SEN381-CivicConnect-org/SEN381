@@ -1,5 +1,78 @@
 @page "/requester/new"
-@attribute [Authorize(Roles="Requester")]
+@attribute [Authorize(Roles = "Requester")]
 @inject TicketService Tickets
-<PageTitle>New Ticket | CivicConnect</PageTitle><div class="page-head"><div><p class="eyebrow">New service request</p><h1>Create a new ticket</h1><p>Provide enough detail for the correct team to understand and resolve your request.</p></div></div><div class="card form-card"><form @onsubmit="Submit"><div class="form-grid"><div class="field full"><label>Request title *</label><input @bind="model.Title" required/></div><div class="field"><label>Category *</label><select @bind="model.Category" required><option value="">Select a category</option><option>IT Support</option><option>Facilities</option><option>HR Request</option><option>Finance</option><option>General Enquiry</option></select><small>Categories are configured by your office.</small></div><div class="field"><label>Priority *</label><select @bind="model.Priority"><option>Low</option><option>Medium</option><option>High</option></select></div><div class="field full"><label>Description *</label><textarea @bind="model.Description" required></textarea></div><div class="field full"><label>Attachment</label><div class="attachment-area"><div><strong>Deferred capability</strong><span>Attachments are present in the visual mockup but are not in the current committed scope.</span></div></div></div></div><div class="form-actions"><button type="button" class="btn btn-secondary" @onclick='()=>Nav.NavigateTo("/requester/tickets")'>Cancel</button><button class="btn btn-primary" type="submit">Submit Ticket</button></div></form></div>
-@code{Ticket model=new(){Priority="Medium"};void Submit(){var id=Tickets.Create(model);Nav.NavigateTo($"/tickets/{id}");}}
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>New Ticket | CivicConnect</PageTitle>
+<div class="page-head">
+    <div>
+        <p class="eyebrow">New service request</p>
+        <h1>Create a new ticket</h1>
+        <p>Create a demo request. Tickets remain available until the demo restarts.</p>
+    </div>
+</div>
+<div class="card form-card">
+    <form @onsubmit="Submit" @onsubmit:preventDefault="true">
+        <div class="form-grid">
+            <div class="field full">
+                <label>Request title *</label>
+                <input @bind="model.Title" required />
+            </div>
+            <div class="field">
+                <label>Category *</label>
+                <select @bind="model.Category" required>
+                    <option value="">Select a category</option>
+                    <option>IT Support</option>
+                    <option>Facilities</option>
+                    <option>HR Request</option>
+                    <option>Finance</option>
+                    <option>General Enquiry</option>
+                </select>
+                <small>Choose from the categories available in this demo.</small>
+            </div>
+            <div class="field">
+                <label>Priority *</label>
+                <select @bind="model.Priority">
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                </select>
+            </div>
+            <div class="field full">
+                <label>Description *</label>
+                <textarea @bind="model.Description" required></textarea>
+            </div>
+            <div class="field full">
+                <label>Attachment</label>
+                <div class="attachment-area">
+                    <div>
+                        <strong>Attachments unavailable</strong>
+                        <span>File uploads are not available in this demo.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                @onclick='() => Nav.NavigateTo("/requester/tickets")'>Cancel</button>
+            <button class="btn btn-primary" type="submit">Submit Ticket</button>
+        </div>
+    </form>
+</div>
+
+@code
+{
+    Ticket model = new()
+    {
+        Priority = "Medium"
+    };
+
+    async Task Submit()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        var id = Tickets.Create(model, state.User);
+        Nav.NavigateTo($"/tickets/{id}");
+    }
+}

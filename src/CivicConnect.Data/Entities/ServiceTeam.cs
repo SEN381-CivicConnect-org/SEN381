@@ -9,4 +9,5 @@ public sealed class ServiceTeam : IHasTimestamps
     public DateTimeOffset UpdatedAt { get; set; }
 
     public ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
+    public ICollection<Category> DefaultCategories { get; set; } = new List<Category>();
 }

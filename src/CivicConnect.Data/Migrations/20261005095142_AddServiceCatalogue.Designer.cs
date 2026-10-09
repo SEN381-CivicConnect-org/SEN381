@@ -3,6 +3,7 @@ using System;
 using CivicConnect.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CivicConnect.Data.Migrations
 {
     [DbContext(typeof(CivicConnectDbContext))]
-    partial class CivicConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005095142_AddServiceCatalogue")]
+    partial class AddServiceCatalogue
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,69 +75,6 @@ namespace CivicConnect.Data.Migrations
                         .HasDatabaseName("ix_app_user_email");
 
                     b.ToTable("app_user", (string)null);
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Asset", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AssetTag")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("asset_tag");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<int?>("LocationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("location_id");
-
-                    b.Property<DateOnly>("PurchaseDate")
-                        .HasColumnType("date")
-                        .HasColumnName("purchase_date");
-
-                    b.Property<string>("Supplier")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("supplier");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.HasKey("Id")
-                        .HasName("pk_asset");
-
-                    b.HasIndex("AssetTag")
-                        .IsUnique()
-                        .HasDatabaseName("ix_asset_asset_tag");
-
-                    b.HasIndex("LocationId")
-                        .HasDatabaseName("ix_asset_location_id");
-
-                    b.ToTable("asset", (string)null);
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.Category", b =>
@@ -197,117 +137,6 @@ namespace CivicConnect.Data.Migrations
                         .HasDatabaseName("ix_category_priority_target_id");
 
                     b.ToTable("category", (string)null);
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Location", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<short>("ImpactLevel")
-                        .HasColumnType("smallint")
-                        .HasColumnName("impact_level");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<short>("LocationKindId")
-                        .HasColumnType("smallint")
-                        .HasColumnName("location_kind_id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<int?>("ParentLocationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("parent_location_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.HasKey("Id")
-                        .HasName("pk_location");
-
-                    b.HasIndex("LocationKindId")
-                        .HasDatabaseName("ix_location_location_kind_id");
-
-                    b.HasIndex("ParentLocationId")
-                        .HasDatabaseName("ix_location_parent_location_id");
-
-                    b.ToTable("location", null, t =>
-                        {
-                            t.HasCheckConstraint("location_impact_level_range_ck", "impact_level BETWEEN 1 AND 4");
-
-                            t.HasCheckConstraint("location_parent_not_self_ck", "id <> parent_location_id");
-                        });
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.LocationKind", b =>
-                {
-                    b.Property<short>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_location_kind");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_location_kind_name");
-
-                    b.ToTable("location_kind", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = (short)1,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Name = "site"
-                        },
-                        new
-                        {
-                            Id = (short)2,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Name = "floor"
-                        },
-                        new
-                        {
-                            Id = (short)3,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Name = "room"
-                        });
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.PriorityTarget", b =>
@@ -608,17 +437,6 @@ namespace CivicConnect.Data.Migrations
                     b.ToTable("user_role", (string)null);
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.Asset", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.Location", "Location")
-                        .WithMany("Assets")
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_asset_locations_location_id");
-
-                    b.Navigation("Location");
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.Category", b =>
                 {
                     b.HasOne("CivicConnect.Data.Entities.ServiceTeam", "DefaultServiceTeam")
@@ -638,26 +456,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("DefaultServiceTeam");
 
                     b.Navigation("PriorityTarget");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Location", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.LocationKind", "LocationKind")
-                        .WithMany("Locations")
-                        .HasForeignKey("LocationKindId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_location_location_kinds_location_kind_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Location", "ParentLocation")
-                        .WithMany("ChildLocations")
-                        .HasForeignKey("ParentLocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_location_location_parent_location_id");
-
-                    b.Navigation("LocationKind");
-
-                    b.Navigation("ParentLocation");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.TeamMember", b =>
@@ -725,18 +523,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("TeamMemberships");
 
                     b.Navigation("UserRoles");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Location", b =>
-                {
-                    b.Navigation("Assets");
-
-                    b.Navigation("ChildLocations");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.LocationKind", b =>
-                {
-                    b.Navigation("Locations");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.PriorityTarget", b =>

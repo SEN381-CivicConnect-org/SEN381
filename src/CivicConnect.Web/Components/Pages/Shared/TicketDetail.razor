@@ -1,5 +1,111 @@
 @page "/tickets/{Id}"
 @attribute [Authorize]
 @inject TicketService Tickets
-@if(ticket is null){<h1>Ticket not found</h1>}else{<div class="page-head"><div><button class="btn btn-ghost" @onclick='()=>Nav.NavigateTo("/requester/tickets")'>Back</button><h1 style="margin-top:8px">@ticket.Title</h1><p>#@ticket.Id · @ticket.Category</p></div><span class="badge">@ticket.Status</span></div><div class="detail-grid"><div class="card detail-card"><div class="meta-grid"><div class="meta-item"><span>Requester</span><strong>@ticket.Requester</strong></div><div class="meta-item"><span>Assigned to</span><strong>@ticket.Assignee</strong></div><div class="meta-item"><span>Priority</span><strong>@ticket.Priority</strong></div><div class="meta-item"><span>Last updated</span><strong>@ticket.Updated</strong></div></div><div class="description"><strong>Description</strong><p>@ticket.Description</p></div><div class="section-head" style="margin-top:28px"><h2>Activity</h2></div><div class="timeline"><div class="timeline-item"><div class="dot"></div><div><strong>Status: @ticket.Status</strong><p>@ticket.Updated · System activity</p></div></div><div class="timeline-item"><div class="dot"></div><div><strong>Ticket created</strong><p>Request submitted by @ticket.Requester.</p></div></div></div></div><div class="side-stack"><div class="card side-card"><h3>Ticket information</h3><div class="kv"><span>Ticket ID</span><strong>@ticket.Id</strong></div><div class="kv"><span>Category</span><strong>@ticket.Category</strong></div><div class="kv"><span>Priority</span><strong>@ticket.Priority</strong></div><div class="kv"><span>Status</span><strong>@ticket.Status</strong></div></div></div></div>}
-@code{[Parameter]public string Id{get;set;}="";Ticket? ticket;protected override void OnParametersSet()=>ticket=Tickets.Find(Id);}
+@inject AuthenticationStateProvider AuthState
+@inject WorkspaceNavigation Workspace
+
+@if (ticket is null)
+{
+    <PageTitle>Ticket not found | CivicConnect</PageTitle>
+    <div class="page-head">
+        <div>
+            <h1>Ticket not found</h1>
+            <p>This ticket is unavailable. Return to your workspace to choose another ticket.</p>
+        </div>
+    </div>
+    <button
+        type="button"
+        class="btn btn-primary"
+        @onclick="Workspace.GoBack">Return to my workspace</button>
+}
+else
+{
+    <div class="page-head">
+        <div>
+            <button class="btn btn-ghost" @onclick="Workspace.GoBack">Back</button>
+            <h1 style="margin-top:8px">@ticket.Title</h1>
+            <p>#@ticket.Id · @ticket.Category</p>
+        </div>
+        <span class="badge">@ticket.Status</span>
+    </div>
+    <div class="detail-grid">
+        <div class="card detail-card">
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <span>Requester</span>
+                    <strong>@ticket.Requester</strong>
+                </div>
+                <div class="meta-item">
+                    <span>Assigned to</span>
+                    <strong>@ticket.Assignee</strong>
+                </div>
+                <div class="meta-item">
+                    <span>Priority</span>
+                    <strong>@ticket.Priority</strong>
+                </div>
+                <div class="meta-item">
+                    <span>Last updated</span>
+                    <strong>@ticket.Updated</strong>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Description</strong>
+                <p>@ticket.Description</p>
+            </div>
+            <div class="section-head" style="margin-top:28px">
+                <h2>Activity</h2>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="dot"></div>
+                    <div>
+                        <strong>Status: @ticket.Status</strong>
+                        <p>@ticket.Updated · System activity</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="dot"></div>
+                    <div>
+                        <strong>Ticket created</strong>
+                        <p>Request submitted by @ticket.Requester.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="side-stack">
+            <div class="card side-card">
+                <h3>Ticket information</h3>
+                <div class="kv">
+                    <span>Ticket ID</span>
+                    <strong>@ticket.Id</strong>
+                </div>
+                <div class="kv">
+                    <span>Category</span>
+                    <strong>@ticket.Category</strong>
+                </div>
+                <div class="kv">
+                    <span>Priority</span>
+                    <strong>@ticket.Priority</strong>
+                </div>
+                <div class="kv">
+                    <span>Status</span>
+                    <strong>@ticket.Status</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    Ticket? ticket;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        ticket = Tickets.FindVisible(Id, state.User);
+    }
+}

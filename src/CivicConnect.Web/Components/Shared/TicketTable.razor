@@ -1,2 +1,22 @@
-<div class="card table-wrap"><table><thead><tr><th>Ticket</th><th>Category</th><th>Priority</th><th>Status</th><th>Last updated</th></tr></thead><tbody>@foreach(var t in Tickets){<tr class="clickable" @onclick='()=>Nav.NavigateTo($"/tickets/{t.Id}")'><td><span class="ticket-title">@t.Title</span><span class="ticket-sub">#@t.Id</span></td><td>@t.Category</td><td><span class="badge @Priority(t.Priority)">@t.Priority</span></td><td><span class="badge @Status(t.Status)">@t.Status</span></td><td>@t.Updated</td></tr>}</tbody></table></div>
-@code{[Parameter] public IEnumerable<Ticket> Tickets {get;set;}=[]; string Status(string s)=>s switch{"Open"=>"badge-open","In Progress"=>"badge-progress","Resolved"=>"badge-resolved",_=>"badge-closed"}; string Priority(string s)=>s switch{"High"=>"badge-high","Medium"=>"badge-medium",_=>"badge-low"};}
+<div class="card table-wrap ticket-table">
+    <table role="table" aria-label="Tickets">
+        <thead role="rowgroup"><tr role="row"><th scope="col">Ticket</th><th scope="col">Category</th><th scope="col">Priority</th><th scope="col">Status</th><th scope="col">Last updated</th></tr></thead>
+        <tbody role="rowgroup">
+            @foreach (var t in Tickets)
+            {
+                <tr role="row" class="clickable" @onclick='()=>Nav.NavigateTo($"/tickets/{t.Id}")'>
+                    <td role="cell" class="ticket-name"><a class="ticket-title" href="@($"/tickets/{t.Id}")" @onclick:stopPropagation="true">@t.Title</a><span class="ticket-sub">#@t.Id</span></td>
+                    <td role="cell" class="ticket-category"><span class="mobile-cell-label" aria-hidden="true">Category</span>@t.Category</td>
+                    <td role="cell" class="ticket-priority"><span class="mobile-cell-label" aria-hidden="true">Priority</span><span class="badge @Priority(t.Priority)">@t.Priority</span></td>
+                    <td role="cell" class="ticket-status"><span class="mobile-cell-label" aria-hidden="true">Status</span><span class="badge @Status(t.Status)">@t.Status</span></td>
+                    <td role="cell" class="ticket-updated"><span class="mobile-cell-label" aria-hidden="true">Last updated</span>@t.Updated</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@code {
+    [Parameter] public IEnumerable<Ticket> Tickets { get; set; } = [];
+    string Status(string s) => s switch { "Open" => "badge-open", "In Progress" => "badge-progress", "Resolved" => "badge-resolved", _ => "badge-closed" };
+    string Priority(string s) => s switch { "High" => "badge-high", "Medium" => "badge-medium", _ => "badge-low" };
+}
