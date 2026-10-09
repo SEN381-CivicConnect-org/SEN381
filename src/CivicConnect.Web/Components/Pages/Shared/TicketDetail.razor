@@ -1,29 +1,29 @@
 @page "/tickets/{Id}"
 @attribute [Authorize]
 @inject TicketService Tickets
-@inject NavigationManager Nav
-@using CivicConnect.Domain.Enums
+@inject WorkspaceNavigation Workspace
 
 @if (ticket is null)
 {
-    <h1>Ticket not found</h1>
+    <PageTitle>Ticket not found | CivicConnect</PageTitle>
+    <div class="page-head">
+        <div>
+            <h1>Ticket not found</h1>
+            <p>This ticket is unavailable. Return to your workspace to choose another ticket.</p>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="Workspace.GoBack">Return to my workspace</button>
 }
 else
 {
-    <PageTitle>#@ticket.Id - @ticket.Title | CivicConnect</PageTitle>
-
     <div class="page-head">
         <div>
-            <button class="btn btn-ghost" @onclick='()=>Nav.NavigateTo("/requester/tickets")'>Back</button>
+            <button class="btn btn-ghost" @onclick="Workspace.GoBack">Back</button>
             <h1 style="margin-top:8px">@ticket.Title</h1>
             <p>#@ticket.Id · @ticket.Category</p>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <span class="badge @GetPriorityBadgeClass(ticket.PriorityLevel)">@ticket.Priority Priority</span>
-            <span class="badge">@ticket.Status</span>
-        </div>
+        <span class="badge">@ticket.Status</span>
     </div>
-
     <div class="detail-grid">
         <div class="card detail-card">
             <div class="meta-grid">
@@ -36,7 +36,7 @@ else
                     <strong>@ticket.Assignee</strong>
                 </div>
                 <div class="meta-item">
-                    <span>Priority (Calculated)</span>
+                    <span>Priority</span>
                     <strong>@ticket.Priority</strong>
                 </div>
                 <div class="meta-item">
@@ -71,7 +71,6 @@ else
                 <strong>Description</strong>
                 <p>@ticket.Description</p>
             </div>
-
             <div class="section-head" style="margin-top:28px">
                 <h2>Activity</h2>
             </div>

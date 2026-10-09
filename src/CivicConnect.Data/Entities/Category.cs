@@ -10,11 +10,8 @@ public sealed class Category : IHasTimestamps
     public string Description { get; set; } = null!;
     public bool IsActive { get; set; } = true;
 
-    /// <summary>Baseline category urgency level (FR-05).</summary>
-    public UrgencyLevel DefaultUrgency { get; set; } = UrgencyLevel.Medium;
-
-    public short PriorityTargetId { get; set; }
-    public PriorityTarget PriorityTarget { get; set; } = null!;
+    /// 1 = low, 2 = medium, 3 = high, 4 = critical.
+    public short UrgencyLevel { get; set; }
 
     public int DefaultServiceTeamId { get; set; }
     public ServiceTeam DefaultServiceTeam { get; set; } = null!;

@@ -4,6 +4,7 @@ using CivicConnect.Data;
 using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CivicConnect.Data.Migrations
 {
     [DbContext(typeof(CivicConnectDbContext))]
-    partial class CivicConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008101738_AddTicketIntakeAndClustering")]
+    partial class AddTicketIntakeAndClustering
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,12 +160,6 @@ namespace CivicConnect.Data.Migrations
                     b.Property<int>("DefaultServiceTeamId")
                         .HasColumnType("integer")
                         .HasColumnName("default_service_team_id");
-
-                    b.Property<int>("DefaultUrgency")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(2)
-                        .HasColumnName("default_urgency");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -881,98 +878,6 @@ namespace CivicConnect.Data.Migrations
                     b.ToTable("user_role", (string)null);
                 });
 
-            modelBuilder.Entity("CivicConnect.Domain.Entities.ServiceRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("AssignedToId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assigned_to_id");
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer")
-                        .HasColumnName("category_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<int>("Impact")
-                        .HasColumnType("integer")
-                        .HasColumnName("impact");
-
-                    b.Property<bool>("IsSupervisorOverridden")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_supervisor_overridden");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer")
-                        .HasColumnName("priority");
-
-                    b.Property<Guid?>("RequesterId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("requester_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("Open")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SupervisorOverrideReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("supervisor_override_reason");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<int>("Urgency")
-                        .HasColumnType("integer")
-                        .HasColumnName("urgency");
-
-                    b.HasKey("Id")
-                        .HasName("pk_service_request");
-
-                    b.HasIndex("AssignedToId")
-                        .HasDatabaseName("ix_service_request_assigned_to_id");
-
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_service_request_category_id");
-
-                    b.HasIndex("Priority")
-                        .HasDatabaseName("ix_service_request_priority");
-
-                    b.HasIndex("RequesterId")
-                        .HasDatabaseName("ix_service_request_requester_id");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_service_request_status");
-
-                    b.ToTable("service_request", (string)null);
             modelBuilder.Entity("CivicConnect.Data.Entities.Asset", b =>
                 {
                     b.HasOne("CivicConnect.Data.Entities.Location", "Location")
@@ -1210,33 +1115,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CivicConnect.Domain.Entities.ServiceRequest", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "AssignedTo")
-                        .WithMany()
-                        .HasForeignKey("AssignedToId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_service_request_app_user_assigned_to_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_service_request_category_category_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "Requester")
-                        .WithMany()
-                        .HasForeignKey("RequesterId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_service_request_app_user_requester_id");
-
-                    b.Navigation("AssignedTo");
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Requester");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.AppUser", b =>

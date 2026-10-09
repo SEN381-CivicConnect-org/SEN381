@@ -1,5 +1,5 @@
 @page "/requester/new"
-@attribute [Authorize(Roles="Requester")]
+@attribute [Authorize(Roles = "Requester")]
 @inject TicketService Tickets
 @inject NavigationManager Nav
 @using CivicConnect.Domain.Entities
@@ -80,9 +80,11 @@
                 </div>
             </div>
         </div>
-
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" @onclick='()=>Nav.NavigateTo("/requester/tickets")'>Cancel</button>
+            <button
+                type="button"
+                class="btn btn-secondary"
+                @onclick='() => Nav.NavigateTo("/requester/tickets")'>Cancel</button>
             <button class="btn btn-primary" type="submit">Submit Ticket</button>
         </div>
     </form>

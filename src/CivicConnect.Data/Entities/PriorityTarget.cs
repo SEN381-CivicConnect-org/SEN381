@@ -7,6 +7,4 @@ public sealed class PriorityTarget
     public string Name { get; set; } = null!;
     public int ResolveWithinMinutes { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
-
-    public ICollection<Category> Categories { get; set; } = new List<Category>();
 }

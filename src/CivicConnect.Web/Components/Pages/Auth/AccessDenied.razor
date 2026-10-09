@@ -3,6 +3,6 @@
 <div class="page-head"><div><h1>Access denied</h1><p>Your account does not have permission to open that workspace.</p></div></div>
 <div class="card form-card"><button class="btn btn-primary" @onclick="GoHome">Return to my workspace</button></div>
 @code {
-    [Inject] CivicConnect.Web.Services.DemoAuthenticationStateProvider Auth { get; set; } = default!;
+    [Inject] CivicConnect.Web.Services.AppAuthenticationStateProvider Auth { get; set; } = default!;
     void GoHome() => Nav.NavigateTo(Auth.HomeForCurrentRole());
 }

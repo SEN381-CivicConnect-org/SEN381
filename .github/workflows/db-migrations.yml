@@ -48,3 +48,6 @@ jobs:
 
       - name: Migrate up again (empty -> current schema)
         run: ./scripts/migrate-up.sh
+
+      - name: Run tests
+        run: dotnet test --no-build
