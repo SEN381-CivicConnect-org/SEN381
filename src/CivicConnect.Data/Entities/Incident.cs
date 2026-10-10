@@ -36,6 +36,14 @@ public sealed class Incident
     public long? MergedIntoId { get; set; }
     public Incident? MergedInto { get; set; }
 
+    /// Team currently holding the incident.
+    public int? AssignedTeamId { get; set; }
+    public ServiceTeam? AssignedTeam { get; set; }
+
+    /// Individual currently holding the incident.
+    public Guid? AssigneeId { get; set; }
+    public AppUser? Assignee { get; set; }
+
     /// Incremented by the database on every update, so concurrent edits can be detected.
     public int Version { get; set; }
 

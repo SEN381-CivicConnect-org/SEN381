@@ -27,6 +27,8 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<SubmissionRequest> SubmissionRequests => Set<SubmissionRequest>();
     public DbSet<IncidentSubscription> IncidentSubscriptions => Set<IncidentSubscription>();
+    public DbSet<IncidentStatusTransition> IncidentStatusTransitions => Set<IncidentStatusTransition>();
+    public DbSet<IncidentStatusHistory> IncidentStatusHistories => Set<IncidentStatusHistory>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
