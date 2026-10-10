@@ -31,6 +31,8 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<IncidentStatusHistory> IncidentStatusHistories => Set<IncidentStatusHistory>();
     public DbSet<ResolutionCode> ResolutionCodes => Set<ResolutionCode>();
     public DbSet<Resolution> Resolutions => Set<Resolution>();
+    public DbSet<IncidentNote> IncidentNotes => Set<IncidentNote>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
@@ -40,7 +42,8 @@ public sealed class CivicConnectDbContext : DbContext
         return (DbContextOptionsBuilder<CivicConnectDbContext>)optionsBuilder
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsHistoryTable("__ef_migrations_history")
-                .MapEnum<IncidentStatus>("incident_status"))
+                .MapEnum<IncidentStatus>("incident_status")
+                .MapEnum<NotificationKind>("notification_kind"))
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(new UpdatedAtInterceptor());
     }
@@ -55,6 +58,10 @@ public sealed class CivicConnectDbContext : DbContext
         modelBuilder.HasPostgresEnum(
             "incident_status",
             new[] { "NEW", "ASSIGNED", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED", "REJECTED", "MERGED" });
+
+        modelBuilder.HasPostgresEnum(
+            "notification_kind",
+            new[] { "STATUS_CHANGE", "ASSIGNMENT", "RESOLUTION" });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
     }
