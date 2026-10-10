@@ -85,7 +85,7 @@ public class ServiceRequest
         DueAt = Priority switch
         {
             PriorityLevel.Critical => CreatedAt.AddHours(4),
-            PriorityLevel.High => now.AddHours(24),
+            PriorityLevel.High => CreatedAt.AddHours(24),
             PriorityLevel.Medium => now.AddDays(3),
             PriorityLevel.Low => now.AddDays(7),
             _ => now.AddDays(3)
