@@ -79,5 +79,15 @@ public sealed class IncidentConfiguration : IEntityTypeConfiguration<Incident>
             .WithMany()
             .HasForeignKey(i => i.MergedIntoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(i => i.AssignedTeam)
+            .WithMany()
+            .HasForeignKey(i => i.AssignedTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(i => i.Assignee)
+            .WithMany()
+            .HasForeignKey(i => i.AssigneeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

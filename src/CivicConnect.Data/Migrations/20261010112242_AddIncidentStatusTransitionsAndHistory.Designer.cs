@@ -4,6 +4,7 @@ using CivicConnect.Data;
 using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CivicConnect.Data.Migrations
 {
     [DbContext(typeof(CivicConnectDbContext))]
-    partial class CivicConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261010112242_AddIncidentStatusTransitionsAndHistory")]
+    partial class AddIncidentStatusTransitionsAndHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -701,166 +704,6 @@ namespace CivicConnect.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.Resolution", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int?>("AssetId")
-                        .HasColumnType("integer")
-                        .HasColumnName("asset_id");
-
-                    b.Property<long>("IncidentId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("incident_id");
-
-                    b.Property<bool>("NeedsReplacement")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasColumnName("needs_replacement");
-
-                    b.Property<short>("ResolutionCodeId")
-                        .HasColumnType("smallint")
-                        .HasColumnName("resolution_code_id");
-
-                    b.Property<DateTimeOffset>("ResolvedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("resolved_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<Guid>("ResolvedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("resolved_by");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("summary");
-
-                    b.Property<DateTimeOffset?>("SupersededAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("superseded_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_resolution");
-
-                    b.HasIndex("AssetId")
-                        .HasDatabaseName("ix_resolution_asset_id");
-
-                    b.HasIndex("IncidentId")
-                        .IsUnique()
-                        .HasDatabaseName("resolution_incident_active_uq")
-                        .HasFilter("superseded_at IS NULL");
-
-                    b.HasIndex("ResolutionCodeId")
-                        .HasDatabaseName("ix_resolution_resolution_code_id");
-
-                    b.HasIndex("ResolvedBy")
-                        .HasDatabaseName("ix_resolution_resolved_by");
-
-                    b.HasIndex("IncidentId", "ResolvedAt")
-                        .HasDatabaseName("ix_resolution_incident_id_resolved_at");
-
-                    b.ToTable("resolution", (string)null);
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.ResolutionCode", b =>
-                {
-                    b.Property<short>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("code");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<bool>("ImpliesReplacement")
-                        .HasColumnType("boolean")
-                        .HasColumnName("implies_replacement");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_resolution_code");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ix_resolution_code_code");
-
-                    b.ToTable("resolution_code", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = (short)1,
-                            Code = "FIXED",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            ImpliesReplacement = false,
-                            IsActive = true,
-                            Name = "Fixed on site"
-                        },
-                        new
-                        {
-                            Id = (short)2,
-                            Code = "NO_FAULT_FOUND",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            ImpliesReplacement = false,
-                            IsActive = true,
-                            Name = "No fault found"
-                        },
-                        new
-                        {
-                            Id = (short)3,
-                            Code = "DUPLICATE",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            ImpliesReplacement = false,
-                            IsActive = true,
-                            Name = "Duplicate of another incident"
-                        },
-                        new
-                        {
-                            Id = (short)4,
-                            Code = "HARDWARE_REPLACED",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            ImpliesReplacement = true,
-                            IsActive = true,
-                            Name = "Faulty hardware replaced"
-                        },
-                        new
-                        {
-                            Id = (short)5,
-                            Code = "BEYOND_REPAIR",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            ImpliesReplacement = true,
-                            IsActive = true,
-                            Name = "Beyond repair, replacement required"
-                        });
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.Role", b =>
                 {
                     b.Property<short>("Id")
@@ -1376,44 +1219,6 @@ namespace CivicConnect.Data.Migrations
                     b.Navigation("LocationKind");
 
                     b.Navigation("ParentLocation");
-                });
-
-            modelBuilder.Entity("CivicConnect.Data.Entities.Resolution", b =>
-                {
-                    b.HasOne("CivicConnect.Data.Entities.Asset", "Asset")
-                        .WithMany()
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_resolution_asset_asset_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.Incident", "Incident")
-                        .WithMany()
-                        .HasForeignKey("IncidentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resolution_incident_incident_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.ResolutionCode", "ResolutionCode")
-                        .WithMany()
-                        .HasForeignKey("ResolutionCodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resolution_resolution_code_resolution_code_id");
-
-                    b.HasOne("CivicConnect.Data.Entities.AppUser", "ResolvedByUser")
-                        .WithMany()
-                        .HasForeignKey("ResolvedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resolution_app_user_resolved_by");
-
-                    b.Navigation("Asset");
-
-                    b.Navigation("Incident");
-
-                    b.Navigation("ResolutionCode");
-
-                    b.Navigation("ResolvedByUser");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.SubmissionRequest", b =>
