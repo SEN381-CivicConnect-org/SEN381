@@ -84,7 +84,7 @@ public class ServiceRequest
         var now = DateTimeOffset.UtcNow;
         DueAt = Priority switch
         {
-            PriorityLevel.Critical => now.AddHours(4),
+            PriorityLevel.Critical => CreatedAt.AddHours(4),
             PriorityLevel.High => now.AddHours(24),
             PriorityLevel.Medium => now.AddDays(3),
             PriorityLevel.Low => now.AddDays(7),
