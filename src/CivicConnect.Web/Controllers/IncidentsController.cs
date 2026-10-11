@@ -1,0 +1,370 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using CivicConnect.Data;
+using CivicConnect.Data.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace CivicConnect.Web.Controllers;
+
+/// <summary>
+/// Data Transfer Object for supervisor priority override ([FR-06]).
+/// </summary>
+public sealed class OverridePriorityRequestDto
+{
+    [Required(ErrorMessage = "New priority is required.")]
+    [Range(1, 4, ErrorMessage = "Priority must be between 1 (critical) and 4 (low).")]
+    public short NewPriority { get; set; }
+
+    [Required(ErrorMessage = "Override reason is required.")]
+    [MaxLength(300, ErrorMessage = "Override reason cannot exceed 300 characters.")]
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Data Transfer Object for changing the status of an incident ([FR-07] / [FR-13]).
+/// </summary>
+public sealed class ChangeStatusRequestDto
+{
+    public IncidentStatus? NewStatus { get; set; }
+    public IncidentStatus? Status { get; set; }
+    public string? Note { get; set; }
+    public string? ResolutionSummary { get; set; }
+    public short? ResolutionCodeId { get; set; }
+    public int? AssetId { get; set; }
+
+    public IncidentStatus TargetStatus => NewStatus ?? Status ?? IncidentStatus.New;
+}
+
+/// <summary>
+/// Data Transfer Object representing an overdue incident ([FR-12]).
+/// </summary>
+public sealed class OverdueIncidentDto
+{
+    public long Id { get; set; }
+    public string ReferenceNumber { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int CategoryId { get; set; }
+    public int LocationId { get; set; }
+    public short Priority { get; set; }
+    public short ComputedPriority { get; set; }
+    public IncidentStatus Status { get; set; }
+    public DateTimeOffset OpenedAt { get; set; }
+    public DateTimeOffset DueAt { get; set; }
+    public bool IsOverdue { get; set; }
+    public TimeSpan Overrun { get; set; }
+    public double OverrunMinutes { get; set; }
+    public bool PriorityOverridden { get; set; }
+    public string? OverrideReason { get; set; }
+    public Guid? OverrideBy { get; set; }
+    public DateTimeOffset? OverrideAt { get; set; }
+}
+
+[ApiController]
+[Route("api/incidents")]
+public sealed class IncidentsController : ControllerBase
+{
+    private readonly CivicConnectDbContext _context;
+
+    public IncidentsController(CivicConnectDbContext context)
+    {
+        _context = context;
+    }
+
+    /// <summary>
+    /// [FR-07 / FR-13] Automated Notifications on Status Change.
+    /// Validates the status transition against IncidentStatusTransitions, updates the incident status,
+    /// and appends an IncidentStatusHistory row (plus Resolution if resolving with details).
+    /// PostgreSQL triggers (incident_status_history_notify_trg / resolution_notify_trg) automatically
+    /// queue deduplicated notifications for all subscribers in incident_subscription.
+    /// </summary>
+    /// <param name="id">The unique identifier (bigint) of the incident.</param>
+    /// <param name="dto">The payload containing the new status and optional note/resolution details.</param>
+    /// <returns>HTTP 200 OK with the updated incident details.</returns>
+    [HttpPut("{id:long}/status")]
+    [HttpPatch("{id:long}/status")]
+    [Authorize]
+    public async Task<IActionResult> UpdateStatus(long id, [FromBody] ChangeStatusRequestDto dto)
+    {
+        if (dto is null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (dto.NewStatus is null && dto.Status is null)
+        {
+            return BadRequest(new { message = "A valid target status is required." });
+        }
+
+        var actorId = await ResolveAuthenticatedUserIdAsync();
+        if (actorId == Guid.Empty)
+        {
+            return Unauthorized(new { message = "User identifier claim was not found in the authentication token." });
+        }
+
+        var incident = await _context.Incidents.FirstOrDefaultAsync(i => i.Id == id);
+        if (incident is null)
+        {
+            return NotFound(new { message = $"Incident with ID '{id}' was not found." });
+        }
+
+        var previousStatus = incident.Status;
+        var targetStatus = dto.TargetStatus;
+
+        var isTransitionPermitted = await _context.IncidentStatusTransitions
+            .AsNoTracking()
+            .AnyAsync(t => t.FromStatus == previousStatus && t.ToStatus == targetStatus);
+
+        if (!isTransitionPermitted)
+        {
+            return BadRequest(new
+            {
+                message = $"Status transition from '{previousStatus}' to '{targetStatus}' is not permitted."
+            });
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        var hasHistory = await _context.IncidentStatusHistories
+            .AsNoTracking()
+            .AnyAsync(h => h.IncidentId == incident.Id);
+
+        if (!hasHistory)
+        {
+            var creationHistory = new IncidentStatusHistory
+            {
+                IncidentId = incident.Id,
+                FromStatus = null,
+                ToStatus = IncidentStatus.New,
+                ChangedBy = actorId,
+                ChangedAt = incident.OpenedAt != default ? incident.OpenedAt : now,
+                Note = "Initial incident creation.",
+                AssignedTeamId = incident.AssignedTeamId,
+                AssigneeId = incident.AssigneeId
+            };
+
+            await _context.IncidentStatusHistories.AddAsync(creationHistory);
+            await _context.SaveChangesAsync();
+        }
+
+        var statusHistory = new IncidentStatusHistory
+        {
+            IncidentId = incident.Id,
+            FromStatus = previousStatus,
+            ToStatus = targetStatus,
+            ChangedBy = actorId,
+            ChangedAt = now,
+            Note = dto.Note,
+            AssignedTeamId = incident.AssignedTeamId,
+            AssigneeId = incident.AssigneeId
+        };
+
+        await _context.IncidentStatusHistories.AddAsync(statusHistory);
+
+        incident.Status = targetStatus;
+        if (targetStatus == IncidentStatus.Resolved)
+        {
+            incident.ResolvedAt = now;
+
+            if (dto.ResolutionCodeId.HasValue || !string.IsNullOrWhiteSpace(dto.ResolutionSummary))
+            {
+                var resolution = new Resolution
+                {
+                    IncidentId = incident.Id,
+                    ResolutionCodeId = dto.ResolutionCodeId ?? 1,
+                    Summary = !string.IsNullOrWhiteSpace(dto.ResolutionSummary)
+                        ? dto.ResolutionSummary.Trim()
+                        : (!string.IsNullOrWhiteSpace(dto.Note) ? dto.Note.Trim() : "Incident resolved."),
+                    AssetId = dto.AssetId,
+                    ResolvedBy = actorId,
+                    ResolvedAt = now
+                };
+
+                await _context.Resolutions.AddAsync(resolution);
+            }
+        }
+        else if (targetStatus == IncidentStatus.Closed)
+        {
+            incident.ClosedAt = now;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Incident status updated successfully.",
+            incidentId = incident.Id,
+            referenceNumber = incident.ReferenceNumber,
+            previousStatus,
+            status = incident.Status,
+            resolvedAt = incident.ResolvedAt,
+            closedAt = incident.ClosedAt,
+            changedAt = now
+        });
+    }
+
+    /// <summary>
+    /// [FR-06] Supervisor Priority Override with Recorded Reason.
+    /// Strictly restricted to authenticated supervisors.
+    /// Preserves ComputedPriority and recalculates DueAt anchored to OpenedAt.
+    /// </summary>
+    /// <param name="id">The unique identifier of the incident.</param>
+    /// <param name="dto">The payload containing the new priority target ID (1..4) and recorded reason.</param>
+    [HttpPut("{id:long}/override-priority")]
+    [Authorize(Roles = "Supervisor,supervisor")]
+    public async Task<IActionResult> OverridePriority(long id, [FromBody] OverridePriorityRequestDto dto)
+    {
+        if (dto is null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+        {
+            return BadRequest(new { message = "An override reason must be provided." });
+        }
+
+        var trimmedReason = dto.Reason.Trim();
+        if (trimmedReason.Length > 300)
+        {
+            return BadRequest(new { message = "Override reason cannot exceed 300 characters." });
+        }
+
+        if (dto.NewPriority is < 1 or > 4)
+        {
+            return BadRequest(new { message = "Priority must be a valid priority target between 1 (critical) and 4 (low)." });
+        }
+
+        var supervisorGuid = await ResolveAuthenticatedUserIdAsync();
+        if (supervisorGuid == Guid.Empty)
+        {
+            return Unauthorized(new { message = "Valid supervisor user identifier (UUID) was not found in the authentication token." });
+        }
+
+        var priorityTarget = await _context.PriorityTargets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(pt => pt.Id == dto.NewPriority);
+
+        if (priorityTarget is null)
+        {
+            return BadRequest(new { message = $"Priority target '{dto.NewPriority}' does not exist." });
+        }
+
+        var incident = await _context.Incidents.FirstOrDefaultAsync(i => i.Id == id);
+        if (incident is null)
+        {
+            return NotFound(new { message = $"Incident with ID '{id}' was not found." });
+        }
+
+        // Keep ComputedPriority intact; apply supervisor override metadata
+        incident.Priority = dto.NewPriority;
+        incident.PriorityOverridden = true;
+        incident.OverrideReason = trimmedReason;
+        incident.OverrideBy = supervisorGuid;
+        incident.OverrideAt = DateTimeOffset.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            await _context.Entry(incident).ReloadAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "The incident was modified by another user. Please reload and try again." });
+        }
+
+        return Ok(new
+        {
+            message = "Priority overridden successfully.",
+            incidentId = incident.Id,
+            referenceNumber = incident.ReferenceNumber,
+            computedPriority = incident.ComputedPriority,
+            priority = incident.Priority,
+            priorityOverridden = incident.PriorityOverridden,
+            overrideReason = incident.OverrideReason,
+            overrideBy = incident.OverrideBy,
+            overrideAt = incident.OverrideAt,
+            openedAt = incident.OpenedAt,
+            dueAt = incident.DueAt,
+            version = incident.Version
+        });
+    }
+
+    /// <summary>
+    /// [FR-12] Overdue Request Visibility.
+    /// Retrieves all open incidents (New, Assigned, InProgress, OnHold) where DueAt has passed,
+    /// ordered by DueAt ascending, including elapsed overrun.
+    /// Restricted to supervisors and management roles.
+    /// </summary>
+    [HttpGet("overdue")]
+    [Authorize(Roles = "Supervisor,Manager,Operations Manager,Administrator,supervisor,operations manager,administrator,Management")]
+    public async Task<IActionResult> GetOverdueIncidents()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var overdueIncidents = await _context.Incidents
+            .AsNoTracking()
+            .Where(i => (i.Status == IncidentStatus.New
+                      || i.Status == IncidentStatus.Assigned
+                      || i.Status == IncidentStatus.InProgress
+                      || i.Status == IncidentStatus.OnHold)
+                     && i.DueAt < now)
+            .OrderBy(i => i.DueAt)
+            .ToListAsync();
+
+        var response = overdueIncidents
+            .Select(i => new OverdueIncidentDto
+            {
+                Id = i.Id,
+                ReferenceNumber = i.ReferenceNumber,
+                Title = i.Title,
+                Description = i.Description,
+                CategoryId = i.CategoryId,
+                LocationId = i.LocationId,
+                Priority = i.Priority,
+                ComputedPriority = i.ComputedPriority,
+                Status = i.Status,
+                OpenedAt = i.OpenedAt,
+                DueAt = i.DueAt,
+                IsOverdue = true,
+                Overrun = now - i.DueAt,
+                OverrunMinutes = (now - i.DueAt).TotalMinutes,
+                PriorityOverridden = i.PriorityOverridden,
+                OverrideReason = i.OverrideReason,
+                OverrideBy = i.OverrideBy,
+                OverrideAt = i.OverrideAt
+            })
+            .ToList();
+
+        return Ok(response);
+    }
+
+    private async Task<Guid> ResolveAuthenticatedUserIdAsync()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub")
+            ?? User.FindFirstValue("id")
+            ?? User.FindFirstValue("userId");
+
+        if (Guid.TryParse(userIdClaim, out var parsedGuid))
+        {
+            return parsedGuid;
+        }
+
+        var emailClaim = User.FindFirstValue(ClaimTypes.Email);
+        if (!string.IsNullOrWhiteSpace(emailClaim))
+        {
+            var userId = await _context.AppUsers
+                .AsNoTracking()
+                .Where(u => u.Email == emailClaim && u.IsActive)
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync();
+
+            return userId;
+        }
+
+        return Guid.Empty;
+    }
+}
