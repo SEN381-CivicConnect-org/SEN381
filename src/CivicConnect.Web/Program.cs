@@ -16,9 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
-{
-    CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString);
-});
+    CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();

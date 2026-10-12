@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject TicketService Tickets
 @inject WorkspaceNavigation Workspace
+@inject AuthenticationStateProvider Authentication
 
 @if (ticket is null)
 {
@@ -52,6 +53,17 @@ else
                 <h2>Activity</h2>
             </div>
             <div class="timeline">
+                @foreach (var note in notes)
+                {
+                    <div class="timeline-item">
+                        <div class="dot"></div>
+                        <div>
+                            <strong>@(note.IsInternal ? "Internal note" : "Public note")</strong>
+                            <p style="white-space:pre-wrap;overflow-wrap:anywhere">@note.Text</p>
+                            <p>@note.Timestamp.ToLocalTime().ToString("d MMM yyyy, HH:mm zzz") · @note.Author</p>
+                        </div>
+                    </div>
+                }
                 <div class="timeline-item">
                     <div class="dot"></div>
                     <div>
@@ -67,6 +79,29 @@ else
                     </div>
                 </div>
             </div>
+            @if (canAddNotes)
+            {
+                <form @onsubmit="AddNote" @onsubmit:preventDefault="true">
+                    <div class="field">
+                        <label for="ticket-note">Add a note</label>
+                        <textarea id="ticket-note" @bind="noteText" required></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="note-visibility">Visibility</label>
+                        <select id="note-visibility" @bind="isInternal">
+                            <option value="true">Internal (staff and management)</option>
+                            <option value="false">Public (visible to requester)</option>
+                        </select>
+                    </div>
+                    @if (noteError is not null)
+                    {
+                        <p class="validation-message" role="alert">@noteError</p>
+                    }
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add note</button>
+                    </div>
+                </form>
+            }
         </div>
         <div class="side-stack">
             <div class="card side-card">
@@ -98,6 +133,48 @@ else
     public string Id { get; set; } = "";
 
     Ticket? ticket;
+    IReadOnlyList<TicketNote> notes = Array.Empty<TicketNote>();
+    string noteText = "";
+    string? noteError;
+    bool isInternal = true;
+    bool canAddNotes;
 
-    protected override void OnParametersSet() => ticket = Tickets.Find(Id);
+    protected override async Task OnParametersSetAsync()
+    {
+        ticket = Tickets.Find(Id);
+        noteText = "";
+        noteError = null;
+        isInternal = true;
+        await LoadNotes();
+    }
+
+    async Task LoadNotes()
+    {
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        canAddNotes = user.Identity?.IsAuthenticated == true &&
+            (user.IsInRole("Staff") || user.IsInRole("Management"));
+        notes = Tickets.GetNotes(Id, user);
+    }
+
+    async Task AddNote()
+    {
+        noteError = null;
+        if (string.IsNullOrWhiteSpace(noteText))
+        {
+            noteError = "Enter a note before saving.";
+            return;
+        }
+
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        try
+        {
+            Tickets.AddNote(Id, noteText, isInternal, user);
+            noteText = "";
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException)
+        {
+            noteError = ex.Message;
+        }
+        await LoadNotes();
+    }
 }
