@@ -1,7 +1,7 @@
 
 # Stage 1: Build & Publish (Compilation)
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Optimize layer caching: copy .csproj files first
@@ -21,7 +21,7 @@ RUN dotnet publish "CivicConnect.Api.csproj" -c Release -o /app/publish /p:UseAp
 
 # Stage 2: Runtime Environment
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Install curl for container health check probe
