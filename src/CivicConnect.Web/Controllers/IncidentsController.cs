@@ -127,8 +127,8 @@ public sealed class IncidentsController : ControllerBase
             return BadRequest(new { message = "A valid target status is required." });
         }
 
-        var actorGuid = await ResolveAuthenticatedUserIdAsync();
-        if (actorGuid == Guid.Empty)
+        var actorId = await ResolveAuthenticatedUserIdAsync();
+        if (actorId == Guid.Empty)
         {
             return Unauthorized(new { message = "Authenticated user identifier claim was not found." });
         }
