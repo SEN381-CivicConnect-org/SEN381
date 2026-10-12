@@ -1,22 +1,24 @@
 
 # Stage 1: Build & Publish (Compilation)
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Optimize layer caching
 COPY ["src/CivicConnect.Web/CivicConnect.Web.csproj", "src/CivicConnect.Web/"]
+COPY ["src/CivicConnect.Data/CivicConnect.Data.csproj", "src/CivicConnect.Data/"]
 RUN dotnet restore "src/CivicConnect.Web/CivicConnect.Web.csproj"
 
-# Copy remaining frontend source
+# Copy remaining frontend and data source
 COPY src/CivicConnect.Web/ src/CivicConnect.Web/
+COPY src/CivicConnect.Data/ src/CivicConnect.Data/
 WORKDIR "/src/src/CivicConnect.Web"
 RUN dotnet publish "CivicConnect.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 
 # Stage 2: Runtime Environment (Kestrel Web Host)
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Install curl for container health check probe
