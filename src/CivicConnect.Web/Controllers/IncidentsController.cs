@@ -13,13 +13,24 @@ namespace CivicConnect.Web.Controllers;
 /// </summary>
 public sealed class OverridePriorityRequestDto
 {
+    /// <summary>
+    /// Target priority ID (1 = critical, 2 = high, 3 = medium, 4 = low) corresponding to <see cref="PriorityTarget.Id"/>.
+    /// </summary>
     [Required(ErrorMessage = "New priority is required.")]
-    [Range(1, 4, ErrorMessage = "Priority must be between 1 (critical) and 4 (low).")]
+    [Range(1, 4, ErrorMessage = "New priority must be between 1 (critical) and 4 (low).")]
     public short NewPriority { get; set; }
 
-    [Required(ErrorMessage = "Override reason is required.")]
+    /// <summary>
+    /// Mandatory recorded justification for overriding the computed priority.
+    /// </summary>
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Override reason is required.")]
     [MaxLength(300, ErrorMessage = "Override reason cannot exceed 300 characters.")]
     public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional optimistic concurrency version token of the incident being updated.
+    /// </summary>
+    public int? Version { get; set; }
 }
 
 /// <summary>
@@ -60,14 +71,17 @@ public sealed class IncidentsController : ControllerBase
 
     /// <summary>
     /// [FR-06] Supervisor Priority Override with Recorded Reason.
-    /// Strictly restricted to authenticated supervisors.
-    /// Preserves ComputedPriority and recalculates DueAt anchored to OpenedAt.
+    /// Updates the effective priority of an <see cref="Incident"/> while preserving <see cref="Incident.ComputedPriority"/>.
     /// </summary>
-    /// <param name="id">The unique identifier of the incident.</param>
-    /// <param name="dto">The payload containing the new priority target ID (1..4) and recorded reason.</param>
+    /// <param name="id">The database identifier (<c>incident.id</c>) of the incident.</param>
+    /// <param name="dto">The payload containing the new priority target ID, mandatory reason, and optional version.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPut("{id:long}/override-priority")]
-    [Authorize(Roles = "Supervisor,supervisor")]
-    public async Task<IActionResult> OverridePriority(long id, [FromBody] OverridePriorityRequestDto dto)
+    [Authorize(Roles = "Supervisor,supervisor,Staff,Management")]
+    public async Task<IActionResult> OverridePriority(
+        long id,
+        [FromBody] OverridePriorityRequestDto? dto,
+        CancellationToken cancellationToken = default)
     {
         if (dto is null)
         {
@@ -85,36 +99,47 @@ public sealed class IncidentsController : ControllerBase
             return BadRequest(new { message = "Override reason cannot exceed 300 characters." });
         }
 
-        if (dto.NewPriority is < 1 or > 4)
+        if (dto.NewPriority < 1 || dto.NewPriority > 4)
         {
-            return BadRequest(new { message = "Priority must be a valid priority target between 1 (critical) and 4 (low)." });
+            return BadRequest(new { message = "New priority must be between 1 (critical) and 4 (low)." });
         }
 
-        // Securely extract the supervisor identifier from the authenticated user's claims
-        var supervisorIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub");
+        // Extract and validate the authenticated supervisor's user ID (UUID / Guid in app_user.id)
+        var supervisorClaim = User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User?.FindFirstValue("sub");
 
-        if (string.IsNullOrWhiteSpace(supervisorIdClaim) || !Guid.TryParse(supervisorIdClaim, out var supervisorGuid))
+        if (string.IsNullOrWhiteSpace(supervisorClaim) || !Guid.TryParse(supervisorClaim, out var supervisorGuid))
         {
-            return Unauthorized(new { message = "Valid supervisor user identifier (UUID) was not found in the authentication token." });
+            return Unauthorized(new { message = "A valid supervisor user ID (UUID) claim was not found in the authentication token." });
         }
 
-        var priorityTarget = await _context.PriorityTargets
-            .AsNoTracking()
-            .FirstOrDefaultAsync(pt => pt.Id == dto.NewPriority);
+        var priorityExists = await _context.PriorityTargets
+            .AnyAsync(pt => pt.Id == dto.NewPriority, cancellationToken);
 
-        if (priorityTarget is null)
+        if (!priorityExists)
         {
             return BadRequest(new { message = $"Priority target '{dto.NewPriority}' does not exist." });
         }
 
-        var incident = await _context.Incidents.FirstOrDefaultAsync(i => i.Id == id);
+        var incident = await _context.Incidents
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
         if (incident is null)
         {
             return NotFound(new { message = $"Incident with ID '{id}' was not found." });
         }
 
-        // Keep ComputedPriority intact; apply supervisor override metadata
+        if (dto.Version.HasValue && incident.Version != dto.Version.Value)
+        {
+            return Conflict(new
+            {
+                message = "The incident was modified by another user. Please refresh and try again.",
+                incidentId = incident.Id,
+                currentVersion = incident.Version
+            });
+        }
+
+        // Preserve incident.ComputedPriority untouched so the original calculated priority stays visible.
         incident.Priority = dto.NewPriority;
         incident.PriorityOverridden = true;
         incident.OverrideReason = trimmedReason;
@@ -123,12 +148,20 @@ public sealed class IncidentsController : ControllerBase
 
         try
         {
-            await _context.SaveChangesAsync();
-            await _context.Entry(incident).ReloadAsync();
+            await _context.SaveChangesAsync(cancellationToken);
+
+            if (_context.Database.IsRelational())
+            {
+                await _context.Entry(incident).ReloadAsync(cancellationToken);
+            }
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict(new { message = "The incident was modified by another user. Please reload and try again." });
+            return Conflict(new
+            {
+                message = "The incident was modified concurrently by another user. Please reload and try again.",
+                incidentId = id
+            });
         }
 
         return Ok(new
