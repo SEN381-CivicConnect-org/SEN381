@@ -1,5 +1,6 @@
 using CivicConnect.Api.Services;
 using CivicConnect.Data;
+using CivicConnect.Data.Configuration;
 using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -55,11 +56,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-// Configure PostgreSQL Relational Persistence via CivicConnectDbContext (NFR-01: No hardcoded credentials)
-var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
-    ?? builder.Configuration["CONNECTION_STRING"]
-    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("CONNECTION_STRING environment variable is not set. Copy .env.example to .env and fill it in.");
+// Configure & Validate System Secrets from Environment Variables (NFR-01, IT-CFG-01: No hardcoded credentials)
+SystemSecretsConfiguration.LoadDotEnvIfPresent();
+var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration);
+builder.Services.AddSingleton(systemSecrets);
+var connectionString = systemSecrets.ConnectionString;
 
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 {
