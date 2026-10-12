@@ -61,6 +61,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
@@ -94,7 +95,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
     depends_on:
+      db:
+        condition: service_healthy
       backend-api:
         condition: service_started
     healthcheck:
