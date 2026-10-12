@@ -57,11 +57,11 @@ public sealed class TicketService
         },
     };
 
-    public Ticket? Find(string id) => Tickets.FirstOrDefault(x => x.Id == id);
+    public Ticket? Find(string id) => Tickets.FirstOrDefault(ticket => ticket.Id == id);
 
     public string Create(Ticket ticket)
     {
-        var number = Tickets.Select(x => int.Parse(x.Id.Split('-')[1])).DefaultIfEmpty(0).Max() + 1;
+        var number = Tickets.Select(item => int.Parse(item.Id.Split('-')[1])).DefaultIfEmpty(0).Max() + 1;
         ticket.Id = $"CC-{number:000}";
         ticket.Status = "Open";
         ticket.Updated = "Just now";
@@ -69,6 +69,48 @@ public sealed class TicketService
         Tickets.Insert(0, ticket);
         return ticket.Id;
     }
+
+    private readonly object _notesLock = new();
+    private readonly List<TicketNote> _notes = new();
+
+    private static bool CanAddNotes(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true &&
+        (user.IsInRole("Staff") || user.IsInRole("Management"));
+
+    public TicketNote AddNote(string ticketId, string text, bool isInternal, ClaimsPrincipal user)
+    {
+        if (!CanAddNotes(user))
+            throw new UnauthorizedAccessException("Only staff and management can add notes.");
+        if (string.IsNullOrWhiteSpace(text))
+            throw new ArgumentException("Enter a note before saving.", nameof(text));
+        if (Find(ticketId) is null)
+            throw new ArgumentException("Ticket not found.", nameof(ticketId));
+
+        var note = new TicketNote(ticketId, text.Trim(), DateTimeOffset.UtcNow,
+            user.Identity!.Name ?? user.FindFirstValue(ClaimTypes.Email) ?? "Staff",
+            user.FindFirstValue(ClaimTypes.Email), isInternal);
+        lock (_notesLock)
+        {
+            _notes.Add(note);
+        }
+        return note;
+    }
+
+    public IReadOnlyList<TicketNote> GetNotes(string ticketId, ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated != true)
+            return Array.Empty<TicketNote>();
+
+        // Filter before returning data to the UI; requesters never receive internal notes.
+        var includeInternal = CanAddNotes(user) && !user.IsInRole("Requester");
+        lock (_notesLock)
+        {
+            return _notes.Where(note => note.TicketId == ticketId &&
+                (includeInternal || !note.IsInternal))
+                .OrderByDescending(note => note.Timestamp).ToArray();
+        }
+    }
+
     // Minimal forward lifecycle: Open is the existing UI name for NEW.
     private static readonly Dictionary<string, string> NextStatuses = new()
     {
