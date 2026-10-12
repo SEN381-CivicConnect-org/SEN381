@@ -28,6 +28,7 @@ builder.Services.AddScoped<WorkspaceNavigation>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
+builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]

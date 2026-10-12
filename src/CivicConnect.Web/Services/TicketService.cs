@@ -7,10 +7,13 @@ public sealed class TicketService
 {
     private readonly object statusLock = new();
     private readonly IPriorityMatrix _priorityMatrix;
+    private readonly AuditService _audit;
+    private readonly object creationLock = new();
 
-    public TicketService(IPriorityMatrix? priorityMatrix = null)
+    public TicketService(IPriorityMatrix? priorityMatrix = null, AuditService? audit = null)
     {
         _priorityMatrix = priorityMatrix ?? new PriorityMatrix();
+        _audit = audit ?? new AuditService();
     }
 
     public List<Ticket> Tickets { get; } = new()
@@ -96,7 +99,22 @@ public sealed class TicketService
     /// <summary>
     /// Creates a ticket and snapshots its calculated priority via PriorityMatrix (FR-05, DD-02).
     /// </summary>
-    public string Create(Ticket t)
+    // Existing non-UI callers retain their API; the requester UI supplies its signed-in actor.
+    public string Create(Ticket t) => Create(t, "System");
+
+    public string Create(Ticket t, string actor)
+    {
+        ArgumentNullException.ThrowIfNull(t);
+        ArgumentException.ThrowIfNullOrWhiteSpace(actor);
+        lock (creationLock)
+        {
+            if (!string.IsNullOrEmpty(t.Id) && Find(t.Id) is not null)
+                throw new InvalidOperationException("This ticket has already been created.");
+            return CreateCore(t, actor);
+        }
+    }
+
+    private string CreateCore(Ticket t, string actor)
     {
         var n = Tickets
             .Select(x => int.TryParse(x.Id.Split('-').LastOrDefault(), out var parsed) ? parsed : 0)
@@ -141,6 +159,19 @@ public sealed class TicketService
             OverrideAt = t.OverrideAt
         };
 
+        // Capture workflow state, excluding free text, contact details and override reasons.
+        _audit.Record(actor, "Ticket", snapshot.Id, "CREATE", newValues: new Dictionary<string, object?>
+        {
+            ["CategoryId"] = snapshot.CategoryId,
+            ["LocationId"] = snapshot.LocationId,
+            ["ImpactLevel"] = snapshot.ImpactLevel,
+            ["UrgencyLevel"] = snapshot.UrgencyLevel,
+            ["ComputedPriorityId"] = snapshot.ComputedPriorityId,
+            ["PriorityId"] = snapshot.PriorityId,
+            ["Priority"] = snapshot.Priority,
+            ["PriorityOverridden"] = snapshot.PriorityOverridden,
+            ["Status"] = snapshot.Status
+        });
         Tickets.Insert(0, snapshot);
         return snapshot.Id;
     }
@@ -166,6 +197,8 @@ public sealed class TicketService
             user.FindFirstValue(ClaimTypes.Email), isInternal);
         lock (_notesLock)
         {
+            _audit.Record(AuditService.ActorFor(user), "Ticket", ticketId, "ADD_NOTE",
+                newValues: new Dictionary<string, object?> { ["IsInternal"] = isInternal });
             _notes.Add(note);
         }
         return note;
@@ -246,6 +279,10 @@ public sealed class TicketService
                 return new(false, $"Cannot change status from '{ticket.Status}' to '{newStatus}'. Follow the forward lifecycle: Open → Assigned → In Progress → Resolved → Closed.");
             }
 
+            // Auditing runs only after the existing authorization and lifecycle checks succeed.
+            _audit.Record(AuditService.ActorFor(actor), "Ticket", ticketId, "CHANGE_STATUS",
+                previousValues: new Dictionary<string, object?> { ["Status"] = previous },
+                newValues: new Dictionary<string, object?> { ["Status"] = next });
             var changedAt = DateTime.UtcNow;
             ticket.StatusHistory.Add(new TicketStatusHistoryEntry
             {

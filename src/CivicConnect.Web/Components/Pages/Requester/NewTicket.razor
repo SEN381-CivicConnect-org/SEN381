@@ -1,6 +1,7 @@
 @page "/requester/new"
 @attribute [Authorize(Roles = "Requester")]
 @inject TicketService Tickets
+@inject AuthenticationStateProvider Authentication
 
 <PageTitle>New Ticket | CivicConnect</PageTitle>
 
@@ -159,7 +160,7 @@
         previewPriorityId = PriorityMatrix.Calculate(selectedImpactLevel, selectedUrgencyLevel);
     }
 
-    private void Submit()
+    private async Task Submit()
     {
         var category = availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName)
             ?? new CategoryOption(4, "Facilities", PriorityMatrix.LevelMedium);
@@ -174,7 +175,13 @@
         model.ImpactLevel = location.ImpactLevel;
         model.UrgencyLevel = category.UrgencyLevel;
 
-        var id = Tickets.Create(model);
+        var state = await Authentication.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated != true || !state.User.IsInRole("Requester"))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        var id = Tickets.Create(model, AuditService.ActorFor(state.User));
         Nav.NavigateTo($"/tickets/{id}");
     }
 }
