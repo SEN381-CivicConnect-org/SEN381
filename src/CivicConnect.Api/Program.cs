@@ -8,6 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Service Registration & Dependency Injection
 
+// Add Controllers support
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
+// Authorization & Authentication
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+
+// Swagger / OpenAPI documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -70,6 +83,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("CivicConnectCorsPolicy");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // 3. Basic System Endpoints
 app.MapControllers();

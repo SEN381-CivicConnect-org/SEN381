@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CivicConnect.Data\CivicConnect.Data.csproj" />
+    <ProjectReference Include="..\..\src\CivicConnect.Api\CivicConnect.Api.csproj" />
   </ItemGroup>
 
 </Project>
