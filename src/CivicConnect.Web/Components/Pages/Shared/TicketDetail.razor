@@ -85,14 +85,14 @@ else
                 <AuthorizeView Roles="Staff">
                     <Authorized>
                         <label for="ticket-status">Change status</label>
-                        <select id="ticket-status" @bind="requestedStatus">
+                        <select id="ticket-status" @bind="requestedStatus" disabled="@(TicketService.GetNextStatus(ticket.Status) is null)">
                             <option value="">Select a status</option>
-                            <option value="ASSIGNED">Assigned (claim)</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="RESOLVED">Resolved</option>
-                            <option value="CLOSED">Closed</option>
+                            @if (TicketService.GetNextStatus(ticket.Status) is { } nextStatus)
+                            {
+                                <option value="@nextStatus">@TicketService.DisplayStatus(nextStatus)</option>
+                            }
                         </select>
-                        <button type="button" class="btn btn-primary" @onclick="ChangeStatus">Update status</button>
+                        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrEmpty(requestedStatus))" @onclick="ChangeStatus">Update status</button>
                         @if (transitionMessage is not null)
                         {
                             <p role="status">@transitionMessage</p>

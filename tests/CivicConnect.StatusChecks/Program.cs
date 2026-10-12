@@ -4,6 +4,19 @@ using CivicConnect.Web.Services;
 
 var staff = User("Technician One", "Staff");
 var statuses = new[] { "NEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED" };
+for (var index = 0; index < statuses.Length; index++)
+{
+    Assert(TicketService.GetNextStatus(statuses[index]) == (index + 1 < statuses.Length ? statuses[index + 1] : null), "UI offers only the next legal status.");
+}
+Assert(TicketService.GetNextStatus("Open") == "ASSIGNED", "Existing Open vocabulary supported by UI.");
+Assert(TicketService.GetNextStatus("unknown") is null, "Unknown status offers no transition.");
+
+var creationService = new TicketService();
+var created = new Ticket { Title = "New request", Requester = "Reporter", Assignee = "Technician", Description = "Details", Status = "Closed" };
+var createdId = creationService.Create(created);
+Assert(createdId == "CC-015" && ReferenceEquals(creationService.Find(createdId), created), "Dev creation identifiers and lookup preserved.");
+Assert(ReferenceEquals(creationService.Tickets[0], created) && created.Status == "Open" && created.Updated == "Just now" && !string.IsNullOrWhiteSpace(created.Created), "Dev creation defaults and ordering preserved.");
+Assert(created.Requester == "Reporter" && created.Assignee == "Technician" && created.Description == "Details" && created.StatusHistory.Count == 0, "Dev ticket fields preserved without fabricated history.");
 for (var from = 0; from < statuses.Length; from++)
 {
     for (var to = 0; to < statuses.Length; to++)

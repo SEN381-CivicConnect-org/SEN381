@@ -98,6 +98,12 @@ public sealed class TicketService
         _ => status
     };
 
+    public static string? GetNextStatus(string? status)
+    {
+        var current = NormalizeStatus(status);
+        return current is not null && NextStatuses.TryGetValue(current, out var next) ? next : null;
+    }
+
     public StatusTransitionResult ChangeStatus(string ticketId, string? newStatus, ClaimsPrincipal actor)
     {
         if (actor.Identity?.IsAuthenticated != true || !actor.IsInRole("Staff") ||

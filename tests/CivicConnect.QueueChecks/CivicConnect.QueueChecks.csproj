@@ -13,6 +13,9 @@
         Include="../../src/CivicConnect.Web/Models/Ticket.cs"
         Link="Models/Ticket.cs" />
     <Compile
+        Include="../../src/CivicConnect.Web/Models/TicketStatusHistoryEntry.cs"
+        Link="Models/TicketStatusHistoryEntry.cs" />
+    <Compile
         Include="../../src/CivicConnect.Web/Services/TicketService.cs"
         Link="Services/TicketService.cs" />
     <Compile
