@@ -34,7 +34,7 @@ public sealed class OverridePriorityRequestDto
 }
 
 /// <summary>
-/// Data Transfer Object for changing the status of an incident ([FR-07] / [FR-13]).
+/// Data Transfer Object for changing the status of an incident (FR-07 / FR-13).
 /// </summary>
 public sealed class ChangeStatusRequestDto
 {
@@ -49,7 +49,7 @@ public sealed class ChangeStatusRequestDto
 }
 
 /// <summary>
-/// Data Transfer Object representing an overdue incident ([FR-12]).
+/// Data Transfer Object representing an overdue incident (FR-12).
 /// </summary>
 public sealed class OverdueIncidentDto
 {
@@ -73,6 +73,30 @@ public sealed class OverdueIncidentDto
     public DateTimeOffset? OverrideAt { get; set; }
 }
 
+/// <summary>
+/// Data Transfer Object representing an active incident in the role-specific staff queue (FR-14).
+/// </summary>
+public sealed class TeamQueueItemDto
+{
+    public long Id { get; set; }
+    public string ReferenceNumber { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public short Priority { get; set; }
+    public short ComputedPriority { get; set; }
+    public IncidentStatus Status { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public string? AssignedTeam { get; set; }
+    public Guid? AssigneeId { get; set; }
+    public DateTimeOffset OpenedAt { get; set; }
+    public DateTimeOffset DueAt { get; set; }
+    public bool IsOverdue { get; set; }
+    public bool PriorityOverridden { get; set; }
+    public string? OverrideReason { get; set; }
+    public Guid? OverrideBy { get; set; }
+    public DateTimeOffset? OverrideAt { get; set; }
+}
+
 [ApiController]
 [Route("api/incidents")]
 public sealed class IncidentsController : ControllerBase
@@ -85,15 +109,9 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// [FR-07 / FR-13] Automated Notifications on Status Change.
-    /// Validates the status transition against IncidentStatusTransitions, updates the incident status,
-    /// and appends an IncidentStatusHistory row (plus Resolution if resolving with details).
-    /// PostgreSQL triggers (incident_status_history_notify_trg / resolution_notify_trg) automatically
-    /// queue deduplicated notifications for all subscribers in incident_subscription.
+    /// [FR-07 / FR-13] Updates the status of an incident and records an IncidentStatusHistory row.
+    /// The PostgreSQL trigger incident_status_history_notify_trg automatically fans out notifications to subscribers.
     /// </summary>
-    /// <param name="id">The unique identifier (bigint) of the incident.</param>
-    /// <param name="dto">The payload containing the new status and optional note/resolution details.</param>
-    /// <returns>HTTP 200 OK with the updated incident details.</returns>
     [HttpPut("{id:long}/status")]
     [HttpPatch("{id:long}/status")]
     [Authorize]
@@ -109,13 +127,13 @@ public sealed class IncidentsController : ControllerBase
             return BadRequest(new { message = "A valid target status is required." });
         }
 
-        var actorId = await ResolveAuthenticatedUserIdAsync();
-        if (actorId == Guid.Empty)
+        var actorGuid = await ResolveAuthenticatedUserIdAsync();
+        if (actorGuid == Guid.Empty)
         {
-            return Unauthorized(new { message = "User identifier claim was not found in the authentication token." });
+            return Unauthorized(new { message = "Authenticated user identifier claim was not found." });
         }
 
-        var incident = await _context.Incidents.FirstOrDefaultAsync(i => i.Id == id);
+        var incident = await _context.Incidents.FindAsync(id);
         if (incident is null)
         {
             return NotFound(new { message = $"Incident with ID '{id}' was not found." });
@@ -329,10 +347,9 @@ public sealed class IncidentsController : ControllerBase
     }
 
     /// <summary>
-    /// [FR-12] Overdue Request Visibility.
-    /// Retrieves all open incidents (New, Assigned, InProgress, OnHold) where DueAt has passed,
-    /// ordered by DueAt ascending, including elapsed overrun.
-    /// Restricted to supervisors and management roles.
+    /// [FR-12] Overdue Incident Visibility.
+    /// Retrieves all active incidents where the SLA due date has passed.
+    /// Strictly restricted to supervisors and managers.
     /// </summary>
     [HttpGet("overdue")]
     [Authorize(Roles = "Supervisor,Manager,Operations Manager,Administrator,supervisor,operations manager,administrator,Management")]
@@ -375,6 +392,104 @@ public sealed class IncidentsController : ControllerBase
             .ToList();
 
         return Ok(response);
+    }
+
+    /// <summary>
+    /// [FR-14] Role-Specific Staff Incident Queue.
+    /// Retrieves active incidents assigned to the authenticated staff member's team(s) or directly to the staff member.
+    /// Restricted to staff and supervisors; identity and team assignment are extracted server-side from claims and active team_member rows.
+    /// </summary>
+    [HttpGet("team-queue")]
+    [Authorize(Roles = "Staff,Supervisor,technician,supervisor")]
+    public async Task<IActionResult> GetTeamQueue()
+    {
+        var staffUserId = await ResolveAuthenticatedUserIdAsync();
+        var staffTeamClaim = (User.FindFirstValue("Team") ?? User.FindFirstValue("team"))?.Trim();
+
+        var teamIdSet = new HashSet<int>();
+
+        if (staffUserId != Guid.Empty)
+        {
+            var memberTeamIds = await _context.TeamMembers
+                .AsNoTracking()
+                .Where(tm => tm.UserId == staffUserId && tm.LeftAt == null)
+                .Select(tm => tm.ServiceTeamId)
+                .ToListAsync();
+
+            foreach (var teamId in memberTeamIds)
+            {
+                teamIdSet.Add(teamId);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(staffTeamClaim))
+        {
+            var hasNumericId = int.TryParse(staffTeamClaim, out var parsedTeamId);
+            var claimTeamIds = await _context.ServiceTeams
+                .AsNoTracking()
+                .Where(st => st.Name == staffTeamClaim || (hasNumericId && st.Id == parsedTeamId))
+                .Select(st => st.Id)
+                .ToListAsync();
+
+            foreach (var teamId in claimTeamIds)
+            {
+                teamIdSet.Add(teamId);
+            }
+        }
+
+        var hasDirectAssignment = staffUserId != Guid.Empty
+            && await _context.Incidents
+                .AsNoTracking()
+                .AnyAsync(i => i.AssigneeId == staffUserId
+                            && (i.Status == IncidentStatus.New
+                                || i.Status == IncidentStatus.Assigned
+                                || i.Status == IncidentStatus.InProgress
+                                || i.Status == IncidentStatus.OnHold));
+
+        if (teamIdSet.Count == 0 && !hasDirectAssignment)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new { message = "User is not assigned to an active service team or direct incident assignment." });
+        }
+
+        var teamIds = teamIdSet.ToArray();
+        var now = DateTimeOffset.UtcNow;
+
+        var teamQueue = await _context.Incidents
+            .AsNoTracking()
+            .Where(i => (i.Status == IncidentStatus.New
+                      || i.Status == IncidentStatus.Assigned
+                      || i.Status == IncidentStatus.InProgress
+                      || i.Status == IncidentStatus.OnHold)
+                     && ((i.AssignedTeamId.HasValue && teamIds.Contains(i.AssignedTeamId.Value))
+                         || (!i.AssignedTeamId.HasValue && teamIds.Contains(i.Category.DefaultServiceTeamId))
+                         || (staffUserId != Guid.Empty && i.AssigneeId == staffUserId)))
+            .OrderBy(i => i.Priority)
+            .ThenBy(i => i.OpenedAt)
+            .Select(i => new TeamQueueItemDto
+            {
+                Id = i.Id,
+                ReferenceNumber = i.ReferenceNumber,
+                Title = i.Title,
+                Description = i.Description,
+                Priority = i.Priority,
+                ComputedPriority = i.ComputedPriority,
+                Status = i.Status,
+                CategoryName = i.Category.Name,
+                AssignedTeam = i.AssignedTeam != null ? i.AssignedTeam.Name : i.Category.DefaultServiceTeam.Name,
+                AssigneeId = i.AssigneeId,
+                OpenedAt = i.OpenedAt,
+                DueAt = i.DueAt,
+                IsOverdue = i.DueAt < now,
+                PriorityOverridden = i.PriorityOverridden,
+                OverrideReason = i.OverrideReason,
+                OverrideBy = i.OverrideBy,
+                OverrideAt = i.OverrideAt
+            })
+            .ToListAsync();
+
+        return Ok(teamQueue);
     }
 
     private async Task<Guid> ResolveAuthenticatedUserIdAsync()
