@@ -1,4 +1,5 @@
 @page "/staff/queue"
+@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize(Roles = "Staff")]
 @inject TicketService Tickets
 
@@ -75,11 +76,29 @@ else
     private string category = "";
     private string status = "";
     private string sort = "date-newest";
+    private string? staffTeam;
+    private string? staffName;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthState is not null)
+        {
+            var state = await AuthState;
+            var user = state.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                staffTeam = user.FindFirst("Team")?.Value;
+                staffName = user.Identity.Name;
+            }
+        }
+    }
 
     // Apply FR-15 only after the existing Staff Queue visibility restriction.
     private IEnumerable<Ticket> ActiveTickets =>
-        Tickets.Tickets
-            .Where(ticket => ticket.Status != "Resolved" && ticket.Status != "Closed");
+        Tickets.GetStaffQueue(staffTeam, staffName);
 
     private IEnumerable<string> AvailableCategories =>
         ActiveTickets
@@ -101,3 +120,4 @@ else
         sort = "date-newest";
     }
 }
+

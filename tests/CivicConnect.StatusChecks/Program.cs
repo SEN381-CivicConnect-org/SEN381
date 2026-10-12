@@ -14,9 +14,26 @@ Assert(TicketService.GetNextStatus("unknown") is null, "Unknown status offers no
 var creationService = new TicketService();
 var created = new Ticket { Title = "New request", Requester = "Reporter", Assignee = "Technician", Description = "Details", Status = "Closed" };
 var createdId = creationService.Create(created);
-Assert(createdId == "CC-015" && ReferenceEquals(creationService.Find(createdId), created), "Dev creation identifiers and lookup preserved.");
-Assert(ReferenceEquals(creationService.Tickets[0], created) && created.Status == "Open" && created.Updated == "Just now" && !string.IsNullOrWhiteSpace(created.Created), "Dev creation defaults and ordering preserved.");
-Assert(created.Requester == "Reporter" && created.Assignee == "Technician" && created.Description == "Details" && created.StatusHistory.Count == 0, "Dev ticket fields preserved without fabricated history.");
+var stored = creationService.Find(createdId)!;
+Assert(createdId == "CC-015" && !ReferenceEquals(stored, created), "Dev creation identifiers and isolated snapshot preserved.");
+Assert(ReferenceEquals(creationService.Tickets[0], stored) && stored.Status == "Open" && stored.Updated == "Just now" && !string.IsNullOrWhiteSpace(stored.Created), "Dev creation defaults and ordering preserved.");
+Assert(stored.Requester == "Reporter" && stored.Assignee == "Technician" && stored.Description == "Details" && stored.StatusHistory.Count == 0, "Dev ticket fields preserved without fabricated history.");
+var originalPriority = (stored.ComputedPriorityId, stored.PriorityId, stored.Priority);
+var internalNote = creationService.AddNote(createdId, "  Investigating  ", true, staff);
+var publicNote = creationService.AddNote(createdId, "Assigned to a technician", false, staff);
+Assert(stored.StatusHistory.Count == 0 && stored.Status == "Open", "Notes do not change status or append transition history.");
+foreach (var target in statuses.Skip(1))
+{
+    Assert(creationService.ChangeStatus(createdId, target, staff).Success, "Created ticket follows the complete forward lifecycle.");
+}
+Assert(stored.Status == "Closed" && stored.StatusHistory.Count == 4, "Full lifecycle records four successful transitions.");
+Assert((stored.ComputedPriorityId, stored.PriorityId, stored.Priority) == originalPriority, "Status changes preserve dev priority snapshot.");
+Assert(creationService.GetNotes(createdId, staff).SequenceEqual(new[] { publicNote, internalNote }), "Status changes preserve dev notes and ordering.");
+Assert(creationService.GetNotes(createdId, User("Reporter", "Requester")).SequenceEqual(new[] { publicNote }), "Status changes preserve internal-note visibility rules.");
+Assert(internalNote.Text == "Investigating" && internalNote.Timestamp.Offset == TimeSpan.Zero, "Dev note trimming and UTC timestamps preserved.");
+Assert(!creationService.ChangeStatus(createdId, "NEW", staff).Success && stored.StatusHistory.Count == 4, "Backward transition preserves recorded history.");
+creationService.AddNote(createdId, "Resolution confirmed", false, staff);
+Assert(stored.Status == "Closed" && stored.StatusHistory.Count == 4 && creationService.GetNotes(createdId, staff).Count == 3, "Notes still work after the complete lifecycle without changing history.");
 for (var from = 0; from < statuses.Length; from++)
 {
     for (var to = 0; to < statuses.Length; to++)
