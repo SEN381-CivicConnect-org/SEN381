@@ -59,6 +59,7 @@ public static class TicketQueueFilter
 
     private static int PriorityRank(string priority) => priority switch
     {
+        "Critical" => 4,
         "High" => 3,
         "Medium" => 2,
         "Low" => 1,

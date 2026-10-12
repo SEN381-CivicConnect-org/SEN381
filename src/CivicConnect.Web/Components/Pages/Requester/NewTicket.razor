@@ -3,44 +3,71 @@
 @inject TicketService Tickets
 
 <PageTitle>New Ticket | CivicConnect</PageTitle>
+
 <div class="page-head">
     <div>
         <p class="eyebrow">New service request</p>
         <h1>Create a new ticket</h1>
-        <p>Create a demo request. Tickets remain available until the demo restarts.</p>
+        <p>Provide enough detail for the correct team to understand and resolve your request.</p>
     </div>
 </div>
+
 <div class="card form-card">
     <form @onsubmit="Submit" @onsubmit:preventDefault="true">
         <div class="form-grid">
             <div class="field full">
-                <label>Request title *</label>
-                <input @bind="model.Title" required />
+                <label for="ticket-title">Request title *</label>
+                <input id="ticket-title" @bind="model.Title" placeholder="e.g. Electrical sparks in ground floor hallway" required />
             </div>
+
             <div class="field">
-                <label>Category *</label>
-                <select @bind="model.Category" required>
+                <label for="ticket-category">Category *</label>
+                <select id="ticket-category" @bind="SelectedCategoryName" required>
                     <option value="">Select a category</option>
-                    <option>IT Support</option>
-                    <option>Facilities</option>
-                    <option>HR Request</option>
-                    <option>Finance</option>
-                    <option>General Enquiry</option>
+                    @foreach (var cat in availableCategories)
+                    {
+                        <option value="@cat.Name">@cat.Name (@PriorityMatrix.GetLevelName(cat.UrgencyLevel) Urgency)</option>
+                    }
                 </select>
-                <small>Choose from the categories available in this demo.</small>
+                <small>Categories and default urgency levels (1–4) are managed via PostgreSQL.</small>
             </div>
+
             <div class="field">
-                <label>Priority *</label>
-                <select @bind="model.Priority">
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
+                <label for="ticket-location">Location *</label>
+                <select id="ticket-location" @bind="SelectedLocationName" required>
+                    @foreach (var loc in availableLocations)
+                    {
+                        <option value="@loc.Name">@loc.Name (@PriorityMatrix.GetLevelName(loc.ImpactLevel) Impact)</option>
+                    }
                 </select>
+                <small>Select the physical location affected by this request.</small>
             </div>
+
+            <!-- FR-05 Calculated Priority Preview (PriorityMatrix / DD-02 / STK-CFL-01) -->
+            <div class="field full" style="background: var(--surface-subtle, #f8fafc); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 13.5px; color: var(--text);">
+                            Calculated Priority:
+                            <span class="badge @PriorityMatrix.GetPriorityBadgeClass(previewPriorityId)" style="margin-left: 8px; font-size: 12px; padding: 4px 10px;">
+                                @PriorityMatrix.GetPriorityName(previewPriorityId) Priority
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                            Priority Matrix (FR-05): Category Urgency <strong>@PriorityMatrix.GetLevelName(selectedUrgencyLevel) (@selectedUrgencyLevel)</strong> + Location Impact <strong>@PriorityMatrix.GetLevelName(selectedImpactLevel) (@selectedImpactLevel)</strong> → PriorityTarget <strong>#@previewPriorityId (@PriorityMatrix.GetPriorityName(previewPriorityId))</strong>.
+                        </div>
+                    </div>
+                    <span style="font-size: 11px; padding: 3px 8px; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-weight: 600;">
+                        STK-CFL-01 Enforced
+                    </span>
+                </div>
+            </div>
+
             <div class="field full">
-                <label>Description *</label>
-                <textarea @bind="model.Description" required></textarea>
+                <label for="ticket-desc">Description *</label>
+                <textarea id="ticket-desc" @bind="model.Description" rows="4" placeholder="Describe the problem, specific location, and any immediate hazards." required></textarea>
             </div>
+
             <div class="field full">
                 <label>Attachment</label>
                 <div class="attachment-area">
@@ -51,6 +78,7 @@
                 </div>
             </div>
         </div>
+
         <div class="form-actions">
             <button
                 type="button"
@@ -63,13 +91,89 @@
 
 @code
 {
-    Ticket model = new()
+    private sealed record CategoryOption(int Id, string Name, short UrgencyLevel);
+    private sealed record LocationOption(int Id, string Name, short ImpactLevel);
+
+    private readonly List<CategoryOption> availableCategories = new()
     {
-        Priority = "Medium"
+        new(1, "Electrical", PriorityMatrix.LevelCritical),
+        new(2, "Safety Incident", PriorityMatrix.LevelCritical),
+        new(3, "IT Support", PriorityMatrix.LevelHigh),
+        new(4, "Facilities", PriorityMatrix.LevelMedium),
+        new(5, "HR Request", PriorityMatrix.LevelLow),
+        new(6, "Finance", PriorityMatrix.LevelLow),
+        new(7, "General Enquiry", PriorityMatrix.LevelLow)
     };
 
-    void Submit()
+    private readonly List<LocationOption> availableLocations = new()
     {
+        new(1, "Main Campus / Server Room", PriorityMatrix.LevelCritical),
+        new(2, "Building A / Main Lobby", PriorityMatrix.LevelHigh),
+        new(3, "Ground Floor", PriorityMatrix.LevelMedium),
+        new(4, "Single Workstation / Office Room", PriorityMatrix.LevelLow)
+    };
+
+    private Ticket model = new();
+
+    private string selectedCategoryName = "Facilities";
+    private string SelectedCategoryName
+    {
+        get => selectedCategoryName;
+        set
+        {
+            selectedCategoryName = value;
+            Recalculate();
+        }
+    }
+
+    private string selectedLocationName = "Ground Floor";
+    private string SelectedLocationName
+    {
+        get => selectedLocationName;
+        set
+        {
+            selectedLocationName = value;
+            Recalculate();
+        }
+    }
+
+    private short selectedUrgencyLevel = PriorityMatrix.LevelMedium;
+    private short selectedImpactLevel = PriorityMatrix.LevelMedium;
+    private short previewPriorityId = PriorityMatrix.PriorityMedium;
+
+    protected override void OnInitialized()
+    {
+        Recalculate();
+    }
+
+    private void Recalculate()
+    {
+        var category = availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName)
+            ?? new CategoryOption(4, "Facilities", PriorityMatrix.LevelMedium);
+
+        var location = availableLocations.FirstOrDefault(l => l.Name == selectedLocationName)
+            ?? new LocationOption(3, "Ground Floor", PriorityMatrix.LevelMedium);
+
+        selectedUrgencyLevel = category.UrgencyLevel;
+        selectedImpactLevel = location.ImpactLevel;
+        previewPriorityId = PriorityMatrix.Calculate(selectedImpactLevel, selectedUrgencyLevel);
+    }
+
+    private void Submit()
+    {
+        var category = availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName)
+            ?? new CategoryOption(4, "Facilities", PriorityMatrix.LevelMedium);
+
+        var location = availableLocations.FirstOrDefault(l => l.Name == selectedLocationName)
+            ?? new LocationOption(3, "Ground Floor", PriorityMatrix.LevelMedium);
+
+        model.CategoryId = category.Id;
+        model.Category = category.Name;
+        model.LocationId = location.Id;
+        model.Location = location.Name;
+        model.ImpactLevel = location.ImpactLevel;
+        model.UrgencyLevel = category.UrgencyLevel;
+
         var id = Tickets.Create(model);
         Nav.NavigateTo($"/tickets/{id}");
     }

@@ -22,6 +22,7 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();
+builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddSingleton<TicketService>();
 
 var app = builder.Build();
