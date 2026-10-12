@@ -19,6 +19,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Configure CORS for web client access
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CivicConnectCorsPolicy", policy =>
@@ -34,6 +35,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JSON serializer options
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -70,7 +72,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("CivicConnectCorsPolicy");
 
 // 3. Basic System Endpoints
-
+app.MapControllers();
 app.MapGet("/", () => Results.Ok(new
 {
     platform = "CivicConnect API",
@@ -83,6 +85,7 @@ app.MapGet("/", () => Results.Ok(new
 .WithName("RootInfo")
 .WithTags("System");
 
+// Health Probe for System Readiness
 app.MapGet("/health", async (CivicConnectDbContext dbContext) =>
 {
     var checks = new Dictionary<string, string>();
@@ -178,6 +181,7 @@ app.MapGet("/api/priority-targets", async (CivicConnectDbContext dbContext) =>
 .WithName("GetPriorityTargets")
 .WithTags("ReferenceData");
 
+// Get active service teams
 app.MapGet("/api/service-teams", async (CivicConnectDbContext dbContext) =>
 {
     var teams = await dbContext.ServiceTeams

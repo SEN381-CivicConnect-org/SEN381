@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CivicConnect.Web.Models;
 
 namespace CivicConnect.Web.Services;
@@ -83,6 +84,14 @@ public sealed class TicketService
 
     public Ticket? Find(string id) => Tickets.FirstOrDefault(x => x.Id == id);
 
+    public IEnumerable<Ticket> GetStaffQueue(string? teamName = null, string? staffName = null) =>
+        Tickets.Where(ticket =>
+            ticket.Status != "Resolved" &&
+            ticket.Status != "Closed" &&
+            (string.IsNullOrWhiteSpace(teamName) && string.IsNullOrWhiteSpace(staffName)
+                || (!string.IsNullOrWhiteSpace(teamName) && string.Equals(ticket.Category, teamName, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(staffName) && string.Equals(ticket.Assignee, staffName, StringComparison.OrdinalIgnoreCase))));
+
     /// <summary>
     /// Creates a ticket and snapshots its calculated priority via PriorityMatrix (FR-05, DD-02).
     /// </summary>
@@ -133,5 +142,46 @@ public sealed class TicketService
 
         Tickets.Insert(0, snapshot);
         return snapshot.Id;
+    }
+
+    private readonly object _notesLock = new();
+    private readonly List<TicketNote> _notes = new();
+
+    private static bool CanAddNotes(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true &&
+        (user.IsInRole("Staff") || user.IsInRole("Management"));
+
+    public TicketNote AddNote(string ticketId, string text, bool isInternal, ClaimsPrincipal user)
+    {
+        if (!CanAddNotes(user))
+            throw new UnauthorizedAccessException("Only staff and management can add notes.");
+        if (string.IsNullOrWhiteSpace(text))
+            throw new ArgumentException("Enter a note before saving.", nameof(text));
+        if (Find(ticketId) is null)
+            throw new ArgumentException("Ticket not found.", nameof(ticketId));
+
+        var note = new TicketNote(ticketId, text.Trim(), DateTimeOffset.UtcNow,
+            user.Identity!.Name ?? user.FindFirstValue(ClaimTypes.Email) ?? "Staff",
+            user.FindFirstValue(ClaimTypes.Email), isInternal);
+        lock (_notesLock)
+        {
+            _notes.Add(note);
+        }
+        return note;
+    }
+
+    public IReadOnlyList<TicketNote> GetNotes(string ticketId, ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated != true)
+            return Array.Empty<TicketNote>();
+
+        // Filter before returning data to the UI; requesters never receive internal notes.
+        var includeInternal = CanAddNotes(user) && !user.IsInRole("Requester");
+        lock (_notesLock)
+        {
+            return _notes.Where(note => note.TicketId == ticketId &&
+                (includeInternal || !note.IsInternal))
+                .OrderByDescending(note => note.Timestamp).ToArray();
+        }
     }
 }
