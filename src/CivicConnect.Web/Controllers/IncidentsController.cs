@@ -127,8 +127,8 @@ public sealed class IncidentsController : ControllerBase
             return BadRequest(new { message = "A valid target status is required." });
         }
 
-        var actorGuid = await ResolveAuthenticatedUserIdAsync();
-        if (actorGuid == Guid.Empty)
+        var actorId = await ResolveAuthenticatedUserIdAsync();
+        if (actorId == Guid.Empty)
         {
             return Unauthorized(new { message = "Authenticated user identifier claim was not found." });
         }
@@ -155,15 +155,27 @@ public sealed class IncidentsController : ControllerBase
         }
 
         var now = DateTimeOffset.UtcNow;
-        incident.Status = targetStatus;
 
-        if (targetStatus == IncidentStatus.Resolved)
+        var hasHistory = await _context.IncidentStatusHistories
+            .AsNoTracking()
+            .AnyAsync(h => h.IncidentId == incident.Id);
+
+        if (!hasHistory)
         {
-            incident.ResolvedAt = now;
-        }
-        else if (targetStatus == IncidentStatus.Closed)
-        {
-            incident.ClosedAt = now;
+            var creationHistory = new IncidentStatusHistory
+            {
+                IncidentId = incident.Id,
+                FromStatus = null,
+                ToStatus = IncidentStatus.New,
+                ChangedBy = actorId,
+                ChangedAt = incident.OpenedAt != default ? incident.OpenedAt : now,
+                Note = "Initial incident creation.",
+                AssignedTeamId = incident.AssignedTeamId,
+                AssigneeId = incident.AssigneeId
+            };
+
+            await _context.IncidentStatusHistories.AddAsync(creationHistory);
+            await _context.SaveChangesAsync();
         }
 
         var statusHistory = new IncidentStatusHistory
@@ -171,7 +183,7 @@ public sealed class IncidentsController : ControllerBase
             IncidentId = incident.Id,
             FromStatus = previousStatus,
             ToStatus = targetStatus,
-            ChangedBy = actorGuid,
+            ChangedBy = actorId,
             ChangedAt = now,
             Note = dto.Note,
             AssignedTeamId = incident.AssignedTeamId,
@@ -179,6 +191,34 @@ public sealed class IncidentsController : ControllerBase
         };
 
         await _context.IncidentStatusHistories.AddAsync(statusHistory);
+
+        incident.Status = targetStatus;
+        if (targetStatus == IncidentStatus.Resolved)
+        {
+            incident.ResolvedAt = now;
+
+            if (dto.ResolutionCodeId.HasValue || !string.IsNullOrWhiteSpace(dto.ResolutionSummary))
+            {
+                var resolution = new Resolution
+                {
+                    IncidentId = incident.Id,
+                    ResolutionCodeId = dto.ResolutionCodeId ?? 1,
+                    Summary = !string.IsNullOrWhiteSpace(dto.ResolutionSummary)
+                        ? dto.ResolutionSummary.Trim()
+                        : (!string.IsNullOrWhiteSpace(dto.Note) ? dto.Note.Trim() : "Incident resolved."),
+                    AssetId = dto.AssetId,
+                    ResolvedBy = actorId,
+                    ResolvedAt = now
+                };
+
+                await _context.Resolutions.AddAsync(resolution);
+            }
+        }
+        else if (targetStatus == IncidentStatus.Closed)
+        {
+            incident.ClosedAt = now;
+        }
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -188,6 +228,8 @@ public sealed class IncidentsController : ControllerBase
             referenceNumber = incident.ReferenceNumber,
             previousStatus,
             status = incident.Status,
+            resolvedAt = incident.ResolvedAt,
+            closedAt = incident.ClosedAt,
             changedAt = now
         });
     }
