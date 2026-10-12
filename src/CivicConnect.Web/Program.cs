@@ -23,6 +23,8 @@ builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
+builder.Services.AddScoped<IResolutionService, ResolutionService>();
+builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddSingleton<TicketService>();
 
 var app = builder.Build();
@@ -48,4 +50,3 @@ app.UseAntiforgery();
 app.MapControllers();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();
-

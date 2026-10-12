@@ -67,6 +67,8 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 });
 
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
+builder.Services.AddScoped<IResolutionService, ResolutionService>();
+builder.Services.AddScoped<ResolutionService>();
 
 var app = builder.Build();
 
@@ -534,6 +536,8 @@ app.MapGet("/api/requests", async (
 .WithTags("Incidents");
 
 app.Run();
+
+public partial class Program;
 
 public record CalculatePriorityRequest(
     int? CategoryId = null,
