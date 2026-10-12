@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Compile the actual Queue sources independently of database/authentication startup. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile
+        Include="../../src/CivicConnect.Web/Models/Ticket.cs"
+        Link="Models/Ticket.cs" />
+    <Compile
+        Include="../../src/CivicConnect.Web/Services/TicketService.cs"
+        Link="Services/TicketService.cs" />
+    <Compile
+        Include="../../src/CivicConnect.Web/Services/TicketQueueFilter.cs"
+        Link="Services/TicketQueueFilter.cs" />
+    <RazorComponent
+        Include="../../src/CivicConnect.Web/Components/Pages/Staff/Queue.razor"
+        Link="Components/Pages/Staff/Queue.razor" />
+    <RazorComponent
+        Include="../../src/CivicConnect.Web/Components/Shared/TicketTable.razor"
+        Link="Components/Shared/TicketTable.razor" />
+  </ItemGroup>
+</Project>

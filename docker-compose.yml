@@ -1,14 +1,118 @@
 services:
+  # ============================================================================
+  # 1. Relational Persistence: PostgreSQL 15 Alpine
+  # ============================================================================
   db:
-    image: postgres:16
+    image: postgres:15-alpine
+    container_name: civicconnect-db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: civicconnect
-      POSTGRES_USER: civicconnect
-      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: ${POSTGRES_DB:-civicconnect}
+      POSTGRES_USER: ${POSTGRES_USER:-civicconnect}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-civicconnect} -d ${POSTGRES_DB:-civicconnect}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - civicconnect-net
+
+  # ============================================================================
+  # 2. Message Broker: RabbitMQ 3 Management Alpine
+  # ============================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: civicconnect-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-civicconnect}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbit_secure_dev_pass}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - civicconnect-net
+
+  # ============================================================================
+  # 3. Core Service Layer: ASP.NET Core Web API (.NET 10)
+  # ============================================================================
+  backend-api:
+    build:
+      context: .
+      dockerfile: src/CivicConnect.Api/Dockerfile
+    container_name: civicconnect-backend-api
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-5000}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-civicconnect}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-rabbit_secure_dev_pass}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - civicconnect-net
+
+  # ============================================================================
+  # 4. Presentation Layer: Blazor Web App (.NET 10 Kestrel)
+  # ============================================================================
+  frontend-web:
+    build:
+      context: .
+      dockerfile: src/CivicConnect.Web/Dockerfile
+    container_name: civicconnect-frontend-web
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+    depends_on:
+      backend-api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - civicconnect-net
 
 volumes:
   db-data:
+    name: civicconnect-db-data
+  rabbitmq-data:
+    name: civicconnect-rabbitmq-data
+
+networks:
+  civicconnect-net:
+    name: civicconnect-net
+    driver: bridge
