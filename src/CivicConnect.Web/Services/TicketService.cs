@@ -40,7 +40,7 @@ public sealed class TicketService
             Updated = "12 Sep 2026",
             Requester = "Bernard Small",
             Assignee = "Nadia Peters",
-            Description = "Please provide the latest approved employee leave policy document.",
+            Description = "Please provide the latest approved employee leave policy document."
         },
         new()
         {
@@ -51,12 +51,17 @@ public sealed class TicketService
             Status = "Open",
             Updated = "9 Sep 2026",
             Requester = "Ayesha Khan",
-            Description = "Please create system access for a new staff member starting Monday.",
+          Description = "Please create system access for a new staff member starting Monday.",
         },
     };
-
     public Ticket? Find(string id) => Tickets.FirstOrDefault(ticket => ticket.Id == id);
-
+    public IEnumerable<Ticket> GetStaffQueue(string? teamName = null, string? staffName = null) =>
+        Tickets.Where(ticket =>
+            ticket.Status != "Resolved" &&
+            ticket.Status != "Closed" &&
+            (string.IsNullOrWhiteSpace(teamName) && string.IsNullOrWhiteSpace(staffName)
+                || (!string.IsNullOrWhiteSpace(teamName) && string.Equals(ticket.Category, teamName, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(staffName) && string.Equals(ticket.Assignee, staffName, StringComparison.OrdinalIgnoreCase))));
     public string Create(Ticket ticket)
     {
         var number = Tickets.Select(item => int.Parse(item.Id.Split('-')[1])).DefaultIfEmpty(0).Max() + 1;
@@ -67,14 +72,11 @@ public sealed class TicketService
         Tickets.Insert(0, ticket);
         return ticket.Id;
     }
-
     private readonly object _notesLock = new();
     private readonly List<TicketNote> _notes = new();
-
     private static bool CanAddNotes(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true &&
         (user.IsInRole("Staff") || user.IsInRole("Management"));
-
     public TicketNote AddNote(string ticketId, string text, bool isInternal, ClaimsPrincipal user)
     {
         if (!CanAddNotes(user))
@@ -83,7 +85,6 @@ public sealed class TicketService
             throw new ArgumentException("Enter a note before saving.", nameof(text));
         if (Find(ticketId) is null)
             throw new ArgumentException("Ticket not found.", nameof(ticketId));
-
         var note = new TicketNote(ticketId, text.Trim(), DateTimeOffset.UtcNow,
             user.Identity!.Name ?? user.FindFirstValue(ClaimTypes.Email) ?? "Staff",
             user.FindFirstValue(ClaimTypes.Email), isInternal);
@@ -93,12 +94,10 @@ public sealed class TicketService
         }
         return note;
     }
-
     public IReadOnlyList<TicketNote> GetNotes(string ticketId, ClaimsPrincipal user)
     {
         if (user.Identity?.IsAuthenticated != true)
             return Array.Empty<TicketNote>();
-
         // Filter before returning data to the UI; requesters never receive internal notes.
         var includeInternal = CanAddNotes(user) && !user.IsInRole("Requester");
         lock (_notesLock)
