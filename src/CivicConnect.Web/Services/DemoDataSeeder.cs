@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+using CivicConnect.Data.Security;
 using Npgsql;
 
 namespace CivicConnect.Web.Services;
@@ -6,7 +6,7 @@ namespace CivicConnect.Web.Services;
 /// Ensures the three demo accounts (one per portal) exist so the login screen has something to sign into.
 public static class DemoDataSeeder
 {
-    private static readonly PasswordHasher<object> Hasher = new();
+    private static readonly IPasswordHashingService Hasher = Argon2idPasswordHasher.Instance;
 
     private static readonly (string Email, string FullName, string RoleName)[] Accounts =
     {
@@ -41,9 +41,11 @@ public static class DemoDataSeeder
         foreach (var (email, fullName, roleName) in Accounts)
         {
             await using var exists = conn.CreateCommand();
-            exists.CommandText = "SELECT 1 FROM app_user WHERE email = $1";
+            exists.CommandText = "SELECT password_hash FROM app_user WHERE email = $1";
             exists.Parameters.AddWithValue(email);
-            if (await exists.ExecuteScalarAsync() is null)
+            var existingHash = await exists.ExecuteScalarAsync() as string;
+
+            if (existingHash is null)
             {
                 await using var insert = conn.CreateCommand();
                 insert.CommandText =
@@ -60,9 +62,23 @@ public static class DemoDataSeeder
                     """;
                 insert.Parameters.AddWithValue(email);
                 insert.Parameters.AddWithValue(fullName);
-                insert.Parameters.AddWithValue(Hasher.HashPassword(null!, "password"));
+                insert.Parameters.AddWithValue(Hasher.HashPassword("password"));
                 insert.Parameters.AddWithValue(roleName);
                 await insert.ExecuteNonQueryAsync();
+            }
+            else if (!Argon2idPasswordHasher.IsValidPhcFormat(existingHash) ||
+                     (Hasher.VerifyPassword("password", existingHash, out var needsRehash) && needsRehash))
+            {
+                await using var update = conn.CreateCommand();
+                update.CommandText =
+                    """
+                    UPDATE app_user
+                    SET password_hash = $1, updated_at = now()
+                    WHERE email = $2
+                    """;
+                update.Parameters.AddWithValue(Hasher.HashPassword("password"));
+                update.Parameters.AddWithValue(email);
+                await update.ExecuteNonQueryAsync();
             }
         }
 

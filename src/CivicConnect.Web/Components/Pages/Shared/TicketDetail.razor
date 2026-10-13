@@ -82,6 +82,16 @@ else
                 <h2>Activity</h2>
             </div>
             <div class="timeline">
+                @foreach (var entry in ticket.StatusHistory.AsEnumerable().Reverse())
+                {
+                    <div class="timeline-item">
+                        <div class="dot"></div>
+                        <div>
+                            <strong>@entry.PreviousStatus → @entry.NewStatus</strong>
+                            <p>@entry.Actor · @entry.ChangedAt.ToString("u")</p>
+                        </div>
+                    </div>
+                }
                 @foreach (var note in notes)
                 {
                     <div class="timeline-item">
@@ -136,6 +146,23 @@ else
         <div class="side-stack">
             <div class="card side-card">
                 <h3>Ticket information</h3>
+                <AuthorizeView Roles="Staff">
+                    <Authorized>
+                        <label for="ticket-status">Change status</label>
+                        <select id="ticket-status" @bind="requestedStatus" disabled="@(TicketService.GetNextStatus(ticket.Status) is null)">
+                            <option value="">Select a status</option>
+                            @if (TicketService.GetNextStatus(ticket.Status) is { } nextStatus)
+                            {
+                                <option value="@nextStatus">@TicketService.DisplayStatus(nextStatus)</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrEmpty(requestedStatus))" @onclick="ChangeStatus">Update status</button>
+                        @if (transitionMessage is not null)
+                        {
+                            <p role="status">@transitionMessage</p>
+                        }
+                    </Authorized>
+                </AuthorizeView>
                 <div class="kv">
                     <span>Reference</span>
                     <strong>#@ticket.Id</strong>
@@ -174,6 +201,8 @@ else
     public string Id { get; set; } = "";
 
     Ticket? ticket;
+    string requestedStatus = "";
+    string? transitionMessage;
     IReadOnlyList<TicketNote> notes = Array.Empty<TicketNote>();
     string noteText = "";
     string? noteError;
@@ -183,6 +212,8 @@ else
     protected override async Task OnParametersSetAsync()
     {
         ticket = Tickets.Find(Id);
+        requestedStatus = "";
+        transitionMessage = null;
         noteText = "";
         noteError = null;
         isInternal = true;
@@ -217,5 +248,16 @@ else
             noteError = ex.Message;
         }
         await LoadNotes();
+    }
+
+    async Task ChangeStatus()
+    {
+        var state = await Authentication.GetAuthenticationStateAsync();
+        var result = Tickets.ChangeStatus(Id, requestedStatus, state.User);
+        transitionMessage = result.Message;
+        if (result.Success)
+        {
+            requestedStatus = "";
+        }
     }
 }

@@ -1,5 +1,6 @@
 using CivicConnect.Data;
 using CivicConnect.Data.Configuration;
+using CivicConnect.Data.Security;
 using CivicConnect.Web.Components;
 using CivicConnect.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,8 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));
+builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<Argon2idPasswordHasher>();
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();
@@ -27,6 +30,16 @@ builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddSingleton<TicketService>();
+
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? Environment.GetEnvironmentVariable("API_BASE_URL")
+    ?? "http://localhost:5060";
+
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("ApiClient"));
 
 var app = builder.Build();
 

@@ -2,6 +2,7 @@ using CivicConnect.Api.Services;
 using CivicConnect.Data;
 using CivicConnect.Data.Configuration;
 using CivicConnect.Data.Entities;
+using CivicConnect.Data.Security;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -39,6 +40,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CivicConnectCorsPolicy", policy =>
     {
         policy.WithOrigins(
+                "http://localhost:8085",
+                "http://127.0.0.1:8085",
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
                 "http://localhost:5000",
@@ -67,9 +70,13 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString);
 });
 
+builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<Argon2idPasswordHasher>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<SubmissionService>();
 
 var app = builder.Build();
 
@@ -318,128 +325,53 @@ app.MapPost("/api/requests/calculate-priority", HandleCalculatePriorityAsync)
 
 app.MapPost("/api/requests", async (
     CreateIncidentRequestDto dto,
-    CivicConnectDbContext dbContext,
-    IPriorityMatrix priorityMatrix) =>
+    HttpContext httpContext,
+    ISubmissionService submissionService,
+    CancellationToken cancellationToken) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Description))
+    var headerIdempotencyKey = httpContext.Request.Headers["Idempotency-Key"].FirstOrDefault();
+    var effectiveIdempotencyKey = !string.IsNullOrWhiteSpace(dto.IdempotencyKey)
+        ? dto.IdempotencyKey
+        : headerIdempotencyKey;
+
+    try
     {
-        return Results.BadRequest(new { message = "Title and Description are required." });
-    }
-
-    var category = await dbContext.Categories
-        .AsNoTracking()
-        .FirstOrDefaultAsync(c => c.Id == dto.CategoryId && c.IsActive);
-
-    if (category is null)
-    {
-        return Results.NotFound(new { message = $"Active Category ID {dto.CategoryId} not found." });
-    }
-
-    var location = await dbContext.Locations
-        .AsNoTracking()
-        .FirstOrDefaultAsync(l => l.Id == dto.LocationId && l.IsActive);
-
-    if (location is null)
-    {
-        return Results.NotFound(new { message = $"Active Location ID {dto.LocationId} not found." });
-    }
-
-    short priorityId = priorityMatrix.CalculatePriority(location.ImpactLevel, category.UrgencyLevel);
-
-    var incident = new Incident
-    {
-        CategoryId = category.Id,
-        LocationId = location.Id,
-        Title = dto.Title.Trim(),
-        Description = dto.Description.Trim(),
-        Status = IncidentStatus.New,
-        ComputedPriority = priorityId,
-        Priority = priorityId,
-        PriorityOverridden = false,
-        AssignedTeamId = category.DefaultServiceTeamId
-    };
-
-    dbContext.Incidents.Add(incident);
-    await dbContext.SaveChangesAsync();
-
-    Ticket? ticket = null;
-    var reporterId = dto.ReporterId ?? dto.RequesterId;
-
-    if (reporterId.HasValue)
-    {
-        var reporterExists = await dbContext.AppUsers
-            .AsNoTracking()
-            .AnyAsync(u => u.Id == reporterId.Value && u.IsActive);
-
-        if (reporterExists)
-        {
-            dbContext.IncidentStatusHistories.Add(new IncidentStatusHistory
+        var result = await submissionService.SubmitAsync(
+            new SubmitTicketRequestDto
             {
-                IncidentId = incident.Id,
-                FromStatus = null,
-                ToStatus = IncidentStatus.New,
-                ChangedBy = reporterId.Value,
-                ChangedAt = incident.OpenedAt,
-                AssignedTeamId = incident.AssignedTeamId
-            });
+                Title = dto.Title,
+                Description = dto.Description,
+                CategoryId = dto.CategoryId,
+                LocationId = dto.LocationId,
+                ReporterId = dto.ReporterId ?? dto.RequesterId,
+                IdempotencyKey = effectiveIdempotencyKey
+            },
+            cancellationToken: cancellationToken);
 
-            ticket = new Ticket
-            {
-                IncidentId = incident.Id,
-                ReporterId = reporterId.Value,
-                CategoryId = category.Id,
-                LocationId = location.Id,
-                Title = incident.Title,
-                Description = incident.Description
-            };
-            dbContext.Tickets.Add(ticket);
-
-            var alreadySubscribed = await dbContext.IncidentSubscriptions
-                .AnyAsync(s => s.IncidentId == incident.Id && s.ReporterId == reporterId.Value);
-
-            if (!alreadySubscribed)
-            {
-                dbContext.IncidentSubscriptions.Add(new IncidentSubscription
-                {
-                    IncidentId = incident.Id,
-                    ReporterId = reporterId.Value
-                });
-            }
-
-            await dbContext.SaveChangesAsync();
-        }
+        return result.IsIdempotentReplay
+            ? Results.Ok(result)
+            : Results.Created($"/api/requests/{result.Id}", result);
     }
-
-    return Results.Created($"/api/requests/{incident.Id}", new
+    catch (ArgumentException ex)
     {
-        incident.Id,
-        incident.ReferenceNumber,
-        TicketId = ticket?.Id,
-        TicketReferenceNumber = ticket?.ReferenceNumber,
-        incident.Title,
-        incident.Description,
-        incident.CategoryId,
-        CategoryName = category.Name,
-        incident.LocationId,
-        LocationName = location.Name,
-        ImpactLevel = location.ImpactLevel,
-        ImpactName = priorityMatrix.FormatLevelName(location.ImpactLevel),
-        UrgencyLevel = category.UrgencyLevel,
-        UrgencyName = priorityMatrix.FormatLevelName(category.UrgencyLevel),
-        incident.ComputedPriority,
-        ComputedPriorityName = priorityMatrix.FormatPriorityName(incident.ComputedPriority),
-        incident.Priority,
-        PriorityName = priorityMatrix.FormatPriorityName(incident.Priority),
-        incident.PriorityOverridden,
-        incident.Status,
-        incident.AssignedTeamId,
-        incident.OpenedAt,
-        incident.DueAt
-    });
+        return Results.BadRequest(new { message = ex.Message });
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { message = ex.Message });
+    }
+    catch (IdempotencyConflictException ex)
+    {
+        return Results.Conflict(new { message = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
 })
 .WithName("CreateIncident")
 .WithTags("Incidents")
-.WithSummary("Creates an Incident (and optional Ticket/Subscription) with priority computed via PriorityMatrix (FR-05)");
+.WithSummary("Creates an Incident (or clusters onto an existing open Incident) and attaches a Ticket/Subscription with priority computed via PriorityMatrix (FR-03, FR-05, NFR-06)");
 
 app.MapGet("/api/requests/{id:long}", async (
     long id,
@@ -565,4 +497,5 @@ public record CreateIncidentRequestDto(
     int CategoryId,
     int LocationId,
     Guid? ReporterId = null,
-    Guid? RequesterId = null);
+    Guid? RequesterId = null,
+    string? IdempotencyKey = null);

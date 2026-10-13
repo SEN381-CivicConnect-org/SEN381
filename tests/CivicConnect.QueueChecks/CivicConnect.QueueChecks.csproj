@@ -27,5 +27,7 @@
     <RazorComponent
         Include="../../src/CivicConnect.Web/Components/Shared/TicketTable.razor"
         Link="Components/Shared/TicketTable.razor" />
+    <Compile Include="../../src/CivicConnect.Web/Models/TicketNote.cs" Link="Models/TicketNote.cs" />
+    <Compile Include="../../src/CivicConnect.Web/Models/TicketStatusHistoryEntry.cs" Link="Models/TicketStatusHistoryEntry.cs" />
   </ItemGroup>
 </Project>
