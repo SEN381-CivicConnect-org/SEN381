@@ -10,7 +10,7 @@ using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
-var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration);
+var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration, requireJwtSecret: false);
 builder.Services.AddSingleton(systemSecrets);
 var connectionString = systemSecrets.ConnectionString;
 

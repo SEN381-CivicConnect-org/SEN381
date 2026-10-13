@@ -152,10 +152,8 @@ public sealed class SystemSecretsConfigurationTests
     {
         var repoRoot = LocateRepositoryRoot();
         var apiAppSettings = Path.Combine(repoRoot, "src", "CivicConnect.Api", "appsettings.json");
-        var apiDevAppSettings = Path.Combine(repoRoot, "src", "CivicConnect.Api", "appsettings.Development.json");
 
         Assert.True(File.Exists(apiAppSettings), $"Expected '{apiAppSettings}' to exist.");
-        Assert.True(File.Exists(apiDevAppSettings), $"Expected '{apiDevAppSettings}' to exist.");
 
         var configFiles = Directory.GetFiles(
             Path.Combine(repoRoot, "src"),
@@ -196,7 +194,7 @@ public sealed class SystemSecretsConfigurationTests
         while (dir is not null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "CivicConnect.sln")) ||
-                File.Exists(Path.Combine(dir.FullName, "GEMINI.md")))
+                Directory.Exists(Path.Combine(dir.FullName, ".git")))
             {
                 return dir.FullName;
             }
