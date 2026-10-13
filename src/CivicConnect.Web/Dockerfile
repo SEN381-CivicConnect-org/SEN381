@@ -36,8 +36,8 @@ COPY --from=build --chown=appuser:appgroup /app/publish .
 # Enforce least privilege non-root execution
 USER appuser
 
-EXPOSE 8080
-ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8085
+ENV ASPNETCORE_HTTP_PORTS=8085
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "CivicConnect.Web.dll"]

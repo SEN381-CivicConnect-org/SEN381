@@ -30,6 +30,16 @@ builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddSingleton<TicketService>();
 
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? Environment.GetEnvironmentVariable("API_BASE_URL")
+    ?? "http://localhost:5060";
+
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("ApiClient"));
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
