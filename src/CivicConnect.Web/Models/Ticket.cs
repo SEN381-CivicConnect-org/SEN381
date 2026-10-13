@@ -33,4 +33,5 @@ public sealed class Ticket
     public string? OverrideReason { get; set; }
     public Guid? OverrideBy { get; set; }
     public DateTimeOffset? OverrideAt { get; set; }
+    public List<TicketStatusHistoryEntry> StatusHistory { get; } = new();
 }
