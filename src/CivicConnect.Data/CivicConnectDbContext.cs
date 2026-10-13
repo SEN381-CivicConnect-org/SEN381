@@ -34,6 +34,44 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<IncidentNote> IncidentNotes => Set<IncidentNote>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    // Use these for new selections; the DbSets remain unfiltered for history and management.
+    public IQueryable<Category> ActiveCategories => Categories.Where(c => c.IsActive);
+    public IQueryable<Location> ActiveLocations => Locations.Where(l => l.IsActive);
+    public IQueryable<Asset> ActiveAssets => Assets.Where(a => a.IsActive);
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        DeactivateDeletedConfiguration();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        DeactivateDeletedConfiguration();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void DeactivateDeletedConfiguration()
+    {
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State == EntityState.Deleted))
+        {
+            if (entry.Entity is not (Category or Location or Asset))
+            {
+                continue;
+            }
+
+            // Only update lifecycle fields, including when Remove was called on a key-only entity.
+            // Do not overwrite names, details, or foreign keys needed by historical references.
+            entry.State = EntityState.Unchanged;
+            entry.Property("IsActive").CurrentValue = false;
+            entry.Property("IsActive").IsModified = true;
+            entry.Property("UpdatedAt").CurrentValue = DateTimeOffset.UtcNow;
+            entry.Property("UpdatedAt").IsModified = true;
+        }
+    }
+
     /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
         DbContextOptionsBuilder<CivicConnectDbContext> optionsBuilder,
