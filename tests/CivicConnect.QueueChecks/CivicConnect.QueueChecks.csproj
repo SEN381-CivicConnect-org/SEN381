@@ -8,6 +8,8 @@
 
   <!-- Compile the actual Queue sources independently of database/authentication startup. -->
   <ItemGroup>
+    <Compile Include="../../src/CivicConnect.Web/Models/AuditEntry.cs" Link="Models/AuditEntry.cs" />
+    <Compile Include="../../src/CivicConnect.Web/Services/AuditService.cs" Link="Services/AuditService.cs" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Compile
         Include="../../src/CivicConnect.Web/Models/Ticket.cs"

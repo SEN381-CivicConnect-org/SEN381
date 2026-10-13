@@ -11,6 +11,8 @@
     <Compile Include="../../src/CivicConnect.Web/Models/TicketStatusHistoryEntry.cs" Link="Models/TicketStatusHistoryEntry.cs" />
     <Compile Include="../../src/CivicConnect.Web/Services/TicketService.cs" Link="Services/TicketService.cs" />
     <Compile Include="../../src/CivicConnect.Web/Services/PriorityMatrix.cs" Link="Services/PriorityMatrix.cs" />
+    <Compile Include="../../src/CivicConnect.Web/Models/AuditEntry.cs" Link="Models/AuditEntry.cs" />
+    <Compile Include="../../src/CivicConnect.Web/Services/AuditService.cs" Link="Services/AuditService.cs" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>
