@@ -48,3 +48,6 @@ jobs:
 
       - name: Migrate up again (empty -> current schema)
         run: ./scripts/migrate-up.sh
+
+      - name: Run tests with coverage
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
