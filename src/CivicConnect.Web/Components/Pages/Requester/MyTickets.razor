@@ -2,6 +2,7 @@
 @page "/requester/tickets"
 @inject TicketService Tickets
 @inject WorkspaceNavigation Workspace
+@inject AuthenticationStateProvider Authentication
 
 <PageTitle>My Tickets | CivicConnect</PageTitle>
 <div class="page-head">
@@ -28,6 +29,13 @@
         set => Workspace.RequesterFilter = value;
     }
 
-    IEnumerable<Ticket> Filtered => Tickets.Tickets.Where(t =>
-        t.Requester == "Bernard Small" && (filter == "All" || t.Status == filter));
+    private System.Security.Claims.ClaimsPrincipal user = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        user = (await Authentication.GetAuthenticationStateAsync()).User;
+    }
+
+    IEnumerable<Ticket> Filtered => Tickets.GetVisibleTickets(user)
+        .Where(t => filter == "All" || t.Status == filter);
 }

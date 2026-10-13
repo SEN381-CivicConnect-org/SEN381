@@ -181,7 +181,7 @@
             Nav.NavigateTo("/login");
             return;
         }
-        var id = Tickets.Create(model, AuditService.ActorFor(state.User));
+        var id = Tickets.CreateForRequester(model, state.User);
         Nav.NavigateTo($"/tickets/{id}");
     }
 }

@@ -49,6 +49,8 @@ public sealed class TicketService
             Status = "Open",
             Updated = "Yesterday",
             Requester = "Bernard Small",
+            // Cross-category demo assignment exercises the existing team OR assignee visibility rule.
+            Assignee = "Daniel Jacobs",
             Description = "The air conditioner in Meeting Room B is not cooling the room."
         },
         new()
@@ -87,6 +89,38 @@ public sealed class TicketService
     };
 
     public Ticket? Find(string id) => Tickets.FirstOrDefault(x => x.Id == id);
+
+    // Legacy demo snapshots have only a display name. ID-backed tickets never
+    // fall back to names, so a renamed account or duplicate name cannot claim them.
+    private static bool IsOwner(Ticket ticket, ClaimsPrincipal user) =>
+        !string.IsNullOrWhiteSpace(ticket.RequesterId)
+            ? string.Equals(ticket.RequesterId, user.FindFirstValue(ClaimTypes.NameIdentifier), StringComparison.Ordinal)
+            : !string.IsNullOrWhiteSpace(user.Identity?.Name) &&
+              string.Equals(ticket.Requester, user.Identity.Name, StringComparison.Ordinal);
+
+    public IEnumerable<Ticket> GetVisibleTickets(ClaimsPrincipal user)
+    {
+        if (user.Identity?.IsAuthenticated != true) return Array.Empty<Ticket>();
+        if (user.IsInRole("Staff") || user.IsInRole("Management")) return Tickets;
+        return user.IsInRole("Requester") ? Tickets.Where(ticket => IsOwner(ticket, user)) : Array.Empty<Ticket>();
+    }
+
+    public Ticket? FindVisible(string id, ClaimsPrincipal user) =>
+        GetVisibleTickets(user).FirstOrDefault(ticket => ticket.Id == id);
+
+    public string CreateForRequester(Ticket ticket, ClaimsPrincipal user)
+    {
+        ArgumentNullException.ThrowIfNull(ticket);
+        if (user.Identity?.IsAuthenticated != true || !user.IsInRole("Requester") ||
+            string.IsNullOrWhiteSpace(user.Identity.Name) ||
+            string.IsNullOrWhiteSpace(user.FindFirstValue(ClaimTypes.NameIdentifier)))
+            throw new UnauthorizedAccessException("A signed-in requester identity is required.");
+
+        // Ignore ownership supplied by form state; derive both fields from claims.
+        ticket.Requester = user.Identity.Name;
+        ticket.RequesterId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Create(ticket, AuditService.ActorFor(user));
+    }
 
     public IEnumerable<Ticket> GetStaffQueue(string? teamName = null, string? staffName = null) =>
         Tickets.Where(ticket =>
@@ -150,6 +184,7 @@ public sealed class TicketService
             Status = t.Status,
             Updated = t.Updated,
             Requester = t.Requester,
+            RequesterId = t.RequesterId,
             Assignee = t.Assignee,
             Description = t.Description,
             Created = t.Created,
