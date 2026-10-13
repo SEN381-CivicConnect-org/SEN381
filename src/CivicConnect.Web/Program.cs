@@ -1,4 +1,5 @@
 using CivicConnect.Data;
+using CivicConnect.Data.Security;
 using CivicConnect.Web.Components;
 using CivicConnect.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -19,6 +20,8 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));
+builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<Argon2idPasswordHasher>();
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();

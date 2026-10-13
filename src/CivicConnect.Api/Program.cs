@@ -1,6 +1,7 @@
 using CivicConnect.Api.Services;
 using CivicConnect.Data;
 using CivicConnect.Data.Entities;
+using CivicConnect.Data.Security;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -66,6 +67,8 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString);
 });
 
+builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<Argon2idPasswordHasher>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
