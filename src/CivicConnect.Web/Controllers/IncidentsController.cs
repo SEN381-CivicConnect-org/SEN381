@@ -393,14 +393,19 @@ public sealed class IncidentsController : ControllerBase
             return NotFound(new { message = $"Incident with ID '{id}' was not found." });
         }
 
-        if (dto.Version.HasValue && incident.Version != dto.Version.Value)
+        if (dto.Version.HasValue)
         {
-            return Conflict(new
+            if (incident.Version != dto.Version.Value)
             {
-                message = "The incident was modified by another user. Please refresh and try again.",
-                incidentId = incident.Id,
-                currentVersion = incident.Version
-            });
+                return Conflict(new
+                {
+                    message = "The incident was modified by another user. Please refresh and try again.",
+                    incidentId = incident.Id,
+                    currentVersion = incident.Version
+                });
+            }
+
+            _context.Entry(incident).Property(i => i.Version).OriginalValue = dto.Version.Value;
         }
 
         // Preserve incident.ComputedPriority untouched so the original calculated priority stays visible.
@@ -421,10 +426,17 @@ public sealed class IncidentsController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
+            _context.ChangeTracker.Clear();
+
+            var currentIncident = await _context.Incidents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
             return Conflict(new
             {
                 message = "The incident was modified concurrently by another user. Please reload and try again.",
-                incidentId = id
+                incidentId = id,
+                currentVersion = currentIncident?.Version
             });
         }
 

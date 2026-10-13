@@ -33,6 +33,31 @@ public sealed class AssignIncidentRequestDto
     public string? Note { get; set; }
 }
 
+/// <summary>
+/// Data Transfer Object for supervisor priority override ([FR-06], [NFR-06]).
+/// </summary>
+public sealed class OverridePriorityRequestDto
+{
+    /// <summary>
+    /// Target priority ID (1 = critical, 2 = high, 3 = medium, 4 = low) corresponding to <see cref="PriorityTarget.Id"/>.
+    /// </summary>
+    [Required(ErrorMessage = "New priority is required.")]
+    [Range(1, 4, ErrorMessage = "New priority must be between 1 (critical) and 4 (low).")]
+    public short NewPriority { get; set; }
+
+    /// <summary>
+    /// Mandatory recorded justification for overriding the computed priority.
+    /// </summary>
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Override reason is required.")]
+    [MaxLength(300, ErrorMessage = "Override reason cannot exceed 300 characters.")]
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional optimistic concurrency version token of the incident being updated.
+    /// </summary>
+    public int? Version { get; set; }
+}
+
 [ApiController]
 [Route("api/incidents")]
 public sealed class IncidentsController : ControllerBase
@@ -231,28 +256,61 @@ public sealed class IncidentsController : ControllerBase
             incident.Category?.DefaultServiceTeamId,
             cancellationToken);
 
-        if (incident.Status == IncidentStatus.New)
+        var wasNew = incident.Status == IncidentStatus.New;
+        if (wasNew)
         {
-            await RecordTransitionToAssignedHistoryAsync(
-                incident,
-                staffUserId,
-                staffUserId,
-                resolvedTeamId,
-                note: null,
-                cancellationToken);
-
             incident.Status = IncidentStatus.Assigned;
         }
 
         incident.AssigneeId = staffUserId;
         incident.AssignedTeamId = resolvedTeamId;
 
+        var ownedTransaction = _dbContext.Database.CurrentTransaction is null
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        var activeTransaction = ownedTransaction ?? _dbContext.Database.CurrentTransaction!;
+        const string claimSavepoint = "before_incident_claim";
+
+        if (ownedTransaction is null)
+        {
+            await activeTransaction.CreateSavepointAsync(claimSavepoint, cancellationToken);
+        }
+
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            if (wasNew)
+            {
+                await RecordTransitionToAssignedHistoryAsync(
+                    incident,
+                    staffUserId,
+                    staffUserId,
+                    resolvedTeamId,
+                    note: null,
+                    cancellationToken);
+
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.CommitAsync(cancellationToken);
+            }
         }
         catch (DbUpdateConcurrencyException)
         {
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.RollbackAsync(cancellationToken);
+            }
+            else
+            {
+                await activeTransaction.RollbackToSavepointAsync(claimSavepoint, cancellationToken);
+            }
+
+            _dbContext.ChangeTracker.Clear();
+
             var currentIncident = await _dbContext.Incidents
                 .AsNoTracking()
                 .Include(i => i.Assignee)
@@ -271,6 +329,13 @@ public sealed class IncidentsController : ControllerBase
                 currentAssigneeName,
                 version = currentIncident?.Version
             });
+        }
+        finally
+        {
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.DisposeAsync();
+            }
         }
 
         return Ok(new
@@ -359,28 +424,61 @@ public sealed class IncidentsController : ControllerBase
             incident.Category?.DefaultServiceTeamId,
             cancellationToken);
 
-        if (incident.Status == IncidentStatus.New)
+        var wasNew = incident.Status == IncidentStatus.New;
+        if (wasNew)
         {
-            await RecordTransitionToAssignedHistoryAsync(
-                incident,
-                supervisorId,
-                dto.AssigneeId,
-                resolvedTeamId,
-                string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim(),
-                cancellationToken);
-
             incident.Status = IncidentStatus.Assigned;
         }
 
         incident.AssigneeId = dto.AssigneeId;
         incident.AssignedTeamId = resolvedTeamId;
 
+        var ownedTransaction = _dbContext.Database.CurrentTransaction is null
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        var activeTransaction = ownedTransaction ?? _dbContext.Database.CurrentTransaction!;
+        const string assignSavepoint = "before_incident_assign";
+
+        if (ownedTransaction is null)
+        {
+            await activeTransaction.CreateSavepointAsync(assignSavepoint, cancellationToken);
+        }
+
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            if (wasNew)
+            {
+                await RecordTransitionToAssignedHistoryAsync(
+                    incident,
+                    supervisorId,
+                    dto.AssigneeId,
+                    resolvedTeamId,
+                    string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim(),
+                    cancellationToken);
+
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.CommitAsync(cancellationToken);
+            }
         }
         catch (DbUpdateConcurrencyException)
         {
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.RollbackAsync(cancellationToken);
+            }
+            else
+            {
+                await activeTransaction.RollbackToSavepointAsync(assignSavepoint, cancellationToken);
+            }
+
+            _dbContext.ChangeTracker.Clear();
+
             var currentIncident = await _dbContext.Incidents
                 .AsNoTracking()
                 .Include(i => i.Assignee)
@@ -400,6 +498,13 @@ public sealed class IncidentsController : ControllerBase
                 version = currentIncident?.Version
             });
         }
+        finally
+        {
+            if (ownedTransaction is not null)
+            {
+                await ownedTransaction.DisposeAsync();
+            }
+        }
 
         return Ok(new
         {
@@ -410,6 +515,126 @@ public sealed class IncidentsController : ControllerBase
             assigneeName = targetAssignee.FullName,
             assignedTeamId = incident.AssignedTeamId,
             status = incident.Status,
+            version = incident.Version
+        });
+    }
+
+    /// <summary>
+    /// [FR-06] Supervisor Priority Override with Recorded Reason and Optimistic Concurrency (NFR-06, IT-CONC-02).
+    /// Updates the effective priority of an <see cref="Incident"/> while preserving <see cref="Incident.ComputedPriority"/>.
+    /// </summary>
+    [HttpPut("{id:long}/override-priority")]
+    [Authorize(Roles = "Supervisor,supervisor,Staff,Management,operations manager,administrator")]
+    public async Task<IActionResult> OverridePriority(
+        long id,
+        [FromBody] OverridePriorityRequestDto? dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (dto is null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+        {
+            return BadRequest(new { message = "An override reason must be provided." });
+        }
+
+        var trimmedReason = dto.Reason.Trim();
+        if (trimmedReason.Length > 300)
+        {
+            return BadRequest(new { message = "Override reason cannot exceed 300 characters." });
+        }
+
+        if (dto.NewPriority < 1 || dto.NewPriority > 4)
+        {
+            return BadRequest(new { message = "New priority must be between 1 (critical) and 4 (low)." });
+        }
+
+        var supervisorClaim = User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User?.FindFirstValue("sub");
+
+        if (string.IsNullOrWhiteSpace(supervisorClaim) || !Guid.TryParse(supervisorClaim, out var supervisorGuid) || supervisorGuid == Guid.Empty)
+        {
+            return Unauthorized(new { message = "A valid supervisor user ID (UUID) claim was not found in the authentication token." });
+        }
+
+        var priorityExists = await _dbContext.PriorityTargets
+            .AsNoTracking()
+            .AnyAsync(pt => pt.Id == dto.NewPriority, cancellationToken);
+
+        if (!priorityExists)
+        {
+            return BadRequest(new { message = $"Priority target '{dto.NewPriority}' does not exist." });
+        }
+
+        var incident = await _dbContext.Incidents
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
+        if (incident is null)
+        {
+            return NotFound(new { message = $"Incident with ID '{id}' was not found." });
+        }
+
+        if (dto.Version.HasValue)
+        {
+            if (incident.Version != dto.Version.Value)
+            {
+                return Conflict(new
+                {
+                    message = "The incident was modified by another user. Please refresh and try again.",
+                    incidentId = incident.Id,
+                    currentVersion = incident.Version
+                });
+            }
+
+            _dbContext.Entry(incident).Property(i => i.Version).OriginalValue = dto.Version.Value;
+        }
+
+        incident.Priority = dto.NewPriority;
+        incident.PriorityOverridden = true;
+        incident.OverrideReason = trimmedReason;
+        incident.OverrideBy = supervisorGuid;
+        incident.OverrideAt = DateTimeOffset.UtcNow;
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            if (_dbContext.Database.IsRelational())
+            {
+                await _dbContext.Entry(incident).ReloadAsync(cancellationToken);
+            }
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _dbContext.ChangeTracker.Clear();
+
+            var currentIncident = await _dbContext.Incidents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
+            return Conflict(new
+            {
+                message = "The incident was modified concurrently by another user. Please reload and try again.",
+                incidentId = id,
+                currentVersion = currentIncident?.Version
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Priority overridden successfully.",
+            incidentId = incident.Id,
+            referenceNumber = incident.ReferenceNumber,
+            computedPriority = incident.ComputedPriority,
+            priority = incident.Priority,
+            priorityOverridden = incident.PriorityOverridden,
+            overrideReason = incident.OverrideReason,
+            overrideBy = incident.OverrideBy,
+            overrideAt = incident.OverrideAt,
+            openedAt = incident.OpenedAt,
+            dueAt = incident.DueAt,
             version = incident.Version
         });
     }
