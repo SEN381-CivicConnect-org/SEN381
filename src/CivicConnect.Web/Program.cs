@@ -1,4 +1,5 @@
 using CivicConnect.Data;
+using CivicConnect.Data.Configuration;
 using CivicConnect.Data.Security;
 using CivicConnect.Web.Components;
 using CivicConnect.Web.Services;
@@ -9,10 +10,10 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? builder.Configuration["CONNECTION_STRING"]
-    ?? throw new InvalidOperationException("CONNECTION_STRING environment variable is not set. Copy .env.example to .env and fill it in.");
+SystemSecretsConfiguration.LoadDotEnvIfPresent();
+var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration, requireJwtSecret: false);
+builder.Services.AddSingleton(systemSecrets);
+var connectionString = systemSecrets.ConnectionString;
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddControllers();

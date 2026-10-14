@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-civicconnect}
       POSTGRES_USER: ${POSTGRES_USER:-civicconnect}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-civicconnect}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbit_secure_dev_pass}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MGMT_PORT:-15672}:15672"
@@ -63,10 +63,11 @@ services:
       - ASPNETCORE_HTTP_PORTS=5060
       - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - JWT_SECRET=${JWT_SECRET:-}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-civicconnect}
-      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-rabbit_secure_dev_pass}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}
     depends_on:
       db:
         condition: service_healthy
@@ -97,6 +98,7 @@ services:
       - ASPNETCORE_HTTP_PORTS=8085
       - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - JWT_SECRET=${JWT_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
