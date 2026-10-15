@@ -77,6 +77,7 @@ builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<SubmissionService>();
+builder.Services.AddScoped<IIncidentReportingService, IncidentReportingService>();
 
 var app = builder.Build();
 

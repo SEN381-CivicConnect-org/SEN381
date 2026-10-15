@@ -321,6 +321,10 @@ namespace CivicConnect.Data.Migrations
                     b.HasIndex("ComputedPriority")
                         .HasDatabaseName("ix_incident_computed_priority");
 
+                    b.HasIndex("DueAt")
+                        .HasDatabaseName("ix_incident_due_at_open")
+                        .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
                     b.HasIndex("LocationId")
                         .HasDatabaseName("ix_incident_location_id");
 
@@ -336,6 +340,18 @@ namespace CivicConnect.Data.Migrations
                     b.HasIndex("ReferenceNumber")
                         .IsUnique()
                         .HasDatabaseName("ix_incident_reference_number");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_incident_status");
+
+                    b.HasIndex("Status", "AssignedTeamId")
+                        .HasDatabaseName("ix_incident_status_assigned_team_id");
+
+                    b.HasIndex("Status", "CategoryId")
+                        .HasDatabaseName("ix_incident_status_category_id");
+
+                    b.HasIndex("Status", "Priority")
+                        .HasDatabaseName("ix_incident_status_priority");
 
                     b.ToTable("incident", null, t =>
                         {
