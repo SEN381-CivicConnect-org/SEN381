@@ -33,6 +33,7 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<Resolution> Resolutions => Set<Resolution>();
     public DbSet<IncidentNote> IncidentNotes => Set<IncidentNote>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     // Use these for new selections; the DbSets remain unfiltered for history and management.
     public IQueryable<Category> ActiveCategories => Categories.Where(c => c.IsActive);
@@ -81,7 +82,9 @@ public sealed class CivicConnectDbContext : DbContext
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsHistoryTable("__ef_migrations_history")
                 .MapEnum<IncidentStatus>("incident_status")
-                .MapEnum<NotificationKind>("notification_kind"))
+                .MapEnum<NotificationKind>("notification_kind")
+                .MapEnum<AuditEntityType>("audit_entity_type")
+                .MapEnum<AuditAction>("audit_action"))
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(new UpdatedAtInterceptor());
     }
@@ -100,6 +103,14 @@ public sealed class CivicConnectDbContext : DbContext
         modelBuilder.HasPostgresEnum(
             "notification_kind",
             new[] { "STATUS_CHANGE", "ASSIGNMENT", "RESOLUTION" });
+
+        modelBuilder.HasPostgresEnum(
+            "audit_entity_type",
+            new[] { "USER", "ROLE_GRANT", "CATEGORY", "LOCATION", "ASSET", "INCIDENT" });
+
+        modelBuilder.HasPostgresEnum(
+            "audit_action",
+            new[] { "CREATE", "UPDATE", "DEACTIVATE", "OVERRIDE" });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
     }

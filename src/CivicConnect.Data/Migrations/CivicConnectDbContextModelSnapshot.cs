@@ -21,6 +21,8 @@ namespace CivicConnect.Data.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "audit_action", new[] { "CREATE", "UPDATE", "DEACTIVATE", "OVERRIDE" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "audit_entity_type", new[] { "USER", "ROLE_GRANT", "CATEGORY", "LOCATION", "ASSET", "INCIDENT" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "incident_status", new[] { "NEW", "ASSIGNED", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED", "REJECTED", "MERGED" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "notification_kind", new[] { "STATUS_CHANGE", "ASSIGNMENT", "RESOLUTION" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
@@ -138,6 +140,66 @@ namespace CivicConnect.Data.Migrations
                         .HasDatabaseName("ix_asset_location_id");
 
                     b.ToTable("asset", (string)null);
+                });
+
+            modelBuilder.Entity("CivicConnect.Data.Entities.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<AuditAction>("Action")
+                        .HasColumnType("audit_action")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("AfterState")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("after_state");
+
+                    b.Property<string>("BeforeState")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("before_state");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("entity_id");
+
+                    b.Property<AuditEntityType>("EntityType")
+                        .HasColumnType("audit_entity_type")
+                        .HasColumnName("entity_type");
+
+                    b.Property<long?>("IncidentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("incident_id");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_log");
+
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_audit_log_actor_id");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("ix_audit_log_entity_type_entity_id");
+
+                    b.HasIndex("IncidentId", "OccurredAt")
+                        .HasDatabaseName("ix_audit_log_incident_id_occurred_at")
+                        .HasFilter("incident_id IS NOT NULL");
+
+                    b.ToTable("audit_log", (string)null);
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.Category", b =>
@@ -1329,6 +1391,26 @@ namespace CivicConnect.Data.Migrations
                         .HasConstraintName("fk_asset_locations_location_id");
 
                     b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("CivicConnect.Data.Entities.AuditLog", b =>
+                {
+                    b.HasOne("CivicConnect.Data.Entities.AppUser", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_log_app_user_actor_id");
+
+                    b.HasOne("CivicConnect.Data.Entities.Incident", "Incident")
+                        .WithMany()
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_log_incidents_incident_id");
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("Incident");
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.Category", b =>
