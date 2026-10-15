@@ -1,21 +1,41 @@
 # CivicConnect browser E2E
 
-Playwright exercises the real running Blazor application with fresh browser contexts, one worker, and no retries. There are no mocked components or intercepted APIs. Failure screenshots/traces are retained in `test-results/`; the HTML report is in `playwright-report/`. Both folders are ignored. Keep CI artifacts private because they may contain account/ticket information.
+Playwright controls a real Chromium browser against the running CivicConnect Blazor application. These are end-to-end user-flow tests, not isolated unit tests. Each test uses a fresh browser context; the suite runs with one worker and no retries. There are no mocked components or intercepted APIs. Failure screenshots/traces are retained in `test-results/`; the HTML report is in `playwright-report/`. Both folders are ignored. Keep CI artifacts private because they may contain account/ticket information.
 
 ## Install and run
 
-Use Node.js 22+ and a running PostgreSQL/backend/frontend stack. The frontend defaults to http://localhost:8085. The requested backend address is http://localhost:5001; compose defaults to 5060, so use `BACKEND_PORT=5001` when starting the entire stack if needed. Browser tests only access the frontend.
+Prerequisites: Docker with Docker Compose, Node.js 22+ with npm, and Playwright's Chromium browser (installed in the setup commands below).
 
-From the repository root, rebuild/restart the frontend to apply account/fixture changes and reset in-memory tickets:
+From the repository root, start CivicConnect and verify the containers:
+
+```sh
+BACKEND_PORT=5001 docker compose up -d
+docker compose ps
+```
+
+Expected local ports:
+
+- Frontend: http://localhost:8085
+- Backend: http://localhost:5001
+
+The Docker stack must be running and ready before browser tests. Browser tests only access the frontend. Compose otherwise defaults the backend to port 5060; the command above selects 5001.
+
+After source/fixture changes, or to reset in-memory tickets before a repeated full run, rebuild/restart the frontend from the repository root:
 
 ```sh
 docker compose build frontend-web
 docker compose up -d --no-deps frontend-web
+```
+
+For first-time E2E setup, from the repository root:
+
+```sh
 cd tests/CivicConnect.E2E
 npm ci
 npx playwright install chromium
 cp .env.example .env
-# Fill in account settings in the ignored .env file.
+# Fill in the required E2E credentials and fixtures in the ignored .env file.
+# Load them into the current macOS/Linux shell:
 set -a
 . ./.env
 set +a
@@ -32,8 +52,27 @@ npm test -- specs/workflow.spec.js
 npm test -- specs/auth.spec.js
 npm run test:ui
 npm run report
-npx playwright show-trace test-results/<test-folder>/trace.zip
+# Replace the placeholder with a failure trace under test-results/<test-folder>/trace.zip.
+npx playwright show-trace <path-to-trace.zip>
 ```
+
+To watch tests in a visible Chromium browser, run the following from `tests/CivicConnect.E2E` after loading the environment. Headed mode is useful for demonstrations and debugging; the examples use the current spec filenames:
+
+```sh
+npx playwright test --headed
+npx playwright test specs/queue.spec.js --headed
+npx playwright test specs/auth.spec.js --headed
+```
+
+## Current E2E coverage
+
+- Authentication, protected routes, Staff queue access, and logout.
+- FR-15 search, category filtering, status filtering, and Clear filters.
+- FR-15 priority sorting in both directions; date sorting when displayed dates are reliable.
+- Requester ticket creation and visibility after submission.
+- FR-11 requester ownership in ticket lists and direct-route ownership protection.
+- Staff workflow transitions and the resulting status/activity.
+- Management workspace access and denial of Staff-only routes.
 
 ## Deterministic demo fixtures
 
@@ -79,9 +118,9 @@ Missing settings fail explicitly instead of silently skipping ownership tests. A
 
 Authentication is circuit-scoped. Tests reuse the working auth helper and UI links; role-denial checks use same-document navigation, and direct ticket tests sign in with a local returnUrl. A full page reload creates a new anonymous circuit. The helper waits for the initial Blazor render batch over the default WebSocket transport before filling prerendered inputs.
 
-Creation uses a unique title and leaves the request in memory. Workflow advances CC-010 one step and leaves its new status in memory. Reset/recreate the disposable frontend before each full run, or update the workflow next-status setting explicitly. Run only one suite per application instance. Resetting the frontend restores the original in-memory queue, but does not delete seeded database accounts. Startup seeding is idempotent.
+Creation uses a unique title and leaves the request in memory. Workflow advances CC-010 one step and leaves its new status in memory. Reset/recreate the disposable frontend before each full run, or update the workflow next-status setting explicitly. Run only one suite per application instance. Resetting the frontend restores the original in-memory queue, but does not delete seeded database accounts. Startup seeding is idempotent. E2E runs can create requests and change ticket status; do not assume the test database remains unchanged, since startup seeding also writes demo accounts. Use a disposable test environment.
 
-FR-11 assertions remain unchanged. The requester list and detail lookup now use the same service visibility check. Newly created tickets receive RequesterId and display name from the authenticated principal, ignoring ownership in form state. ID-backed ownership remains valid after a display-name change, and another account with the same name cannot access that ticket. Staff/Management retain broader access. Denied detail lookups use the existing Ticket not found view and do not load foreign notes/details.
+Do not weaken assertions to make failing application behaviour pass. FR-11 assertions remain unchanged. The requester list and detail lookup now use the same service visibility check. Newly created tickets receive RequesterId and display name from the authenticated principal, ignoring ownership in form state. ID-backed ownership remains valid after a display-name change, and another account with the same name cannot access that ticket. Staff/Management retain broader access. Denied detail lookups use the existing Ticket not found view and do not load foreign notes/details.
 
 Legacy demo tickets contain display names only, so they use exact, nonblank authenticated display-name matching. This compatibility fallback cannot distinguish legacy owners who share the same display name and will not follow a legacy owner rename. Before using such records with non-demo accounts, migrate/backfill their stable requester IDs from a trusted source. New UI-created requests have no name fallback. The in-memory demo model still resets on frontend restart; no database ownership schema was redesigned.
 
@@ -121,7 +160,7 @@ Results:
 
 - **49 unit tests passed**, including **12 dedicated RequesterOwnershipTests** run separately.
 - Dedicated Queue, Notes, Status and Audit regression executables all passed.
-- **Full unchanged Playwright suite: 19 passed, 0 failed, 2 skipped**. All four previously failing ownership scenarios passed. Date sorts remain intentionally skipped for relative displayed dates.
+- **Current expected full Playwright result: 19 passed, 0 failed, 2 skipped**. All four previously failing ownership scenarios passed. Date sorts remain intentionally skipped for relative displayed dates.
 - The unchanged creation test also passed separately using Requester B's credentials through environment overrides, confirming creation/list visibility for B as well as A.
 - Frontend Docker publish and diff checks passed. Validation used .NET 10 containers because the host SDK is .NET 9. The database integration suite was not run.
 
