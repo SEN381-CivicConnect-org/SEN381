@@ -1,0 +1,76 @@
+$ dotnet --list-sdks
+6.0.408 [/usr/local/share/dotnet/sdk]
+6.0.425 [/usr/local/share/dotnet/sdk]
+7.0.302 [/usr/local/share/dotnet/sdk]
+7.0.317 [/usr/local/share/dotnet/sdk]
+8.0.425 [/usr/local/share/dotnet/sdk]
+9.0.102 [/usr/local/share/dotnet/sdk]
+10.0.402 [/usr/local/share/dotnet/sdk]
+
+Exit code: 0
+
+$ dotnet --version
+10.0.402
+
+Exit code: 0
+
+$ dotnet test tests/CivicConnect.Tests/CivicConnect.Tests.csproj --filter FullyQualifiedName~RequestStatusStateTransitionTests --logger 'console;verbosity=detailed' --logger 'trx;LogFileName=st-results.trx' --results-directory tests/CivicConnect.Tests/evidence -m:1
+  Determining projects to restore...
+CSSM_ModuleLoad(): One or more parameters passed to a function were not valid.
+  All projects are up-to-date for restore.
+  CivicConnect.Data -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Data/bin/Debug/net10.0/CivicConnect.Data.dll
+  CivicConnect.Web -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Web/bin/Debug/net10.0/CivicConnect.Web.dll
+  CivicConnect.Tests -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+Test run for /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+/Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+System.Net.Sockets.SocketException (13): Permission denied
+   at System.Net.Sockets.Socket.UpdateStatusAfterSocketErrorAndThrowException(SocketError error, Boolean disconnectOnFailure, String callerName)
+   at System.Net.Sockets.Socket.DoBind(EndPoint endPointSnapshot, SocketAddress socketAddress)
+   at System.Net.Sockets.Socket.Bind(EndPoint localEP)
+   at System.Net.Sockets.TcpListener.Start(Int32 backlog)
+   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.SocketServer.Start(String endPoint) in /_/src/vstest/src/Microsoft.TestPlatform.CommunicationUtilities/SocketServer.cs:line 65
+   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestSender.InitializeCommunication() in /_/src/vstest/src/Microsoft.TestPlatform.CommunicationUtilities/TestRequestSender.cs:line 168
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Client.ProxyOperationManager.SetupChannel(IEnumerable`1 sources, String runSettings) in /_/src/vstest/src/Microsoft.TestPlatform.CrossPlatEngine/Client/ProxyOperationManager.cs:line 207
+   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Client.ProxyExecutionManager.InitializeTestRun(TestRunCriteria testRunCriteria, IInternalTestRunEventsHandler eventHandler) in /_/src/vstest/src/Microsoft.TestPlatform.CrossPlatEngine/Client/ProxyExecutionManager.cs:line 184
+
+Test Run Aborted.
+Results File: /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/evidence/st-results.trx
+
+Exit code: 1
+
+
+Retry outside sandbox to allow VSTest local socket communication:
+$ dotnet test tests/CivicConnect.Tests/CivicConnect.Tests.csproj --filter FullyQualifiedName~RequestStatusStateTransitionTests --no-restore --logger 'console;verbosity=detailed' --logger 'trx;LogFileName=st-results.trx' --results-directory tests/CivicConnect.Tests/evidence -m:1
+  CivicConnect.Data -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Data/bin/Debug/net10.0/CivicConnect.Data.dll
+  CivicConnect.Web -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Web/bin/Debug/net10.0/CivicConnect.Web.dll
+  CivicConnect.Tests -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+Test run for /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+/Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)
+[xUnit.net 00:00:00.04]   Discovering: CivicConnect.Tests
+[xUnit.net 00:00:00.08]   Discovered:  CivicConnect.Tests
+[xUnit.net 00:00:00.09]   Starting:    CivicConnect.Tests
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: null) [6 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: "Management") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: "Requester") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Assigned", action: "IN_PROGRESS", expected: "In Progress", previousHistory: "ASSIGNED", nextHistory: "IN_PROGRESS") [28 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Open", action: "ASSIGNED", expected: "Assigned", previousHistory: "NEW", nextHistory: "ASSIGNED") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Resolved", action: "CLOSED", expected: "Closed", previousHistory: "RESOLVED", nextHistory: "CLOSED") [2 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "In Progress", action: "RESOLVED", expected: "Resolved", previousHistory: "IN_PROGRESS", nextHistory: "RESOLVED") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Open", action: "ASSIGNED", expected: "Assigned") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Resolved", action: "CLOSED", expected: "Closed") [< 1 ms]
+[xUnit.net 00:00:00.17]   Finished:    CivicConnect.Tests
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Assigned", action: "IN_PROGRESS", expected: "In Progress") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "In Progress", action: "RESOLVED", expected: "Resolved") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_DirectResolveAction_IsRejectedAndRemainsOpen [< 1 ms]
+
+Test Run Successful.
+Total tests: 12
+     Passed: 12
+ Total time: 0,4893 Seconds
+WARNING: Overwriting results file: /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/evidence/st-results.trx
+Results File: /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/evidence/st-results.trx
+
+Exit code: 0
