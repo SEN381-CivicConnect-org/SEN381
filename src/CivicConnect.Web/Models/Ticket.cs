@@ -23,7 +23,8 @@ public sealed class Ticket
     public string Priority { get; set; } = "Medium";
     public string Status { get; set; } = "Open";
     public string Updated { get; set; } = "Just now";
-    public string Requester { get; set; } = "Bernard Small";
+    public string Requester { get; set; } = "";
+    public string? RequesterId { get; set; }
     public string Assignee { get; set; } = "Unassigned";
     public string Description { get; set; } = "";
     public string Created { get; set; } = "";

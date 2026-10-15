@@ -3,7 +3,7 @@ using Npgsql;
 
 namespace CivicConnect.Web.Services;
 
-/// Ensures the three demo accounts (one per portal) exist so the login screen has something to sign into.
+/// Ensures the demo accounts exist, including two distinct reporters for ownership checks.
 public static class DemoDataSeeder
 {
     private static readonly IPasswordHashingService Hasher = Argon2idPasswordHasher.Instance;
@@ -11,6 +11,7 @@ public static class DemoDataSeeder
     private static readonly (string Email, string FullName, string RoleName)[] Accounts =
     {
         ("requester@civicconnect.demo", "Bernard Small", "reporter"),
+        ("requester.b@civicconnect.demo", "Ayesha Khan", "reporter"),
         ("staff@civicconnect.demo", "Daniel Jacobs", "technician"),
         ("manager@civicconnect.demo", "Michael Adams", "operations manager")
     };
