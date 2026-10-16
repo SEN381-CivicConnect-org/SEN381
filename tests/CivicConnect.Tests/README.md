@@ -147,3 +147,15 @@ the inspected workflow, test basis, twelve-case result table, commands, evidence
 and limitations. The focused State Transition suite ran with .NET 10.0.402:
 **12 passed, 0 failed, 0 skipped**. This result does not rerun or supersede the EP
 execution records above.
+
+## Regression Testing
+
+See [Regression tests and post-fix confirmation results](REGRESSION-TESTS.md) for
+the cross-feature regression suite (`TicketWorkflowRegressionTests`), post-fix
+confirmation of `RequestVisibilityEquivalencePartitionTests` (defects D1 and D2
+verified resolved after merging the FR-11 ownership fix), ten-case regression
+result table, commands, and [execution evidence](evidence/reg-execution-latest.txt).
+The combined regression and EP confirmation run executed with .NET 10.0.401:
+**20 passed, 0 failed, 0 skipped** (**98 passed** across the full `CivicConnect.Tests`
+suite). Original pre-fix EP and State Transition evidence files are preserved intact.
+

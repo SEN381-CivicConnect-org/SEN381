@@ -1,0 +1,61 @@
+$ dotnet --list-sdks
+10.0.401 [C:\Program Files\dotnet\sdk]
+
+Exit code: 0
+
+$ dotnet --version
+10.0.401
+
+Exit code: 0
+
+$ dotnet test tests/CivicConnect.Tests/CivicConnect.Tests.csproj --filter "FullyQualifiedName~TicketWorkflowRegressionTests|FullyQualifiedName~RequestVisibilityEquivalencePartitionTests" --no-restore --logger "console;verbosity=detailed" --logger "trx;LogFileName=reg-results.trx" --results-directory tests/CivicConnect.Tests/evidence -m:1
+  CivicConnect.Data -> C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\src\CivicConnect.Data\bin\Debug\net10.0\CivicConnect.Data.dll
+  CivicConnect.Web -> C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\src\CivicConnect.Web\bin\Debug\net10.0\CivicConnect.Web.dll
+  CivicConnect.Tests -> C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\tests\CivicConnect.Tests\bin\Debug\net10.0\CivicConnect.Tests.dll
+Test run for C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\tests\CivicConnect.Tests\bin\Debug\net10.0\CivicConnect.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\tests\CivicConnect.Tests\bin\Debug\net10.0\CivicConnect.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.08]   Discovering: CivicConnect.Tests
+[xUnit.net 00:00:00.14]   Discovered:  CivicConnect.Tests
+[xUnit.net 00:00:00.16]   Starting:    CivicConnect.Tests
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_PrivilegedRolesDetail_RetainsBothPublicAndInternalNoteVisibility_AfterOwnershipFix(role: "Management", actorName: "Michael Adams", actorId: "MGR-1") [112 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOtherUsersRequest_IsNotVisibleInHistory(name: "Other Requester", otherId: "EP-OWN", otherTitle: "Own request title") [112 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOtherUsersRequest_IsNotVisibleInHistory(name: "Bernard Small", otherId: "EP-OTHER", otherTitle: "Other request title") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOtherUsersRequest_DetailsAreNotDisclosed(name: "Bernard Small", id: "EP-OTHER", title: "Other request title", description: "Other request description") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOtherUsersRequest_DetailsAreNotDisclosed(name: "Other Requester", id: "EP-OWN", title: "Own request title", description: "Own request description") [< 1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_PrivilegedRolesDetail_RetainsBothPublicAndInternalNoteVisibility_AfterOwnershipFix(role: "Staff", actorName: "Daniel Jacobs", actorId: "STAFF-1") [4 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_PrivilegedUser_RequesterRequest_IsVisible(role: "Management", name: "Test Manager") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_PrivilegedUser_RequesterRequest_IsVisible(role: "Staff", name: "Assigned Technician") [< 1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOwnRequest_IsVisibleInHistory(name: "Bernard Small", id: "EP-OWN") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOwnRequest_IsVisibleInHistory(name: "Other Requester", id: "EP-OTHER") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOwnRequest_DetailsAreVisible(name: "Bernard Small", id: "EP-OWN", title: "Own request title", description: "Own request description") [1 ms]
+  Passed CivicConnect.Tests.RequestVisibilityEquivalencePartitionTests.EP_RequesterOwnRequest_DetailsAreVisible(name: "Other Requester", id: "EP-OTHER", title: "Other request title", description: "Other request description") [1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_UnauthorizedNoteAndStatusMutations_AreRejectedWithoutAlteringTicketOrAuditTrail(actorKind: "Anonymous") [18 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_UnauthorizedNoteAndStatusMutations_AreRejectedWithoutAlteringTicketOrAuditTrail(actorKind: "Requester") [1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_ForeignRequesterDetail_WithholdsAllNotesAndStatusHistory_WhenOwnershipDeniesTicket(requesterName: "Bernard Small", requesterId: "USER-A", foreignTicketId: "REG-B") [1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_ForeignRequesterDetail_WithholdsAllNotesAndStatusHistory_WhenOwnershipDeniesTicket(requesterName: "Ayesha Khan", requesterId: "USER-B", foreignTicketId: "REG-A") [< 1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_OwningRequesterDetail_RendersPublicNotesAndStatusHistory_WhileWithholdingInternalNotesAndStaffControls(requesterName: "Bernard Small", requesterId: "USER-A", ticketId: "REG-A") [1 ms]
+[xUnit.net 00:00:00.36]   Finished:    CivicConnect.Tests
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_OwningRequesterDetail_RendersPublicNotesAndStatusHistory_WhileWithholdingInternalNotesAndStaffControls(requesterName: "Ayesha Khan", requesterId: "USER-B", ticketId: "REG-B") [1 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_StaffQueueFiltering_IncludesActiveRequesterTickets_AndExcludesOnceResolvedOrClosed [2 ms]
+  Passed CivicConnect.Tests.TicketWorkflowRegressionTests.REG_RequesterCreateFollowedByNotesAndFullLifecycle_PreservesPrioritySnapshotAndOwnership [15 ms]
+
+Test Run Successful.
+Total tests: 20
+     Passed: 20
+ Total time: 1,2700 Seconds
+Results File: C:\Users\shaun\OneDrive\Belgium campus\CLC 2026\2nd Semester\SEN381\Project-Practical\SEN381\tests\CivicConnect.Tests\evidence\reg-results.trx
+
+Exit code: 0
+
+$ dotnet test tests/CivicConnect.Tests/CivicConnect.Tests.csproj --no-restore --verbosity normal -m:1
+Test Run Successful.
+Total tests: 98
+     Passed: 98
+ Total time: 0,9143 Seconds
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Exit code: 0
