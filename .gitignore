@@ -191,4 +191,5 @@ docker-compose.override.yml
 
 .scratch/
 
-
+#Secure the staging variables
+.env.staging

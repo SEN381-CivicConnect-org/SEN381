@@ -4,6 +4,7 @@ using CivicConnect.Data.Security;
 using CivicConnect.Web.Components;
 using CivicConnect.Web.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -18,6 +19,9 @@ var connectionString = systemSecrets.ConnectionString;
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddControllers();
 builder.Services.AddAuthorizationCore();
+// HTTP requests have no circuit identity. Handle denial without challenging an
+// unconfigured HTTP scheme; interactive role checks remain in AuthorizeRouteView.
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, DemoAuthorizationResultHandler>();
 builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));

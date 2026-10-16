@@ -36,6 +36,24 @@ public sealed class IncidentConfiguration : IEntityTypeConfiguration<Incident>
 
         builder.Property(i => i.Status).IsRequired().HasDefaultValue(IncidentStatus.New);
 
+        builder.HasIndex(i => i.Status)
+            .HasDatabaseName("ix_incident_status");
+
+        // Partial: only open statuses are ever overdue-scanned.
+        builder.HasIndex(i => i.DueAt)
+            .HasDatabaseName("ix_incident_due_at_open")
+            .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
+        builder.HasIndex(i => new { i.Status, i.CategoryId })
+            .HasDatabaseName("ix_incident_status_category_id");
+
+        builder.HasIndex(i => new { i.Status, i.AssignedTeamId })
+            .HasDatabaseName("ix_incident_status_assigned_team_id");
+
+        // Turnaround-vs-target grouping, same shape as the category/team breakdowns above.
+        builder.HasIndex(i => new { i.Status, i.Priority })
+            .HasDatabaseName("ix_incident_status_priority");
+
         builder.Property(i => i.PriorityOverridden).HasDefaultValue(false);
 
         // Bumped by a database trigger on every update; the concurrency token EF uses to detect lost updates.

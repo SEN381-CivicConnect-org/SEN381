@@ -211,13 +211,17 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        ticket = Tickets.Find(Id);
+        ticket = null;
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        ticket = Tickets.FindVisible(Id, user);
         requestedStatus = "";
         transitionMessage = null;
         noteText = "";
         noteError = null;
         isInternal = true;
-        await LoadNotes();
+        notes = Array.Empty<TicketNote>();
+        canAddNotes = false;
+        if (ticket is not null) await LoadNotes();
     }
 
     async Task LoadNotes()
