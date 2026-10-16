@@ -927,9 +927,10 @@ including the Gitleaks license failure/fix history, is in
 
 | Category | Evidence | Result when last verified |
 | --- | --- | --- |
-| Unit/component | `docs/testing/unit-component/` — `CivicConnect.Tests` (no DB/network) | 78 passed, 0 failed (this checkout, 2026-10-16). The sub-document itself still reports 43 — it has not been updated for the tests added since, including the growth to 88 passed on the tip of `dev` after PR #138 merged. |
+| Unit/component | `docs/testing/unit-component/` — `CivicConnect.Tests` (no DB/network) | **98 passed, 0 failed** (this checkout, 2026-10-16; compiles cleanly with 0 warnings/errors). Grown from 78 → 88 after PR #138 (`RequestVisibilityEquivalencePartitionTests`) and 88 → 98 after PR #142 (`TicketWorkflowRegressionTests`). The sub-document itself still reports 43. |
 | API/integration | `docs/testing/api-integration/` — `CivicConnect.Data.Tests` (real PostgreSQL, some through the API controllers) | 32 passed, 0 failed — stable across every check run during this work. |
-| Black-box functional | `docs/testing/black-box-functional/` — six standalone "Checks" executables plus four black-box-technique classes in `CivicConnect.Tests` | 4 of 6 "Checks" executables pass when run; 2 (`NavigationChecks`, `ConfigurationChecks`) currently fail to build (see §10.4). The 4 technique-specific xUnit classes: 35 passed, 0 failed. |
+| Black-box functional | `docs/testing/black-box-functional/` — six standalone "Checks" executables plus five black-box-technique classes in `CivicConnect.Tests` | 4 of 6 "Checks" executables pass when run; 2 (`NavigationChecks`, `ConfigurationChecks`) currently fail to build (see §10.4). The 5 technique-specific xUnit classes (`RequestStatusStateTransitionTests`, `RequestVisibilityEquivalencePartitionTests`, `AuthorizationRecoveryTests`, `RequesterOwnershipTests`, `DemoQueueFixtureTests`): **45 passed, 0 failed**. |
+| Ticket Workflow Regression & EP Confirmation | `tests/CivicConnect.Tests/REGRESSION-TESTS.md` — `CivicConnect.Tests` (`TicketWorkflowRegressionTests` & `RequestVisibilityEquivalencePartitionTests`, xUnit on .NET 10.0 SDK) | **20 run, 20 passed, 0 failed, 0 skipped** (~1.27 s): 10 Regression cases (cross-feature boundaries, requester ownership, role-based visibility, lifecycle state transitions) + 10 Equivalence Partitioning (EP) confirmation cases. Full `CivicConnect.Tests` suite: **98 passed, 0 failed** (0 warnings/errors). Equivalence Partitioning defects **D1** (fixed requester history filtering) and **D2** (detail ownership disclosure) confirmed resolved on `dev`. |
 | E2E/system | `docs/testing/e2e-system/` — Playwright against the real Dockerized stack | 21 browser tests; **19 passed, 0 failed, 2 skipped** after a real FR-11 ownership defect the suite found was fixed (PR #133) — see §10.4. |
 | Performance/load | `docs/testing/performance/` — `tools/seed-benchmark` against a 6,000-incident dataset | 7 management/staff/reporter read-path queries, all index-backed (no sequential scans), all well under the NFR-07 (≤500 ms)/NFR-08 (≤2 s) targets at the Postgres level. |
 
@@ -937,6 +938,49 @@ At least two black-box design techniques are represented across the suite (State
 Transition, Decision Table, Equivalence Partitioning, Boundary Value Analysis and
 Negative testing all appear — see `docs/testing/black-box-functional/` for which test
 uses which), satisfying the M3 minimum baseline's technique-diversity requirement.
+
+#### 10.3.1 Ticket Workflow Regression & EP Confirmation
+
+Full detail and terminal execution logs are maintained in `tests/CivicConnect.Tests/REGRESSION-TESTS.md` and `tests/CivicConnect.Tests/evidence/reg-execution-latest.txt`.
+
+| Field | Value |
+| --- | --- |
+| **Test Suite** | `CivicConnect.Tests` (`TicketWorkflowRegressionTests` & `RequestVisibilityEquivalencePartitionTests`) |
+| **Framework** | xUnit (.NET 10.0 SDK — `10.0.401`) |
+| **Execution Scope** | 10 Regression cases (cross-feature boundaries, requester ownership, role-based visibility, lifecycle state transitions) + 10 Equivalence Partitioning (EP) confirmation cases |
+| **Execution Results** | **20 run, 20 passed, 0 failed, 0 skipped**. Duration: ~1.27 s |
+| **Overall Build Health** | Full suite execution resulted in **98 passed tests, 0 failures**. Compiles cleanly with **0 warnings / 0 errors** (`dotnet build -warnaserror`) |
+| **Defect Resolution Confirmation** | Equivalence Partitioning defects **D1** (fixed requester history filtering in `MyTickets.razor`) and **D2** (detail ownership disclosure in `TicketDetail.razor`) are confirmed resolved on the `dev` branch |
+
+**Regression Test Cases (`TicketWorkflowRegressionTests.cs`):**
+
+| Test ID | Feature Boundary | Scenario | Expected Observable Result | Actual Result | Status |
+| --- | --- | --- | --- | --- | --- |
+| `REG-01` | FR-11 × FR-16 × FR-07 | Requester A (`USER-A`) opens own `REG-A` detail | Public note and `NEW → ASSIGNED` visible; internal note and staff controls absent | Public note & history rendered; internal note & controls absent | **Pass** |
+| `REG-02` | FR-11 × FR-16 × FR-07 | Requester B (`USER-B`) opens own `REG-B` detail | Public note and `NEW → ASSIGNED` visible; internal note and staff controls absent | Public note & history rendered; internal note & controls absent | **Pass** |
+| `REG-03` | FR-11 × FR-16 | Requester A (`USER-A`) opens foreign `REG-B` detail | `Ticket not found`; neither public/internal notes nor history disclosed | `Ticket not found`; 0 notes/history rendered | **Pass** |
+| `REG-04` | FR-11 × FR-16 | Requester B (`USER-B`) opens foreign `REG-A` detail | `Ticket not found`; neither public/internal notes nor history disclosed | `Ticket not found`; 0 notes/history rendered | **Pass** |
+| `REG-05` | FR-11 × FR-16 | Staff (`STAFF-1`) opens requester ticket `REG-A` | Both public and internal notes + `Add a note` control visible | Both notes and note form rendered | **Pass** |
+| `REG-06` | FR-11 × FR-16 | Management (`MGR-1`) opens requester ticket `REG-A` | Both public and internal notes + `Add a note` control visible | Both notes and note form rendered | **Pass** |
+| `REG-07` | FR-05 × FR-07 × FR-08 × FR-11 × FR-16 | `CreateForRequester` → 2 notes → full `Open` to `Closed` lifecycle | Priority snapshot (`Critical`), `USER-A` ownership, note isolation, and 7 PII-free audit records (`CREATE`, `2× ADD_NOTE`, `4× CHANGE_STATUS`) preserved | All snapshots, notes, and 7 audit records intact | **Pass** |
+| `REG-08` | FR-07 × FR-16 × FR-08 | Requester attempts `AddNote` and `ChangeStatus` | Both rejected; ticket stays `Open`; 0 notes/history added; only `CREATE` audit entry remains | Rejected; state and audit log unchanged | **Pass** |
+| `REG-09` | FR-07 × FR-16 × FR-08 | Anonymous user attempts `AddNote` and `ChangeStatus` | Both rejected; ticket stays `Open`; 0 notes/history added; only `CREATE` audit entry remains | Rejected; state and audit log unchanged | **Pass** |
+| `REG-10` | FR-11 × FR-14 × FR-15 | Requester creates ticket; Staff advances `Open → Closed` | In `GetStaffQueue` while `Open`/`Assigned`/`In Progress`; excluded when `Resolved`/`Closed`; requester retains visibility | Active queue includes through `In Progress`, excludes at `Resolved`/`Closed` | **Pass** |
+
+**Equivalence Partitioning Post-Fix Confirmation Cases (`RequestVisibilityEquivalencePartitionTests.cs`):**
+
+| Test ID | Equivalence Partition | Scenario | Pre-Fix Status | Post-Fix Result (.NET 10.0) | Status |
+| --- | --- | --- | --- | --- | --- |
+| `EP-01` | EP 1: Requester owns request | `Bernard Small` lists own request (`EP-OWN`) | Blocked (`NETSDK1045`) | `EP-OWN` link visible in history | **Pass** |
+| `EP-02` | EP 1: Requester owns request | `Other Requester` lists own request (`EP-OTHER`) | Blocked (**D1** suspected) | `EP-OTHER` link visible in history (**D1 resolved**) | **Pass** |
+| `EP-03` | EP 1: Requester owns request | `Bernard Small` opens own detail (`EP-OWN`) | Blocked (`NETSDK1045`) | Own title and description visible | **Pass** |
+| `EP-04` | EP 1: Requester owns request | `Other Requester` opens own detail (`EP-OTHER`) | Blocked (`NETSDK1045`) | Own title and description visible | **Pass** |
+| `EP-05` | EP 2: Foreign requester | `Bernard Small` lists requests (checks `EP-OTHER`) | Blocked (`NETSDK1045`) | Foreign link and title absent | **Pass** |
+| `EP-06` | EP 2: Foreign requester | `Other Requester` lists requests (checks `EP-OWN`) | Blocked (**D1** suspected) | Foreign link and title absent (**D1 resolved**) | **Pass** |
+| `EP-07` | EP 2: Foreign requester | `Bernard Small` opens foreign detail (`EP-OTHER`) | Blocked (**D2** suspected) | Foreign title and description not disclosed (**D2 resolved**) | **Pass** |
+| `EP-08` | EP 2: Foreign requester | `Other Requester` opens foreign detail (`EP-OWN`) | Blocked (**D2** suspected) | Foreign title and description not disclosed (**D2 resolved**) | **Pass** |
+| `EP-09` | EP 3: Privileged role | `Staff` (`Assigned Technician`) opens `EP-OTHER` | Blocked (`NETSDK1045`) | Request title and description visible | **Pass** |
+| `EP-10` | EP 3: Privileged role | `Management` (`Test Manager`) opens `EP-OTHER` | Blocked (`NETSDK1045`) | Request title and description visible | **Pass** |
 
 ### 10.4 Known Issues Surfaced While Producing This Evidence
 
