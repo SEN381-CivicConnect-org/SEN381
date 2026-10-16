@@ -245,7 +245,7 @@ public sealed class TicketService
             return Array.Empty<TicketNote>();
 
         // Filter before returning data to the UI; requesters never receive internal notes.
-        var includeInternal = CanAddNotes(user) && !user.IsInRole("Requester");
+        var includeInternal = CanAddNotes(user) && !user.IsInRole("Requester");;
         lock (_notesLock)
         {
             return _notes.Where(note => note.TicketId == ticketId &&
