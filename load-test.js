@@ -12,7 +12,7 @@ export const options = {
 
 export default function () {
   // Target the staging backend port you configured in .env.staging
-  const res = http.get('http://localhost:5061/health'); 
+  const res = http.get('http://localhost:5062/health');
   
   check(res, {
     'status is 200': (r) => r.status === 200,
