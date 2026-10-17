@@ -78,6 +78,11 @@ builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<SubmissionService>();
 builder.Services.AddScoped<IIncidentReportingService, IncidentReportingService>();
+builder.Services.AddScoped<IRetentionSweepService, RetentionSweepJob>();
+builder.Services.AddScoped<RetentionSweepJob>();
+builder.Services.AddScoped<IUserDeIdentificationService, UserDeIdentificationService>();
+builder.Services.AddScoped<UserDeIdentificationService>();
+builder.Services.AddHostedService<RetentionSweepHostedService>();
 
 var app = builder.Build();
 

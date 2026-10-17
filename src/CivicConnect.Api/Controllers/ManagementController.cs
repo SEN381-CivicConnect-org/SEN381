@@ -14,12 +14,20 @@ public sealed class ManagementController : ControllerBase
 {
     private const string ManagementRoles = "Management,Supervisor,operations manager,administrator,supervisor";
     private const string StaffRoles = "Staff,Technician,Supervisor,operations manager,technician,supervisor,administrator";
+    private const string AdminOrManagerRoles = "Administrator,operations manager,administrator";
 
     private readonly IIncidentReportingService _reporting;
+    private readonly IRetentionSweepService? _retentionSweepService;
+    private readonly IUserDeIdentificationService? _deIdentificationService;
 
-    public ManagementController(IIncidentReportingService reporting)
+    public ManagementController(
+        IIncidentReportingService reporting,
+        IRetentionSweepService? retentionSweepService = null,
+        IUserDeIdentificationService? deIdentificationService = null)
     {
         _reporting = reporting ?? throw new ArgumentNullException(nameof(reporting));
+        _retentionSweepService = retentionSweepService;
+        _deIdentificationService = deIdentificationService;
     }
 
     [HttpGet("incidents/open-status-counts")]
@@ -84,5 +92,48 @@ public sealed class ManagementController : ControllerBase
     {
         return Ok(await _reporting.ListIncidentsAsync(
             status, categoryId, teamId, locationId, page, pageSize, cancellationToken));
+    }
+
+    /// <summary>
+    /// Executes an on-demand retention sweep (NFR-05, POPIA s14(1), IT-RET-01).
+    /// Purges idempotency records expired or older than 7 days, and read notifications older than 12 months.
+    /// </summary>
+    [HttpPost("retention/sweep")]
+    [Authorize(Roles = "Administrator,operations manager")]
+    public async Task<ActionResult<RetentionSweepSummaryDto>> RunRetentionSweepAsync(
+        [FromServices] IRetentionSweepService? retentionSweepService = null,
+        CancellationToken cancellationToken = default)
+    {
+        var service = _retentionSweepService ?? retentionSweepService
+            ?? throw new InvalidOperationException("Retention sweep service is not available.");
+        var summary = await service.SweepAsync(cancellationToken: cancellationToken);
+        return Ok(summary);
+    }
+
+    /// <summary>
+    /// Executes POPIA-compliant irreversible soft de-identification of user personal information (NFR-05, IT-RET-02).
+    /// </summary>
+    [HttpPost("users/{id}/de-identify")]
+    [Authorize(Roles = "Administrator,operations manager")]
+    public async Task<ActionResult<UserDeIdentificationResultDto>> DeIdentifyUserAsync(
+        Guid id,
+        [FromServices] IUserDeIdentificationService? deIdentificationService = null,
+        CancellationToken cancellationToken = default)
+    {
+        var service = _deIdentificationService ?? deIdentificationService
+            ?? throw new InvalidOperationException("User de-identification service is not available.");
+        try
+        {
+            var result = await service.DeIdentifyUserAsync(id, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }
