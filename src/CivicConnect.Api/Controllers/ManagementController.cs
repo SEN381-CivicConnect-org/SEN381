@@ -80,9 +80,22 @@ public sealed class ManagementController : ControllerBase
         [FromQuery] int? locationId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
+        [FromQuery] bool onlyOpen = false,
         CancellationToken cancellationToken = default)
     {
         return Ok(await _reporting.ListIncidentsAsync(
-            status, categoryId, teamId, locationId, page, pageSize, cancellationToken));
+            status, categoryId, teamId, locationId, page, pageSize, onlyOpen, cancellationToken));
+    }
+
+    /// Dedicated staff queue for a service team (NFR-07, AP-04).
+    [HttpGet("teams/{teamId:int}/queue")]
+    [Authorize(Roles = StaffRoles)]
+    public async Task<ActionResult<IReadOnlyList<IncidentListItemDto>>> GetTeamQueueAsync(
+        [FromRoute] int teamId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _reporting.GetTeamQueueAsync(teamId, page, pageSize, cancellationToken));
     }
 }

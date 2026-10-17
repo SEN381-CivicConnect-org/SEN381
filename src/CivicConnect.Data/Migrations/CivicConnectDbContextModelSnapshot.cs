@@ -406,6 +406,11 @@ namespace CivicConnect.Data.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_incident_status");
 
+                    b.HasIndex("AssignedTeamId", "OpenedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("incident_team_queue_idx")
+                        .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
                     b.HasIndex("Status", "AssignedTeamId")
                         .HasDatabaseName("ix_incident_status_assigned_team_id");
 
@@ -419,7 +424,7 @@ namespace CivicConnect.Data.Migrations
                         {
                             t.HasCheckConstraint("incident_merge_not_self_ck", "id <> merged_into_id");
 
-                            t.HasCheckConstraint("incident_override_ck", "(NOT priority_overridden\n                      AND override_reason IS NULL AND override_by IS NULL AND override_at IS NULL\n                      AND priority = computed_priority)\n                  OR (priority_overridden\n                      AND override_reason IS NOT NULL AND btrim(override_reason) <> ''\n                      AND override_by IS NOT NULL AND override_at IS NOT NULL)");
+                            t.HasCheckConstraint("incident_override_ck", "(NOT priority_overridden\r\n                      AND override_reason IS NULL AND override_by IS NULL AND override_at IS NULL\r\n                      AND priority = computed_priority)\r\n                  OR (priority_overridden\r\n                      AND override_reason IS NOT NULL AND btrim(override_reason) <> ''\r\n                      AND override_by IS NOT NULL AND override_at IS NOT NULL)");
                         });
                 });
 
