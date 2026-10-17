@@ -10,6 +10,25 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-civicconnect}
       POSTGRES_USER: ${POSTGRES_USER:-civicconnect}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - sh
+      - -c
+      - |
+        if [ ! -f /var/lib/postgresql/server.key ] || [ ! -f /var/lib/postgresql/server.crt ]; then
+          apk add --no-cache openssl >/dev/null 2>&1 || true
+          openssl req -new -x509 -days 3650 -nodes \
+            -out /var/lib/postgresql/server.crt \
+            -keyout /var/lib/postgresql/server.key \
+            -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,DNS:db,IP:127.0.0.1"
+          chown postgres:postgres /var/lib/postgresql/server.crt /var/lib/postgresql/server.key
+          chmod 600 /var/lib/postgresql/server.key
+          chmod 644 /var/lib/postgresql/server.crt
+        fi
+        exec docker-entrypoint.sh postgres \
+          -c ssl=on \
+          -c ssl_cert_file=/var/lib/postgresql/server.crt \
+          -c ssl_key_file=/var/lib/postgresql/server.key
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -61,8 +80,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=5060
-      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
       - JWT_SECRET=${JWT_SECRET:-}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
@@ -96,8 +115,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8085
-      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme}
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
       - JWT_SECRET=${JWT_SECRET:-}
     depends_on:
       db:
