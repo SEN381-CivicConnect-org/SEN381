@@ -63,7 +63,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
 var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration);
 builder.Services.AddSingleton(systemSecrets);
-var connectionString = systemSecrets.ConnectionString;
+var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
+SystemSecretsConfiguration.EnsureServerTlsReady(connectionString);
 
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 {
@@ -468,6 +469,9 @@ app.MapGet("/api/requests", async (
 })
 .WithName("GetIncidents")
 .WithTags("Incidents");
+
+// NFR-10 (IT-SEC-02): Verify running application database connection is not a superuser and not the migration role
+await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
 
 app.Run();
 

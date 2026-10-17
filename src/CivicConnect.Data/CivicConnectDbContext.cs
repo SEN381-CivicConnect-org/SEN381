@@ -1,3 +1,4 @@
+using CivicConnect.Data.Configuration;
 using CivicConnect.Data.Entities;
 using CivicConnect.Data.Interceptors;
 using Microsoft.EntityFrameworkCore;
@@ -34,11 +35,13 @@ public sealed class CivicConnectDbContext : DbContext
     public DbSet<IncidentNote> IncidentNotes => Set<IncidentNote>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<StaffDirectory> StaffDirectory => Set<StaffDirectory>();
 
     // Use these for new selections; the DbSets remain unfiltered for history and management.
     public IQueryable<Category> ActiveCategories => Categories.Where(c => c.IsActive);
     public IQueryable<Location> ActiveLocations => Locations.Where(l => l.IsActive);
     public IQueryable<Asset> ActiveAssets => Assets.Where(a => a.IsActive);
+    public IQueryable<StaffDirectory> StaffDirectories => StaffDirectory.AsNoTracking();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -73,13 +76,16 @@ public sealed class CivicConnectDbContext : DbContext
         }
     }
 
-    /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, and the updated_at interceptor.
+    /// Applies the conventions every host (design-time CLI, API, tests) must share: snake_case naming, a snake_case migrations history table, TLS enforcement, and the updated_at interceptor.
     public static DbContextOptionsBuilder<CivicConnectDbContext> Configure(
         DbContextOptionsBuilder<CivicConnectDbContext> optionsBuilder,
         string connectionString)
     {
+        var tlsConnectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(connectionString);
+        SystemSecretsConfiguration.EnsureServerTlsReady(tlsConnectionString);
+
         return (DbContextOptionsBuilder<CivicConnectDbContext>)optionsBuilder
-            .UseNpgsql(connectionString, npgsql => npgsql
+            .UseNpgsql(tlsConnectionString, npgsql => npgsql
                 .MigrationsHistoryTable("__ef_migrations_history")
                 .MapEnum<IncidentStatus>("incident_status")
                 .MapEnum<NotificationKind>("notification_kind")
@@ -111,6 +117,12 @@ public sealed class CivicConnectDbContext : DbContext
         modelBuilder.HasPostgresEnum(
             "audit_action",
             new[] { "CREATE", "UPDATE", "DEACTIVATE", "OVERRIDE" });
+
+        modelBuilder.Entity<StaffDirectory>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView("staff_directory");
+        });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CivicConnectDbContext).Assembly);
     }

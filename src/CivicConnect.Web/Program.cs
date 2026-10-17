@@ -14,7 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
 var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration, requireJwtSecret: false);
 builder.Services.AddSingleton(systemSecrets);
-var connectionString = systemSecrets.ConnectionString;
+var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
+SystemSecretsConfiguration.EnsureServerTlsReady(connectionString);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddControllers();
@@ -48,11 +49,32 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().Cre
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+var isMigrateOnly = args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
+var shouldMigrate = isMigrateOnly || args.Contains("--migrate", StringComparer.OrdinalIgnoreCase) ||
+    (app.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(systemSecrets.MigrationConnectionString));
+
+if (shouldMigrate)
 {
-    var db = scope.ServiceProvider.GetRequiredService<CivicConnectDbContext>();
-    await db.Database.MigrateAsync();
+    var migrationConn = systemSecrets.MigrationConnectionString ?? connectionString;
+    var migrationTlsConn = SystemSecretsConfiguration.EnsureTlsConnectionString(migrationConn);
+    SystemSecretsConfiguration.EnsureServerTlsReady(migrationTlsConn);
+
+    var migrationOptions = CivicConnectDbContext.Configure(
+        new DbContextOptionsBuilder<CivicConnectDbContext>(),
+        migrationTlsConn);
+
+    await using var migrationDb = new CivicConnectDbContext(migrationOptions.Options);
+    await migrationDb.Database.MigrateAsync();
+
+    if (isMigrateOnly)
+    {
+        Console.WriteLine("Database migrations completed successfully.");
+        return;
+    }
 }
+
+// NFR-10 (IT-SEC-02): Verify running application database connection is not a superuser and not the migration role
+await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
 
 await DemoDataSeeder.EnsureDemoUsersAsync(app.Services.GetRequiredService<NpgsqlDataSource>());
 
