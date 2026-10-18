@@ -46,22 +46,20 @@
             </div>
 
             <!-- FR-05 Calculated Priority Preview (PriorityMatrix / DD-02 / STK-CFL-01) -->
-            <div class="field full" style="background: var(--surface-subtle, #f8fafc); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div class="field full priority-preview-card">
+                <div class="priority-preview-header">
                     <div>
-                        <div style="font-weight: 600; font-size: 13.5px; color: var(--text);">
-                            Calculated Priority:
-                            <span class="badge @PriorityMatrix.GetPriorityBadgeClass(previewPriorityId)" style="margin-left: 8px; font-size: 12px; padding: 4px 10px;">
+                        <div class="priority-preview-title">
+                            <span>Calculated Priority:</span>
+                            <span class="badge @PriorityMatrix.GetPriorityBadgeClass(previewPriorityId)">
                                 @PriorityMatrix.GetPriorityName(previewPriorityId) Priority
                             </span>
                         </div>
-                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                        <div class="priority-preview-formula">
                             Priority Matrix (FR-05): Category Urgency <strong>@PriorityMatrix.GetLevelName(selectedUrgencyLevel) (@selectedUrgencyLevel)</strong> + Location Impact <strong>@PriorityMatrix.GetLevelName(selectedImpactLevel) (@selectedImpactLevel)</strong> → PriorityTarget <strong>#@previewPriorityId (@PriorityMatrix.GetPriorityName(previewPriorityId))</strong>.
                         </div>
                     </div>
-                    <span style="font-size: 11px; padding: 3px 8px; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-weight: 600;">
-                        STK-CFL-01 Enforced
-                    </span>
+                    <span class="badge badge-open">STK-CFL-01 Enforced</span>
                 </div>
             </div>
 
@@ -93,6 +91,12 @@
 
 @code
 {
+    private AuthenticationStateProvider AuthState
+    {
+        get => Authentication;
+        set => Authentication = value;
+    }
+
     private sealed record CategoryOption(int Id, string Name, short UrgencyLevel);
     private sealed record LocationOption(int Id, string Name, short ImpactLevel);
 

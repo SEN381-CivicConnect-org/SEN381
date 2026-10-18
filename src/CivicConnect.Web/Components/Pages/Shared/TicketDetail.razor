@@ -20,54 +20,54 @@ else
 
     <div class="page-head">
         <div>
-            <button class="btn btn-ghost" @onclick="Workspace.GoBack">Back</button>
-            <h1 style="margin-top:8px">@ticket.Title</h1>
+            <button type="button" class="btn btn-ghost btn-back" @onclick="Workspace.GoBack">← Back</button>
+            <h1 class="detail-heading">@ticket.Title</h1>
             <p>#@ticket.Id · @ticket.Category · @ticket.Location</p>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="page-head-badges">
             <span class="badge @PriorityMatrix.GetPriorityBadgeClass(ticket.PriorityId)">@ticket.Priority Priority</span>
-            <span class="badge">@ticket.Status</span>
+            <span class="badge @GetStatusBadgeClass(ticket.Status)">@ticket.Status</span>
         </div>
     </div>
 
     <div class="detail-grid">
         <div class="card detail-card">
             <div class="meta-grid">
-                <div>
+                <div class="meta-item">
                     <span>Requester</span>
                     <strong>@ticket.Requester</strong>
                 </div>
-                <div>
+                <div class="meta-item">
                     <span>Assigned to</span>
                     <strong>@ticket.Assignee</strong>
                 </div>
-                <div>
+                <div class="meta-item">
                     <span>Created</span>
                     <strong>@ticket.Created</strong>
                 </div>
-                <div>
+                <div class="meta-item">
                     <span>Updated</span>
                     <strong>@ticket.Updated</strong>
                 </div>
             </div>
 
             <!-- FR-05 Priority Calculation Snapshot Breakdown -->
-            <div style="margin: 20px 0; padding: 14px 16px; background: var(--surface-subtle, #f8fafc); border: 1px solid var(--border); border-radius: 8px;">
-                <div style="font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="priority-snapshot-card">
+                <div class="priority-snapshot-head">
                     <span>Priority Calculation Snapshot (FR-05 / STK-CFL-01)</span>
-                    <span style="font-size: 10.5px; font-weight: normal; color: var(--muted);">PriorityMatrix (DD-02)</span>
+                    <small>PriorityMatrix (DD-02)</small>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12.5px;">
-                    <div>
-                        <span style="color: var(--muted); display: block;">Location Impact</span>
+                <div class="priority-snapshot-grid">
+                    <div class="meta-item">
+                        <span>Location Impact</span>
                         <strong>@ticket.ImpactName Impact (Level @ticket.ImpactLevel)</strong>
                     </div>
-                    <div>
-                        <span style="color: var(--muted); display: block;">Category Urgency</span>
+                    <div class="meta-item">
+                        <span>Category Urgency</span>
                         <strong>@ticket.UrgencyName Urgency (Level @ticket.UrgencyLevel)</strong>
                     </div>
-                    <div>
-                        <span style="color: var(--muted); display: block;">Calculated Priority</span>
+                    <div class="meta-item">
+                        <span>Calculated Priority</span>
                         <strong>@ticket.Priority (Target #@ticket.PriorityId)</strong>
                     </div>
                 </div>
@@ -78,7 +78,7 @@ else
                 <p>@ticket.Description</p>
             </div>
 
-            <div class="section-head" style="margin-top:28px">
+            <div class="section-head detail-section-head">
                 <h2>Activity</h2>
             </div>
             <div class="timeline">
@@ -98,7 +98,7 @@ else
                         <div class="dot"></div>
                         <div>
                             <strong>@(note.IsInternal ? "Internal note" : "Public note")</strong>
-                            <p style="white-space:pre-wrap;overflow-wrap:anywhere">@note.Text</p>
+                            <p class="note-body">@note.Text</p>
                             <p>@note.Timestamp.ToLocalTime().ToString("d MMM yyyy, HH:mm zzz") · @note.Author</p>
                         </div>
                     </div>
@@ -120,7 +120,7 @@ else
             </div>
             @if (canAddNotes)
             {
-                <form @onsubmit="AddNote" @onsubmit:preventDefault="true">
+                <form class="note-form" @onsubmit="AddNote" @onsubmit:preventDefault="true">
                     <div class="field">
                         <label for="ticket-note">Add a note</label>
                         <textarea id="ticket-note" @bind="noteText" required></textarea>
@@ -146,23 +146,26 @@ else
         <div class="side-stack">
             <div class="card side-card">
                 <h3>Ticket information</h3>
-                <AuthorizeView Roles="Staff">
-                    <Authorized>
-                        <label for="ticket-status">Change status</label>
-                        <select id="ticket-status" @bind="requestedStatus" disabled="@(TicketService.GetNextStatus(ticket.Status) is null)">
-                            <option value="">Select a status</option>
-                            @if (TicketService.GetNextStatus(ticket.Status) is { } nextStatus)
-                            {
-                                <option value="@nextStatus">@TicketService.DisplayStatus(nextStatus)</option>
-                            }
-                        </select>
-                        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrEmpty(requestedStatus))" @onclick="ChangeStatus">Update status</button>
+                @if (canChangeStatus)
+                {
+                    <div class="status-transition-box">
+                        <div class="field">
+                            <label for="ticket-status">Change status</label>
+                            <select id="ticket-status" @bind="requestedStatus" disabled="@(TicketService.GetNextStatus(ticket.Status) is null)">
+                                <option value="">Select a status</option>
+                                @if (TicketService.GetNextStatus(ticket.Status) is { } nextStatus)
+                                {
+                                    <option value="@nextStatus">@TicketService.DisplayStatus(nextStatus)</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-block" disabled="@(string.IsNullOrEmpty(requestedStatus))" @onclick="ChangeStatus">Update status</button>
                         @if (transitionMessage is not null)
                         {
-                            <p role="status">@transitionMessage</p>
+                            <p class="transition-feedback" role="status">@transitionMessage</p>
                         }
-                    </Authorized>
-                </AuthorizeView>
+                    </div>
+                }
                 <div class="kv">
                     <span>Reference</span>
                     <strong>#@ticket.Id</strong>
@@ -208,6 +211,16 @@ else
     string? noteError;
     bool isInternal = true;
     bool canAddNotes;
+    bool canChangeStatus;
+
+    private static string GetStatusBadgeClass(string? status) => status switch
+    {
+        "Open" or "NEW" => "badge-open",
+        "Assigned" or "ASSIGNED" => "badge-assigned",
+        "In Progress" or "IN_PROGRESS" => "badge-progress",
+        "Resolved" or "RESOLVED" => "badge-resolved",
+        _ => "badge-closed"
+    };
 
     protected override async Task OnParametersSetAsync()
     {
@@ -221,14 +234,16 @@ else
         isInternal = true;
         notes = Array.Empty<TicketNote>();
         canAddNotes = false;
+        canChangeStatus = false;
         if (ticket is not null) await LoadNotes();
     }
 
     async Task LoadNotes()
     {
         var user = (await Authentication.GetAuthenticationStateAsync()).User;
-        canAddNotes = user.Identity?.IsAuthenticated == true &&
-            (user.IsInRole("Staff") || user.IsInRole("Management"));
+        var isAuthenticated = user.Identity?.IsAuthenticated == true;
+        canAddNotes = isAuthenticated && (user.IsInRole("Staff") || user.IsInRole("Management"));
+        canChangeStatus = isAuthenticated && user.IsInRole("Staff");
         notes = Tickets.GetNotes(Id, user);
     }
 

@@ -17,7 +17,15 @@ builder.Services.AddSingleton(systemSecrets);
 var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
 SystemSecretsConfiguration.EnsureServerTlsReady(connectionString);
 
-builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddRazorComponents().AddInteractiveServerComponents(options =>
+{
+    var isDevOrStaging = builder.Environment.IsDevelopment() ||
+                         string.Equals(builder.Environment.EnvironmentName, "Staging", StringComparison.OrdinalIgnoreCase);
+    if (isDevOrStaging || builder.Configuration.GetValue<bool>("DetailedErrors"))
+    {
+        options.DetailedErrors = true;
+    }
+});
 builder.Services.AddControllers();
 builder.Services.AddAuthorizationCore();
 // HTTP requests have no circuit identity. Handle denial without challenging an
@@ -41,8 +49,13 @@ builder.Services.AddScoped<WorkspaceNavigation>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
-builder.Services.AddScoped<IRoleDelegationService, RoleDelegationService>();
-builder.Services.AddScoped<RoleDelegationService>();
+builder.Services.AddScoped<IRoleDelegationService>(sp =>
+    new RoleDelegationService(
+        sp.GetRequiredService<IServiceScopeFactory>(),
+        sp.GetService<AuditService>(),
+        sp.GetService<ILogger<RoleDelegationService>>()));
+builder.Services.AddScoped<RoleDelegationService>(sp =>
+    (RoleDelegationService)sp.GetRequiredService<IRoleDelegationService>());
 builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
 builder.Services.AddScoped<WorkspaceDataService>();
