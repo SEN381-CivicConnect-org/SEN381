@@ -53,7 +53,7 @@ public sealed class WorkspaceNavigation : IDisposable
         {
             "Requester" => path is "/requester/tickets" or "/requester/new",
             "Staff" => path is "/staff" or "/staff/queue" or "/staff/assigned",
-            "Management" => path is "/management" or "/management/tickets" or "/management/users" or "/management/categories",
+            "Management" => path is "/management" or "/management/tickets" or "/management/users" or "/management/roles" or "/role-management" or "/management/categories",
             _ => false
         };
     }

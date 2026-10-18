@@ -1,15 +1,19 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-@using Microsoft.AspNetCore.Components.Routing
+@using System.Security.Claims
+@using CivicConnect.Web.Components.Shared
+@using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
 
-@if (Nav.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
+@if (IsAuthRoute)
 {
     @Body
 }
 else
 {
-    <div class="app-shell @(menuOpen ? "menu-open" : "")" @onkeydown="HandleKey">
+    <div class="@AppShellCssClass" @onkeydown="HandleKey">
         <NavMenu @ref="navigation" />
         <main class="main">
             <header class="topbar">
@@ -17,8 +21,8 @@ else
                     @ref="menuButton"
                     type="button"
                     class="icon-btn mobile-menu-toggle"
-                    aria-label="@(menuOpen ? "Close workspace menu" : "Open workspace menu")"
-                    aria-expanded="@(menuOpen ? "true" : "false")"
+                    aria-label="@MenuToggleAriaLabel"
+                    aria-expanded="@MenuToggleAriaExpanded"
                     aria-controls="workspace-navigation"
                     @onclick="ToggleMenu">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -37,7 +41,7 @@ else
                                 <span class="avatar">@Initials(auth.User.Identity?.Name)</span>
                                 <span class="profile-text">
                                     <strong>@auth.User.Identity?.Name</strong>
-                                    <small>@auth.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                                    <small>@GetUserRole(auth.User)</small>
                                 </span>
                             </div>
                         </Authorized>
@@ -51,14 +55,24 @@ else
 
 @code
 {
-    bool menuOpen;
-    bool focusNavigation;
-    NavMenu? navigation;
-    ElementReference menuButton;
+    private bool menuOpen;
+    private bool focusNavigation;
+    private NavMenu? navigation;
+    private ElementReference menuButton;
+
+    private bool IsAuthRoute =>
+        Nav.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase) ||
+        Nav.Uri.Contains("/signup", StringComparison.OrdinalIgnoreCase);
+
+    private string AppShellCssClass => menuOpen ? "app-shell menu-open" : "app-shell";
+
+    private string MenuToggleAriaLabel => menuOpen ? "Close workspace menu" : "Open workspace menu";
+
+    private string MenuToggleAriaExpanded => menuOpen ? "true" : "false";
 
     protected override void OnInitialized() => Nav.LocationChanged += CloseOnNavigation;
 
-    void ToggleMenu()
+    private void ToggleMenu()
     {
         menuOpen = !menuOpen;
         focusNavigation = menuOpen;
@@ -73,13 +87,13 @@ else
         }
     }
 
-    void CloseOnNavigation(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(() =>
+    private void CloseOnNavigation(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(() =>
     {
         menuOpen = false;
         StateHasChanged();
     });
 
-    async Task HandleKey(KeyboardEventArgs e)
+    private async Task HandleKey(KeyboardEventArgs e)
     {
         if (e.Key == "Escape" && menuOpen)
         {
@@ -90,9 +104,12 @@ else
 
     public void Dispose() => Nav.LocationChanged -= CloseOnNavigation;
 
-    static string Initials(string? name) => string.IsNullOrWhiteSpace(name)
+    private static string? GetUserRole(ClaimsPrincipal user) =>
+        user.FindFirst(ClaimTypes.Role)?.Value;
+
+    private static string Initials(string? name) => string.IsNullOrWhiteSpace(name)
         ? "CC"
-        : string.Join("", name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        : string.Join(string.Empty, name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Take(2)
             .Select(x => x[0])).ToUpperInvariant();
 }

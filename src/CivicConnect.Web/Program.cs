@@ -28,12 +28,21 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));
 builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<Argon2idPasswordHasher>();
+builder.Services.AddScoped<IUserRegistrationService>(sp =>
+    new UserRegistrationService(
+        sp.GetRequiredService<IServiceScopeFactory>(),
+        sp.GetRequiredService<IPasswordHashingService>(),
+        sp.GetService<ILogger<UserRegistrationService>>()));
+builder.Services.AddScoped<UserRegistrationService>(sp =>
+    (UserRegistrationService)sp.GetRequiredService<IUserRegistrationService>());
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
+builder.Services.AddScoped<IRoleDelegationService, RoleDelegationService>();
+builder.Services.AddScoped<RoleDelegationService>();
 builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
 builder.Services.AddScoped<WorkspaceDataService>();

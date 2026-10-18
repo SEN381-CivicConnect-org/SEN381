@@ -107,6 +107,12 @@ public sealed class AppAuthenticationStateProvider : AuthenticationStateProvider
             new(ClaimTypes.Role, portalRole)
         };
 
+        foreach (var roleName in roleNames.Where(r => !string.IsNullOrWhiteSpace(r)))
+        {
+            claims.Add(new Claim("DatabaseRole", roleName));
+            claims.Add(new Claim(ClaimTypes.Role, roleName));
+        }
+
         foreach (var teamName in teamNames)
         {
             claims.Add(new Claim("Team", teamName));

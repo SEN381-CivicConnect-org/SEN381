@@ -544,3 +544,87 @@ select { appearance: none; background-image: url('assets/icons/chevron.svg') !im
         width: 100%;
     }
 }
+
+/* Sign-up and authentication form enhancements. */
+.login-box form .btn {
+    min-height: 48px;
+    margin-top: 7px;
+}
+
+.auth-switch {
+    margin: 18px 0 0;
+    font-size: 13.44px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.auth-switch a {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-switch a:hover {
+    color: var(--primary-dark);
+}
+
+.validation-message {
+    color: var(--error-text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.field input.invalid {
+    border-color: var(--danger);
+}
+
+/* Role management & delegation feedback banners and inline controls. */
+.alert {
+    padding: 13px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    font-size: 13.44px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.alert-success {
+    background: var(--success-soft);
+    color: var(--success);
+    border-color: var(--success);
+}
+
+.alert-error,
+.alert-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.alert-info {
+    background: var(--info-soft);
+    color: var(--info);
+    border-color: var(--info);
+}
+
+.role-delegation-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.role-delegation-actions select {
+    min-height: 40px;
+    min-width: 185px;
+    padding: 8px 30px 8px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 9px;
+    background-color: var(--surface);
+    color: var(--text);
+    font-size: 13.12px;
+}
+
+
