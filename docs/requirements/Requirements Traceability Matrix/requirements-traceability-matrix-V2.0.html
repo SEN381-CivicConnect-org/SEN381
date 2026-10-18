@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivicConnect — Requirements Traceability Matrix (RTM) v2.0</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --green: #1b7f3d;
+    --amber: #b25e00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --green: #4ade80;
+      --amber: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 80rem; margin: 0 auto; }
+  h1 {
+    font-size: 1.9rem;
+    margin: 0 0 .25rem;
+    letter-spacing: -.01em;
+  }
+  .sub { color: var(--muted); margin: 0 0 1.5rem; }
+  .summary-cards {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .4rem;
+    padding: .8rem 1.2rem;
+    min-width: 12rem;
+  }
+  .card-val { font-size: 1.5rem; font-weight: 700; margin-bottom: .2rem; }
+  .card-lbl { font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 65rem; margin-top: 1rem; }
+  th, td {
+    text-align: left;
+    padding: .7rem .8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.id, th.id {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; font-size: .9rem; }
+  .badge {
+    display: inline-block;
+    padding: .15rem .45rem;
+    border-radius: .25rem;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .badge-met { background: rgba(27, 127, 61, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .badge-partial { background: rgba(178, 94, 0, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+  .badge-pass { background: rgba(27, 127, 61, 0.1); color: var(--green); font-size: .72rem; }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: .9rem 1.15rem;
+    margin: 1.5rem 0;
+    font-size: .92rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>CivicConnect — Requirements Traceability Matrix (RTM) v2.0</h1>
+  <p class="sub">Baseline Version: 2.0 (Milestone 4 Final Verification) | Verification Scope: Full Automated Test Suite (277 Passing Tests across 3 Solution Projects) &amp; Operational Evidence</p>
+
+  <div class="summary-cards">
+    <div class="card">
+      <div class="card-val">28</div>
+      <div class="card-lbl">Total Requirements</div>
+    </div>
+    <div class="card">
+      <div class="card-val" style="color: var(--green);">23 (82.1%)</div>
+      <div class="card-lbl">Requirements Met</div>
+    </div>
+    <div class="card">
+      <div class="card-val" style="color: var(--amber);">5 (17.9%)</div>
+      <div class="card-lbl">Partially Met (Planned IDs)</div>
+    </div>
+    <div class="card">
+      <div class="card-val">277 / 278</div>
+      <div class="card-lbl">Solution Tests (99.64% Pass)</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Verification Ground Rule:</strong> <em>"A requirement with no real evidence cannot be scored Met."</em> Requirements marked <strong>Met</strong> have passing automated tests in the solution or executed, committed operational runbooks. Requirements marked <strong>Partially Met</strong> have passing code/E2E coverage or specifications, but their exact RTM test ID remains planned or tool-evaluated rather than integrated as an automated CI regression test.
+  </div>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th class="id">ID</th>
+        <th>Description</th>
+        <th>Design / Architecture</th>
+        <th>Issue / PR</th>
+        <th>Test Verification &amp; Location</th>
+        <th>Release Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Requested Capabilities</td>
+        <td class="id">FR-01</td>
+        <td>Submit and categorise a service request</td>
+        <td><code>SubmissionService.cs</code>; <code>TicketSubmissionForm.razor</code>; <code>InitialExtensions</code>; <code>ticket_text_ck</code></td>
+        <td>PR #121</td>
+        <td><code>IT-SUB-01</code> in <code>SubmissionServiceTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Minimum Business Capabilities</td>
+        <td class="id">FR-02</td>
+        <td>Log into appropriate user portal</td>
+        <td><code>AuthService.cs</code>; <code>LoginForm.razor</code>; <code>app_user</code>, <code>role</code></td>
+        <td>PR #133</td>
+        <td>Playwright <code>auth.spec.js</code> &amp; <code>AuthorizationRecoveryTests.cs</code> (<code>IT-AUTH-01</code> planned in xUnit)</td>
+        <td><span class="badge badge-partial">Partially Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-02</td>
+        <td class="id">FR-03</td>
+        <td>Cluster duplicate reports &amp; reporter subscriptions</td>
+        <td><code>SubmissionService.cs</code>; <code>incident_one_open_per_scope_uq</code>; <code>incident_subscription</code></td>
+        <td>PR #121</td>
+        <td><code>IT-CONC-01</code> in <code>ConcurrencyTests.cs</code> (20 concurrent threads) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-04</td>
+        <td>Assign or claim request ownership</td>
+        <td><code>IncidentService.cs &rarr; Claim/Assign</code>; <code>StaffQueue.razor</code>; <code>incident.assignee_id</code></td>
+        <td>PR #121</td>
+        <td><code>IT-CLM-01</code> in <code>ClaimAndAssignOwnershipTests.cs</code> &amp; <code>IT-CLM-02</code> in <code>ConcurrencyTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-01</td>
+        <td class="id">FR-05</td>
+        <td>Calculate priority from impact and urgency</td>
+        <td><code>PriorityMatrix.cs</code>; <code>incident.impact_level</code>, <code>urgency_level</code>, <code>computed_priority</code></td>
+        <td>PR #121</td>
+        <td><code>UT-PRI-01</code> in <code>PriorityMatrixTests.cs</code> &amp; <code>IT-PRI-02</code> in <code>TicketSnapshotTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-01</td>
+        <td class="id">FR-06</td>
+        <td>Supervisor priority override with reason</td>
+        <td><code>IncidentsController.OverridePriority</code>; <code>OverrideModal.razor</code>; <code>incident_override_ck</code></td>
+        <td>PR #110</td>
+        <td><code>IT-OVR-01</code> in <code>IncidentPriorityOverrideTests.cs</code> &amp; <code>IT-CONC-02</code> in <code>ConcurrencyTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">FEC-01</td>
+        <td class="id">FR-07</td>
+        <td>Controlled status transitions with history</td>
+        <td><code>IncidentStateMachine.cs</code>; <code>incident_resolved_at_ck</code>, <code>status_history_change_ck</code></td>
+        <td>PR #121</td>
+        <td><code>UT-SM-01</code> / <code>IT-SM-02</code> in <code>RequestStatusStateTransitionTests.cs</code> (5x5 matrix) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; POPIA s17</td>
+        <td class="id">FR-08</td>
+        <td>Auditable record of changes</td>
+        <td><code>AuditService.cs</code>; <code>audit_log</code>; trigger append-only grant</td>
+        <td>PR #146</td>
+        <td><code>IT-AUD-01</code> in <code>RtmScopeCompletionTests.cs</code> &amp; <code>UT-AUD-02</code> in <code>TicketWorkflowRegressionTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2</td>
+        <td class="id">FR-09</td>
+        <td>Configuration deactivation preserves history</td>
+        <td><code>ConfigService.cs</code>; <code>category_active_name_uq</code>; <code>ON DELETE RESTRICT</code></td>
+        <td>PR #121</td>
+        <td><code>IT-CFG-01</code> &amp; <code>IT-CFG-02</code> in <code>ServiceCatalogueTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-03</td>
+        <td class="id">FR-10</td>
+        <td>Asset linkage on resolution</td>
+        <td><code>ResolutionsController.cs</code>; <code>resolution_replacement_needs_asset_ck</code>, <code>resolution_current_uq</code></td>
+        <td>PR #121</td>
+        <td><code>IT-RES-01</code> &amp; <code>IT-RES-02</code> in <code>ResolutionTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Requester</td>
+        <td class="id">FR-11</td>
+        <td>Reporter visibility of own requests</td>
+        <td><code>TicketService.cs</code>; <code>MyTickets.razor</code>; <code>v_ticket_status</code>; <code>ticket_reporter_submitted_idx</code></td>
+        <td>PR #133, #138</td>
+        <td><code>RequestVisibilityEquivalencePartitionTests.cs</code> (10 EP cases) &amp; <code>requester.spec.js</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Management</td>
+        <td class="id">FR-12</td>
+        <td>Overdue request visibility</td>
+        <td><code>IncidentReportingService.cs</code>; <code>priority_target</code>; <code>incident.due_at</code>; <code>incident_overdue_idx</code></td>
+        <td>PR #146</td>
+        <td><code>IT-SLA-01</code> / <code>02</code> in <code>IncidentDueAtTests.cs</code> &amp; <code>OverdueIncidentTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Requester Capabilities</td>
+        <td class="id">FR-13</td>
+        <td>Automated notifications on status change</td>
+        <td><code>NotificationsController.cs</code>; <code>NotificationBell.razor</code>; <code>notification.dedupe_key</code></td>
+        <td>PR #146</td>
+        <td><code>IT-NOTIF-01</code> in <code>RtmScopeCompletionTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-14</td>
+        <td>Role-specific staff request queue</td>
+        <td><code>Queue.razor</code>; <code>incident_team_queue_idx</code>; <code>[Authorize(Roles="Staff")]</code></td>
+        <td>PR #133</td>
+        <td><code>AuthorizationRecoveryTests.cs</code>, <code>TicketWorkflowRegressionTests.cs</code> (<code>IT-QUEUE-01</code> planned in DB suite)</td>
+        <td><span class="badge badge-partial">Partially Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-15</td>
+        <td>Search, filter, and sort service requests</td>
+        <td><code>TicketQueueFilter.cs</code>; <code>StaffQueue.razor</code>; <code>incident_category_opened_idx</code></td>
+        <td>PR #133</td>
+        <td><code>TicketQueueFilterAndManagementTests.cs</code> (4 tests) &amp; <code>queue.spec.js</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Staff Capabilities</td>
+        <td class="id">FR-16</td>
+        <td>Record ongoing actions and comments</td>
+        <td><code>IncidentNoteService.cs</code>; <code>TicketDetail.razor</code>; <code>incident_note</code></td>
+        <td>PR #142</td>
+        <td><code>TicketWorkflowRegressionTests.cs</code> (`REG-01..08`) &amp; <code>NoteChecks</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Management Capabilities</td>
+        <td class="id">FR-17</td>
+        <td>Management dashboard &amp; categorical reporting</td>
+        <td><code>IncidentReportingService.cs</code>; <code>ManagementController.cs</code>; <code>ManagerDashboard.razor</code></td>
+        <td>PR #146</td>
+        <td><code>IT-REP-01</code> in <code>RtmScopeCompletionTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">Security Constraints</td>
+        <td class="id">NFR-01</td>
+        <td>Protection of system secrets</td>
+        <td><code>SystemSecretsConfiguration.cs</code>; environment variables; Gitleaks scan</td>
+        <td>PR #121, #122</td>
+        <td><code>IT-CFG-01</code> in <code>SystemSecretsConfigurationTests.cs</code> (17 tests) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(1)(a); RSK-08</td>
+        <td class="id">NFR-02</td>
+        <td>Durability and recovery point (RPO)</td>
+        <td>Automated logical dump scripts (<code>backup-db.ps1</code> / <code>backup-db.sh</code>); continuous WAL archive spec</td>
+        <td>PR #145</td>
+        <td><code>wal-archiving-spec-V1.0.md</code> &amp; backup scripts (<code>OPS-BKP-01</code> planned as CI automated test)</td>
+        <td><span class="badge badge-partial">Partially Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(2)(c); RSK-08</td>
+        <td class="id">NFR-03</td>
+        <td>Verified restore and RTO</td>
+        <td>Milestone restore runbook &amp; automation (<code>scripts/run-restore-drill.ps1</code>)</td>
+        <td>PR #145</td>
+        <td><code>OPS-BKP-02</code> in <code>restore-drill-record-M3.md</code> (12.27s RTO; 32/32 tests passed) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s19(1); Regulators</td>
+        <td class="id">NFR-04</td>
+        <td>Protection of personal information</td>
+        <td>Keyless <code>staff_directory</code> view; TLS; <code>civic_report</code> role privilege grants</td>
+        <td>PR #146</td>
+        <td><code>IT-SEC-01</code> in <code>RtmScopeCompletionTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">POPIA s14</td>
+        <td class="id">NFR-05</td>
+        <td>Retention and disposal</td>
+        <td><code>RetentionSweepJob.cs</code>; de-identification; POPIA s14(1) compliance</td>
+        <td>PR #146</td>
+        <td><code>IT-RET-01</code> &amp; <code>IT-RET-02</code> in <code>RetentionAndDisposalTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">STK-CFL-02; RSK-02/03/04</td>
+        <td class="id">NFR-06</td>
+        <td>Concurrency correctness</td>
+        <td><code>WHERE version = :v</code> optimistic token; single-statement atomic upsert</td>
+        <td>PR #121</td>
+        <td><code>IT-CONC-01</code>, <code>IT-CONC-02</code>, <code>IT-TXN-01</code> in <code>ConcurrencyTests.cs</code> <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; §1</td>
+        <td class="id">NFR-07</td>
+        <td>Staff queue query performance</td>
+        <td>Partial composite index <code>incident_team_queue_idx</code></td>
+        <td>PR #146</td>
+        <td><code>PERF-Q-01</code> in <code>perf-q-01-evidence.md</code> (100 runs, 20k rows, p95 1.68 ms vs 500 ms SLA) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2</td>
+        <td class="id">NFR-08</td>
+        <td>Management dashboard query performance</td>
+        <td>Filtered composite index <code>incident_status_opened_idx</code></td>
+        <td>PR #146</td>
+        <td><code>performance-load-V1.0.md</code> (6k rows single-pass &lt;2.2 ms; 20k row 100-run p95 planned)</td>
+        <td><span class="badge badge-partial">Partially Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; RSK-01</td>
+        <td class="id">NFR-09</td>
+        <td>System availability</td>
+        <td>ASP.NET Core <code>/health/live</code>, <code>/health/ready</code> endpoints; sampling engine</td>
+        <td>PR #145</td>
+        <td><code>availability-evidence-M3.md</code> (Simulated 2,160 sample monthly matrix; 99.4% uptime)</td>
+        <td><span class="badge badge-partial">Partially Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; POPIA s19(1)(b)</td>
+        <td class="id">NFR-10</td>
+        <td>Least-privilege database access</td>
+        <td>PostgreSQL roles (<code>civic_app</code> DML only, <code>civic_migrate</code> DDL, <code>civic_report</code> read-only)</td>
+        <td>PR #146</td>
+        <td><code>IT-SEC-02</code> in <code>RtmScopeCompletionTests.cs</code> (runtime <code>SET LOCAL ROLE civic_app</code>) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+      <tr>
+        <td class="name">PED §2; NFR-01</td>
+        <td class="id">NFR-11</td>
+        <td>Password storage</td>
+        <td>Argon2id hashing implementation (`Argon2idPasswordHasher.cs`); <code>user_credential_hash_ck</code></td>
+        <td>PR #121</td>
+        <td><code>IT-SEC-03</code> in <code>PasswordStorageTests.cs</code> (4 tests) <span class="badge badge-pass">PASS</span></td>
+        <td><span class="badge badge-met">Met</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</main>
+</body>
+</html>
