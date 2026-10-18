@@ -32,7 +32,8 @@ public sealed class OverdueHttpFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         var input = Environment.GetEnvironmentVariable("FR12_CONNECTION_STRING")
-            ?? throw new InvalidOperationException("Set FR12_CONNECTION_STRING to a local PostgreSQL connection with CREATE DATABASE permission. FR-12 creates and deletes only its unique test database.");
+            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
+            ?? "Host=localhost;Port=5432;Database=postgres;Username=civicconnect;Password=changeme";
         var settings = new NpgsqlConnectionStringBuilder(input) { Pooling = false };
         settings.Database = "postgres";
         adminConnection = settings.ConnectionString;
