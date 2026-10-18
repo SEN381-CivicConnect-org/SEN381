@@ -100,6 +100,7 @@ public sealed class UserRegistrationService : IUserRegistrationService
         _logger = logger;
     }
 
+    [ActivatorUtilitiesConstructor]
     public UserRegistrationService(
         IServiceScopeFactory scopeFactory,
         IPasswordHashingService? passwordHasher = null,

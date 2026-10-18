@@ -138,6 +138,32 @@ public sealed class RoleDelegationTests
         Assert.Contains("operations manager", authorizeAttr.Roles, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void RoleDelegationService_CanBeResolvedFromDiContainerWithoutAmbiguity()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<AuditService>();
+        services.AddScoped<IRoleDelegationService>(sp =>
+            new RoleDelegationService(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetService<AuditService>(),
+                sp.GetService<Microsoft.Extensions.Logging.ILogger<RoleDelegationService>>()));
+        services.AddScoped<RoleDelegationService>(sp =>
+            (RoleDelegationService)sp.GetRequiredService<IRoleDelegationService>());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var interfaceResolved = scope.ServiceProvider.GetRequiredService<IRoleDelegationService>();
+        var concreteResolved = scope.ServiceProvider.GetRequiredService<RoleDelegationService>();
+        var activatorResolved = ActivatorUtilities.CreateInstance<RoleDelegationService>(scope.ServiceProvider);
+
+        Assert.NotNull(interfaceResolved);
+        Assert.NotNull(concreteResolved);
+        Assert.NotNull(activatorResolved);
+    }
+
     private static RoleDelegationService CreateService() =>
         new(new NoOpScopeFactory());
 
