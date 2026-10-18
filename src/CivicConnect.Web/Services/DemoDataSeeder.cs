@@ -13,8 +13,7 @@ public static class DemoDataSeeder
         ("requester@civicconnect.demo", "Bernard Small", "reporter"),
         ("requester.b@civicconnect.demo", "Ayesha Khan", "reporter"),
         ("staff@civicconnect.demo", "Daniel Jacobs", "technician"),
-        ("manager@civicconnect.demo", "Michael Adams", "operations manager"),
-        ("admin@civicconnect.demo", "Sarah Naidoo", "administrator")
+        ("manager@civicconnect.demo", "Michael Adams", "operations manager")
     };
 
     private static readonly string[] Teams =
