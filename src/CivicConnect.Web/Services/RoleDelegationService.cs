@@ -117,6 +117,7 @@ public sealed class RoleDelegationService : IRoleDelegationService
     private readonly AuditService? _auditService;
     private readonly ILogger<RoleDelegationService>? _logger;
 
+    [ActivatorUtilitiesConstructor]
     public RoleDelegationService(
         IServiceScopeFactory scopeFactory,
         AuditService? auditService = null,

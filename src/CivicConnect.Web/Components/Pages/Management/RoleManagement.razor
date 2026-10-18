@@ -337,6 +337,10 @@ else
             var roleLabel = assignedDef?.DisplayName ?? result.AssignedRole ?? targetRoleName;
             _successMessage = $"Updated {user.FullName}'s authorization role to {roleLabel}.";
         }
+        catch (Exception)
+        {
+            _errorMessage = "An unexpected error occurred while updating the role. Please try again.";
+        }
         finally
         {
             _isSaving = false;
