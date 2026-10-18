@@ -46,6 +46,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:8085",
                 "http://127.0.0.1:8085",
+                "http://localhost:8086",
+                "http://127.0.0.1:8086",
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
                 "http://localhost:5000",
@@ -92,6 +94,9 @@ builder.Services.AddScoped<UserDeIdentificationService>();
 builder.Services.AddHostedService<RetentionSweepHostedService>();
 
 var app = builder.Build();
+
+// Verify that application connects under least-privilege role (NFR-10, IT-SEC-02)
+await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
 
 // 2. HTTP Request Pipeline
 
