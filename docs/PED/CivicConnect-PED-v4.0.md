@@ -147,7 +147,7 @@ CivicConnect will provide a platform for the client that generates tickets for v
 
 ## 2. Scope Baseline
 
-*(Unchanged from PED v1.0.)*
+*(Milestone 1 commitments restated below. The comprehensive Milestone 4 Operational Scope Baseline is maintained at `docs/requirements/scope/scope-baseline-V2.0.html`, with dedicated sub-documents for `statement/scope-statement-V2.0.html`, `in-scope/in-scope-capabilities-V2.0.html`, `out-of-scope/out-of-scope-capabilities-V2.0.html`, `deferred/deferred-scope-V2.0.html`, `constraints/scope-constraints-V2.0.html`, and `change-control/scope-change-control-V2.0.html`; original Milestone 1 baselines remain preserved at `*-V1.0.html`.)*
 
 ### 2.1 Scope Statement
 
