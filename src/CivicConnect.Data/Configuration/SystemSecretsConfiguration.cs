@@ -77,7 +77,10 @@ public static class SystemSecretsConfiguration
         var connectionString = envGetter(ConnectionStringEnvVar);
         if (string.IsNullOrWhiteSpace(connectionString) && getEnvironmentVariable is null && configuration is not null)
         {
-            TryGetFromEnvironmentProvider(configuration, ConnectionStringEnvVar, out connectionString);
+            if (!TryGetFromEnvironmentProvider(configuration, ConnectionStringEnvVar, out connectionString))
+            {
+                TryGetFromEnvironmentProvider(configuration, "ConnectionStrings:DefaultConnection", out connectionString);
+            }
         }
 
         connectionString = NormalizeToAdoNetConnectionString(connectionString);
@@ -449,7 +452,7 @@ public static class SystemSecretsConfiguration
             return string.Empty;
         }
 
-        var trimmed = rawConnectionString.Trim();
+        var trimmed = rawConnectionString.Trim().Trim('"', '\'');
         if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
             trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
         {

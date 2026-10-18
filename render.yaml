@@ -27,6 +27,8 @@ services:
     dockerContext: .
     plan: free # Can be upgraded to 'starter' to eliminate idle sleep
     region: frankfurt
+    branch: staging
+    autoDeploy: true
     healthCheckPath: /health/live
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
@@ -62,6 +64,8 @@ services:
     dockerContext: .
     plan: free # Can be upgraded to 'starter'
     region: frankfurt
+    branch: staging
+    autoDeploy: true
     healthCheckPath: /
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
