@@ -438,7 +438,22 @@ public sealed class RetentionAndDisposalTests
         public Task<IReadOnlyList<TurnaroundSummaryDto>> GetTurnaroundSummaryAsync(DateTimeOffset? from = null, DateTimeOffset? to = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<TurnaroundSummaryDto>>([]);
 
-        public Task<IReadOnlyList<IncidentListItemDto>> ListIncidentsAsync(IncidentStatus? status = null, int? categoryId = null, int? teamId = null, int? locationId = null, int page = 1, int pageSize = 50, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<IncidentListItemDto>> ListIncidentsAsync(
+            IncidentStatus? status = null,
+            int? categoryId = null,
+            int? teamId = null,
+            int? locationId = null,
+            int page = 1,
+            int pageSize = 50,
+            bool onlyOpen = false,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IncidentListItemDto>>([]);
+
+        public Task<IReadOnlyList<IncidentListItemDto>> GetTeamQueueAsync(
+            int teamId,
+            int page = 1,
+            int pageSize = 50,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<IncidentListItemDto>>([]);
 
         public Task<IReadOnlyList<ReporterTicketDto>> ListTicketsForReporterAsync(Guid reporterId, CancellationToken cancellationToken = default) =>

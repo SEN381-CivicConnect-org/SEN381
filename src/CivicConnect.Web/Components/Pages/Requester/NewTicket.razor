@@ -1,6 +1,7 @@
 @page "/requester/new"
 @attribute [Authorize(Roles = "Requester")]
 @inject TicketService Tickets
+@inject NavigationManager Nav
 @inject AuthenticationStateProvider Authentication
 
 <PageTitle>New Ticket | CivicConnect</PageTitle>
