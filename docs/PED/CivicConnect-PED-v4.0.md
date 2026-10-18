@@ -31,10 +31,11 @@
 | 4.0 | 2026-10-18 | Milestone 4 Baseline: Added §11 (Phase 4: Production Deployment Decision, Release Controls & Operational Readiness) and §12 (Milestone 4 Final Project Success Evaluation, Consequence Reflection & Traceability Closure). Reconciled earlier assumptions, verified DR restore drill RTO, availability sampling engine, and finalized low-cost container deployment. Sections 1–10 preserved as historical progression. | All team members | All team members | Baseline |
 | 4.1 | 2026-10-18 | Full RTM Verification Sync: updated §4 (RTM Traceability Matrix) with empirical test pass statuses, real test file locations, and release compliance verdicts (23 Met, 5 Partially Met, 0 Not Met) synchronized with RTM V2.0 (`requirements-traceability-matrix-V2.0.html`). Updated §10.3 to reflect the full solution suite of 277 automated passing tests (177 CivicConnect.Tests, 56 CivicConnect.Data.Tests, 44 CivicConnect.Web.Tests) indexed in `unit-component-tests-V2.0.md` and `api-integration-tests-V2.0.md` (with V1.0 baselines preserved). Synced §12.3 traceability closure. | All team members | All team members | Baseline |
 | 4.2 | 2026-10-18 | Reconciled §10.5, §12.1, §12.2 and §12.3 against the Technical Debt Register (`docs/technical-debt/technical-debt-register-V1.0.md`) and Defect Register (`docs/defects/defect-register-V1.0.md`), both created since v4.1; the current Risk Register (`docs/risk/Risk Register.html`, all 15 risks still Open); and the RTM (`requirements-traceability-matrix-V2.0.html`). §12.1 and §12.3 previously described risks as "resolved and closed" and implied full POPIA compliance and 100% deployment parity; these claims did not match the registers and have been walked back to what the registers actually support. Added ADR-005 (Render production deployment decision) to §12.2's Decision Consequence Reflection, which previously stopped at ADR-004. No change to §2 (Scope Baseline) or §5.2 (Risk Register) — both were already in sync. | All team members | | Draft |
+| 4.3 | 2026-10-19 | Re-synced against all six Milestone 4 controlled documents: RTM (`requirements-traceability-matrix-V2.0.html`), Defect Register, Technical Debt Register, Risk Register, Scope Baseline (`scope-baseline-V2.0.html`), and the new Architecture Decision Review (`docs/architecture/architecture-decision-review-V1.0.md`, merged after v4.2). RTM, registers and Scope Baseline were already in sync — confirmed, not changed. Added §10.6 (Architecture Decision Review) indexing the review's four PARTIAL findings against ADR-ARCH-001, ADR-004, DD-01 and DD-02 (Blazor rendering mode, PostgreSQL version, Observer dispatch and Strategy scope — none yet team-approved for amendment), and updated §10.5's ADR-log bullet accordingly. §12.3 now lists this review as a fourth open controlled item alongside the three registers. §6 (the M2 baseline) is not edited in place, per §2.6 — the review's PARTIAL findings describe where the implementation now diverges from that baseline; they do not retroactively rewrite it. | All team members | | Draft |
 
 This version does not replace the Milestone 1 or Milestone 2 baselines; it extends them. Sections 1–5 and 7–9 restate the Milestone 1 commitments with the small, explicitly-flagged updates that Milestone 2 evidence required (see §4 and §5). Section 6 is the Milestone 2 baseline, unchanged since v2.0. Section 10 is new for Milestone 3. The Milestone 1 document remains available at `docs/PED/CivicConnect-PED-v1.0.md`, and the Milestone 2 baseline at `docs/PED/CivicConnect-PED-v2.0.md`, as the historical baselines they were reviewed and accepted as; per §2.6 Scope Control, neither is edited in place.
 
-**Milestone 3 evidence boundary.** §10 is an index into real, already-produced evidence (CI runs, executed test suites, a benchmark actually run against the project's own database) — every figure in it was verified by this update, not copied from a plan. It is explicitly **not** a complete Milestone 3 submission: §10.5 lists what the M3 brief requires. The Technical Debt Register and Defect Register now exist (added after v4.1 — see §10.5); a Release Evidence Summary, a Residual Risk Statement, and a recorded controlled-change/ADR log for any M3-era decisions still do not. This PED will continue to evolve as that evidence is produced, consistent with §2.6 — it is not re-created, and earlier sections are not silently rewritten to look more complete than the repository evidence supports.
+**Milestone 3 evidence boundary.** §10 is an index into real, already-produced evidence (CI runs, executed test suites, a benchmark actually run against the project's own database) — every figure in it was verified by this update, not copied from a plan. It is explicitly **not** a complete Milestone 3 submission: §10.5 lists what the M3 brief requires. The Technical Debt Register, Defect Register and a controlled-change/ADR log (the Architecture Decision Review, §10.6) now exist; a Release Evidence Summary and a Residual Risk Statement still do not. This PED will continue to evolve as that evidence is produced, consistent with §2.6 — it is not re-created, and earlier sections are not silently rewritten to look more complete than the repository evidence supports.
 
 ### Team Contributions
 
@@ -92,6 +93,7 @@ This version does not replace the Milestone 1 or Milestone 2 baselines; it exten
     - [10.3 Testing Evidence Overview](#103-testing-evidence-overview)
     - [10.4 Known Issues Surfaced While Producing This Evidence](#104-known-issues-surfaced-while-producing-this-evidence)
     - [10.5 What Remains Before an M3 Baseline Can Be Declared](#105-what-remains-before-an-m3-baseline-can-be-declared)
+    - [10.6 Architecture Decision Review](#106-architecture-decision-review)
 11. [Milestone 4 — Production Deployment Decision & Operational Readiness](#11-milestone-4--production-deployment-decision--operational-readiness)
     - [11.1 Deployment Context & Operational Constraints](#111-deployment-context--operational-constraints)
     - [11.2 Evaluation of Candidate Hosting Architectures](#112-evaluation-of-candidate-hosting-architectures)
@@ -1052,14 +1054,30 @@ this PED does not imply completeness it cannot support:
   READY)** — not yet produced.
 - **Residual Risk Statement** for the M3 verification effort specifically — not yet
   produced; distinct from the project-level Risk Register already carried in §5.2.
-- **Controlled-change / ADR records for any M3-era decisions** — none has been needed
-  yet; none has been recorded.
+- **Controlled-change / ADR records for any M3-era decisions** — created:
+  `docs/architecture/architecture-decision-review-V1.0.md`. It reviews the four M2
+  decision records (ADR-ARCH-001, ADR-004, DD-01, DD-02) against the current codebase
+  and finds all four **PARTIAL** (confirmed in part, diverged in part); the three
+  implementation-detail records (0001–0003) are confirmed as configured. See §10.6.
+  Proposed amendments are not yet team-approved, so §6's M2 baseline text is unchanged.
 - **Staging/test deployment evidence** — not yet produced. A live re-run of the full
   Docker stack was attempted while producing §10.3/§10.4 and did not complete (a local
   environment-configuration gap, not an application defect — see
   `docs/testing/e2e-system/e2e-system-V1.0.md` for what happened and why).
 - **An M3 release-candidate identifier** (the exact commit/tag this evidence applies to)
   — not yet nominated.
+
+### 10.6 Architecture Decision Review
+
+The full review is maintained at `docs/architecture/architecture-decision-review-V1.0.md`. It compares the four Milestone 2 decision records (§6.2.8, §6.4, §6.5.2, §6.5.3) and the three implementation records (0001–0003) against the current codebase, docker-compose configuration and merged pull requests, distinguishing historical rationale from source-code observation. Decisions needing team approval remain **provisional**; final release disposition is **PENDING**.
+
+- **ADR-ARCH-001 (Architecture topology) — PARTIAL.** The layered-monolith classification holds, but the M2 phrase "single deployable application" needs clarification: `CivicConnect.Web`, `CivicConnect.Api` and `CivicConnect.Data` are separated, and `docker-compose.yml` runs Web and API as distinct containers. Proposed wording: a layered monolith with separately containerised Web and API hosts over one relational data layer, not independently managed microservices.
+- **ADR-004 (Technology stack) — PARTIAL.** .NET 10, EF Core/Npgsql and Docker Compose are confirmed as configured. Two divergences: §6.4 and FEC-01 (§5.3) describe Blazor **WebAssembly**, but `CivicConnect.Web/Program.cs` configures `AddInteractiveServerComponents`/`AddInteractiveServerRenderMode`; and §6.3.5/§6.4/FEC-01 name **PostgreSQL 16**, but `docker-compose.yml` runs `postgres:15-alpine` (the same drift the Technical Debt Register records independently as TD-12). Neither is a silent rewrite of §6 — both are tracked here and in TD-12 pending a team-approved amendment.
+- **DD-01 (Controlled ticket status reactions) — PARTIAL.** §6.5.2's explicit orchestration (transaction, rollback, audit/history on submission) is confirmed in `SubmissionService`. The conditional Observer dispatch that §6.2's ASR-02 design implications describe as already in place (a subscriber list notified on every state change) is **not established** in code — no event producer/consumer was traced. §6.2's Observer description is accordingly ahead of the verified evidence; DEF-07 (NavigationChecks build failure) sits in the same area and is tracked separately in the Defect Register.
+- **DD-02 (Controlled office configuration) — PARTIAL.** Data-driven categories/locations and the `IPriorityMatrix`/`PriorityMatrix` algorithm interface are confirmed. This is one algorithm behind one interface, consistent with §6.1's "Strategy pattern, not a rules engine" framing (§6.2, ASR-03) — it is not evidence of a runtime-swappable Strategy or a general rules engine, and the review does not claim otherwise.
+- **0001–0003 (EF Core/Npgsql migrations, PostgreSQL, schema conventions) — CONFIRMED** as configured; execution and schema evidence still needs attaching per decision.
+
+**Disposition.** The review proposes amended wording for ADR-ARCH-001 and ADR-004 and evidence-linking for DD-01/DD-02, to be adopted as a controlled addendum once the team approves it. Until then, §6's Milestone 2 baseline text is unchanged (§2.6) and this section is the record of where current evidence diverges from it. The review's own verified-PR and test-artifact tables (§14, §14.1 of the source document) distinguish "merged to dev" from "proven in the release commit" — that distinction still stands and is not restated here.
 
 ---
 
@@ -1137,13 +1155,14 @@ Under SEN381 Master Project Brief §22 (*Decision Consequence Reflection*):
 ### 12.3 Final Risk Register & Traceability Baseline Closure
 This PED carries complete bidirectional traceability for all Architecturally Significant Requirements (ASR-01 through ASR-06), Functional Requirements (FR-01 through FR-17), Non-Functional Requirements (NFR-01 through NFR-11), and Forward Engineering Considerations (FEC-01, FEC-02), with empirical verification recorded in the RTM evidence sheet (`docs/requirements/Requirements Traceability Matrix/requirements-traceability-matrix-V2.0.html`): 23 of 28 requirements Met, 5 Partially Met, 0 Not Met.
 
-Traceability closure is not the same as risk or defect closure, and this section does not claim the latter. Per the three controlled registers that track open work, as of this update:
+Traceability closure is not the same as risk, defect or architecture-decision closure, and this section does not claim any of those. Per the four controlled documents that track open work, as of this update:
 
 - **Risk Register** (`docs/risk/Risk Register.html`) — all 15 risks (RSK-01 to RSK-15) remain Open; see §5.2 and §12.1 point 7.
 - **Defect Register** (`docs/defects/defect-register-V1.0.md`) — 8 of 13 defects remain Open, including two High-severity items (DEF-05, DEF-06); 4 are Fixed and 1 fix is committed but unverified.
 - **Technical Debt Register** (`docs/technical-debt/technical-debt-register-V1.0.md`) — 14 items (2 High, 7 Medium, 5 Low), each with a proposed remediation; none has a tracked status column, so none is recorded as closed. The one exception noted in the register itself: TD-03's NavigationChecks fix may already be in the latest pull but is unverified.
+- **Architecture Decision Review** (`docs/architecture/architecture-decision-review-V1.0.md`, §10.6) — all four reviewed M2 decision records (ADR-ARCH-001, ADR-004, DD-01, DD-02) are rated PARTIAL; proposed amended wording exists but is not yet team-approved. Final release disposition is PENDING.
 
-These three registers, not this section, are the controlled record of what remains open going into any future baseline.
+These four controlled documents, not this section, are the record of what remains open going into any future baseline.
 
 ## References
 
