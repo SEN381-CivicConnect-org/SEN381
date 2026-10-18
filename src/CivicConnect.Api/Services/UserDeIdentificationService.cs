@@ -1,4 +1,5 @@
 using CivicConnect.Data;
+Using CivicConnect.Data.Entities'
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
