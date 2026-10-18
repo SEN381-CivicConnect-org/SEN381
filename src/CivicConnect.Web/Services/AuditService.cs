@@ -127,7 +127,9 @@ public sealed class AuditService
         "Priority" => value is "Low" or "Medium" or "High" or "Critical",
         "Status" => value is "Open" or "New" or "Assigned" or "In Progress" or "Resolved" or "Closed"
             or "NEW" or "ASSIGNED" or "IN_PROGRESS" or "RESOLVED" or "CLOSED",
-        "Role" => value is "Requester" or "Staff" or "Management" or "Technician" or "Supervisor" or "Administrator",
+        "Role" => value is "Requester" or "Staff" or "Management"
+            or "Reporter" or "Technician" or "Supervisor" or "Operations Manager" or "Administrator"
+            or "reporter" or "technician" or "supervisor" or "operations manager" or "administrator",
         _ => false
     };
 

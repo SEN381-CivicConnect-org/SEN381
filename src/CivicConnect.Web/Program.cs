@@ -41,6 +41,8 @@ builder.Services.AddScoped<WorkspaceNavigation>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
+builder.Services.AddScoped<IRoleDelegationService, RoleDelegationService>();
+builder.Services.AddScoped<RoleDelegationService>();
 builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
 builder.Services.AddScoped<WorkspaceDataService>();

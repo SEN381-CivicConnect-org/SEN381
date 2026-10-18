@@ -1,0 +1,385 @@
+@page "/management/roles"
+@page "/role-management"
+@using System.Security.Claims
+@using CivicConnect.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "Management,administrator,operations manager")]
+@inject IRoleDelegationService RoleDelegation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Role Delegation | CivicConnect</PageTitle>
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Access Control</p>
+        <h1>Role Management &amp; Delegation</h1>
+        <p>Manage user authorization levels using hierarchical role delegation. You may only grant roles up to and including your own authorization level.</p>
+    </div>
+</div>
+
+@if (_actorRole is not null)
+{
+    <div class="alert alert-info" role="region" aria-label="Current delegation authority">
+        Signed in as <strong>@_actorName</strong> with role <strong>@_actorRole.DisplayName (Level @_actorRole.Level)</strong>.
+        Assignable roles: <strong>@AssignableRoleListText</strong>.
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success" role="status">
+        @_successMessage
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-error" role="alert">
+        @_errorMessage
+    </div>
+}
+
+<div class="staff-queue-controls">
+    <div class="field queue-search">
+        <label for="role-user-search">Search users</label>
+        <input id="role-user-search"
+               type="search"
+               placeholder="Search by name, email, or current role..."
+               @bind="_searchQuery"
+               @bind:event="oninput" />
+    </div>
+    <div class="field">
+        <label for="role-filter-select">Filter by role</label>
+        <select id="role-filter-select" @bind="_roleFilter">
+            <option value="">All roles</option>
+            @foreach (var role in RoleDelegation.AllRoles)
+            {
+                <option value="@role.Name">@role.DisplayName (Level @role.Level)</option>
+            }
+        </select>
+    </div>
+    <button type="button" class="btn btn-secondary" @onclick="ClearFilters">
+        Clear filters
+    </button>
+</div>
+
+@if (_isLoading)
+{
+    <div class="card empty" role="status">
+        Loading users and authorization levels...
+    </div>
+}
+else if (FilteredUserRows.Count == 0)
+{
+    <div class="card empty" role="status">
+        No users match your current search or filter criteria.
+    </div>
+}
+else
+{
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                    <th>Portal Tier</th>
+                    <th>Status</th>
+                    <th>Delegate / Assign Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in FilteredUserRows)
+                {
+                    <tr>
+                        <td>
+                            <span class="ticket-title">@row.User.FullName</span>
+                            @if (row.IsCurrentActor)
+                            {
+                                <span class="ticket-sub">Current session account</span>
+                            }
+                        </td>
+                        <td>@row.User.Email</td>
+                        <td>
+                            <span class="@row.RoleBadgeClass">
+                                @row.User.CurrentRoleDisplayName (L@row.User.CurrentRoleLevel)
+                            </span>
+                        </td>
+                        <td>@row.User.PortalRole</td>
+                        <td>
+                            <span class="@row.StatusBadgeClass">
+                                @row.StatusText
+                            </span>
+                        </td>
+                        <td>
+                            @if (row.CanManage)
+                            {
+                                <div class="role-delegation-actions">
+                                    <select id="@row.SelectId"
+                                            aria-label="@row.SelectAriaLabel"
+                                            disabled="@_isSaving"
+                                            @bind="row.SelectedRole">
+                                        @foreach (var assignableRole in _assignableRoles)
+                                        {
+                                            <option value="@assignableRole.Name">
+                                                @assignableRole.DisplayName (Level @assignableRole.Level)
+                                            </option>
+                                        }
+                                    </select>
+                                    <button type="button"
+                                            class="btn btn-primary"
+                                            disabled="@row.IsUpdateDisabled"
+                                            @onclick="row.SaveAsync">
+                                        @row.ActionButtonText
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="ticket-sub">
+                                    Outranks your authorization level (Level @row.User.CurrentRoleLevel)
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private readonly Dictionary<Guid, string> _selectedRoles = new();
+    private List<ManagedUserSummary> _users = new();
+    private IReadOnlyList<RoleDefinition> _assignableRoles = Array.Empty<RoleDefinition>();
+    private ClaimsPrincipal _actorPrincipal = new(new ClaimsIdentity());
+    private RoleDefinition? _actorRole;
+    private Guid _actorUserId;
+    private string _actorEmail = string.Empty;
+    private string _actorName = "Signed in user";
+    private string _searchQuery = string.Empty;
+    private string _roleFilter = string.Empty;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private Guid? _savingUserId;
+
+    private string AssignableRoleListText =>
+        _assignableRoles.Count == 0
+            ? "None"
+            : string.Join(", ", _assignableRoles.Select(r => $"{r.DisplayName} (L{r.Level})"));
+
+    private IReadOnlyList<UserRowViewModel> FilteredUserRows =>
+        _users
+            .Where(MatchesFilter)
+            .Select(u => new UserRowViewModel(this, u))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeActorAsync();
+        await LoadUsersAsync();
+    }
+
+    private async Task InitializeActorAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _actorPrincipal = authState.User;
+        _actorName = _actorPrincipal.Identity?.Name ?? "Signed in user";
+        _actorEmail = _actorPrincipal.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
+        var userIdClaim = _actorPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var parsedId))
+        {
+            _actorUserId = parsedId;
+        }
+
+        _actorRole = RoleDelegation.GetEffectiveRole(_actorPrincipal);
+        _assignableRoles = RoleDelegation.GetAssignableRoles(_actorPrincipal);
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var loaded = await RoleDelegation.GetUsersAsync();
+            _users = loaded.ToList();
+
+            foreach (var user in _users)
+            {
+                _selectedRoles[user.UserId] = user.CurrentRoleName;
+            }
+
+            var actorRow = _users.FirstOrDefault(IsCurrentActor);
+            if (actorRow is not null)
+            {
+                var dbRole = RoleDelegation.FindRole(actorRow.CurrentRoleName);
+                if (dbRole is not null)
+                {
+                    _actorRole = dbRole;
+                    _assignableRoles = RoleDelegation.GetAssignableRoles(dbRole.Name);
+                }
+            }
+        }
+        catch
+        {
+            _errorMessage = "Unable to load users from the database. Please verify your database connection.";
+            _users = new List<ManagedUserSummary>();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool MatchesFilter(ManagedUserSummary user)
+    {
+        if (!string.IsNullOrWhiteSpace(_roleFilter) &&
+            !string.Equals(user.CurrentRoleName, _roleFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            return true;
+        }
+
+        var term = _searchQuery.Trim();
+        return user.FullName.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || user.Email.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || user.CurrentRoleDisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || user.CurrentRoleName.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ClearFilters()
+    {
+        _searchQuery = string.Empty;
+        _roleFilter = string.Empty;
+    }
+
+    private bool IsCurrentActor(ManagedUserSummary user)
+    {
+        if (_actorUserId != Guid.Empty && user.UserId == _actorUserId)
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(_actorEmail) &&
+               string.Equals(user.Email, _actorEmail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool CanManageUser(ManagedUserSummary user) =>
+        _actorRole is not null &&
+        _actorRole.Level >= user.CurrentRoleLevel &&
+        _assignableRoles.Count > 0;
+
+    private string GetSelectedRole(ManagedUserSummary user) =>
+        _selectedRoles.TryGetValue(user.UserId, out var selected) ? selected : user.CurrentRoleName;
+
+    private void SetSelectedRole(Guid userId, string? roleName)
+    {
+        if (!string.IsNullOrWhiteSpace(roleName))
+        {
+            _selectedRoles[userId] = roleName;
+        }
+    }
+
+    private bool IsUpdateDisabled(ManagedUserSummary user)
+    {
+        if (_isSaving || !CanManageUser(user))
+        {
+            return true;
+        }
+
+        var selected = GetSelectedRole(user);
+        return string.Equals(selected, user.CurrentRoleName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetActionButtonText(Guid userId) =>
+        _isSaving && _savingUserId == userId ? "Updating..." : "Update Role";
+
+    private static string GetRoleBadgeClass(int roleLevel) => roleLevel switch
+    {
+        5 => "badge badge-high",
+        4 => "badge badge-open",
+        3 => "badge badge-progress",
+        2 => "badge badge-medium",
+        _ => "badge badge-low"
+    };
+
+    private async Task SaveRoleAsync(ManagedUserSummary user)
+    {
+        _successMessage = null;
+        _errorMessage = null;
+
+        var targetRoleName = GetSelectedRole(user);
+        _isSaving = true;
+        _savingUserId = user.UserId;
+
+        try
+        {
+            var result = await RoleDelegation.DelegateRoleAsync(_actorPrincipal, user.UserId, targetRoleName);
+            if (!result.Succeeded)
+            {
+                _errorMessage = result.ErrorMessage ?? "Role update could not be completed.";
+                return;
+            }
+
+            await LoadUsersAsync();
+            var assignedDef = RoleDelegation.FindRole(result.AssignedRole);
+            var roleLabel = assignedDef?.DisplayName ?? result.AssignedRole ?? targetRoleName;
+            _successMessage = $"Updated {user.FullName}'s authorization role to {roleLabel}.";
+        }
+        finally
+        {
+            _isSaving = false;
+            _savingUserId = null;
+        }
+    }
+
+    private sealed class UserRowViewModel
+    {
+        private readonly RoleManagement _parent;
+
+        public UserRowViewModel(RoleManagement parent, ManagedUserSummary user)
+        {
+            _parent = parent;
+            User = user;
+        }
+
+        public ManagedUserSummary User { get; }
+
+        public bool IsCurrentActor => _parent.IsCurrentActor(User);
+
+        public bool CanManage => _parent.CanManageUser(User);
+
+        public bool IsUpdateDisabled => _parent.IsUpdateDisabled(User);
+
+        public string ActionButtonText => _parent.GetActionButtonText(User.UserId);
+
+        public string SelectId => $"role-select-{User.UserId:N}";
+
+        public string SelectAriaLabel => $"Assign role for {User.FullName}";
+
+        public string RoleBadgeClass => GetRoleBadgeClass(User.CurrentRoleLevel);
+
+        public string StatusBadgeClass => User.IsActive ? "badge badge-resolved" : "badge badge-closed";
+
+        public string StatusText => User.IsActive ? "Active" : "Inactive";
+
+        public string SelectedRole
+        {
+            get => _parent.GetSelectedRole(User);
+            set => _parent.SetSelectedRole(User.UserId, value);
+        }
+
+        public Task SaveAsync() => _parent.SaveRoleAsync(User);
+    }
+}
