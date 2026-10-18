@@ -1,38 +1,271 @@
 @page "/management"
 @attribute [Authorize(Roles = "Management")]
 @inject TicketService Tickets
+@inject WorkspaceDataService Data
+@inject AuditService Audit
+@inject ILogger<Dashboard> Logger
 
 <PageTitle>Management Dashboard | CivicConnect</PageTitle>
 
 <div class="page-head">
     <div>
-        <p class="eyebrow">Overview</p>
+        <p class="eyebrow">Management &amp; Oversight</p>
         <h1>Management Dashboard</h1>
-        <p>View ticket counts for the current demo workspace.</p>
+        <p>Monitor service activity, status distributions (open, overdue, resolved, closed), category/team performance breakdowns, and the immutable audit trail (FR-08, FR-12, FR-17).</p>
     </div>
 </div>
+
+@{
+    var totalCount = summary?.TotalRequests ?? Tickets.Tickets.Count;
+    var openCount = summary is not null
+        ? summary.OpenCount + summary.AssignedCount + summary.InProgressCount + summary.OnHoldCount
+        : Tickets.Tickets.Count(t => t.Status is "Open" or "Assigned" or "In Progress");
+    var overdueCount = summary?.OverdueCount ?? 0;
+    var resolvedAndClosed = summary is not null
+        ? summary.ResolvedCount + summary.ClosedCount
+        : Tickets.Tickets.Count(t => t.Status is "Resolved" or "Closed");
+    var resolutionRate = summary?.ResolutionRatePercent
+        ?? (totalCount > 0 ? Math.Round((double)resolvedAndClosed / totalCount * 100.0, 1) : 0.0);
+}
+
 <div class="grid grid-4">
     <div class="card stat-card stat-total">
-        <div class="stat-top">Total tickets</div>
-        <div class="stat-value">@Tickets.Tickets.Count</div>
-        <div class="stat-note">All recorded service requests</div>
+        <div class="stat-top">Total requests</div>
+        <div class="stat-value">@totalCount</div>
+        <div class="stat-note">All recorded service requests &amp; incidents</div>
     </div>
     <div class="card stat-card">
-        <div class="stat-top">Open</div>
-        <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "Open")</div>
-        <div class="stat-note">Currently open in queue</div>
+        <div class="stat-top">Active / Open</div>
+        <div class="stat-value">@openCount</div>
+        <div class="stat-note">
+            New: @(summary?.OpenCount ?? Tickets.Tickets.Count(t => t.Status == "Open")) ·
+            In Progress: @(summary?.InProgressCount ?? Tickets.Tickets.Count(t => t.Status == "In Progress")) ·
+            Overdue: @overdueCount
+        </div>
     </div>
     <div class="card stat-card stat-resolved">
         <div class="stat-top">Resolution rate</div>
-        <div class="stat-value stat-value-text">Unavailable</div>
-        <div class="stat-note">Reliable timing data is not available.</div>
+        <div class="stat-value">@($"{resolutionRate:0.#}%")</div>
+        <div class="stat-note">
+            Resolved: @(summary?.ResolvedCount ?? Tickets.Tickets.Count(t => t.Status == "Resolved")) ·
+            Closed: @(summary?.ClosedCount ?? Tickets.Tickets.Count(t => t.Status == "Closed"))
+        </div>
     </div>
     <div class="card stat-card stat-progress">
-        <div class="stat-top">Avg. response</div>
-        <div class="stat-value stat-value-text">Unavailable</div>
-        <div class="stat-note">Reliable timing data is not available.</div>
+        <div class="stat-top">Service performance</div>
+        @if (summary?.AvgTurnaroundMinutes is { } avgMins)
+        {
+            <div class="stat-value">@($"{avgMins:0.#} min")</div>
+            <div class="stat-note">SLA compliance: @($"{summary.SlaCompliancePercent ?? 100.0:0.#}%")</div>
+        }
+        else
+        {
+            <div class="stat-value">@overdueCount Overdue</div>
+            <div class="stat-note">SLA targets enforced (60m Critical – 4320m Low)</div>
+        }
     </div>
 </div>
+
 <div class="section">
+    <h2>Active Workspace Requests</h2>
     <TicketTable Tickets="Tickets.Tickets" />
 </div>
+
+@if (summary is not null)
+{
+    <div class="section">
+        <h2>Overdue Requests (FR-12)</h2>
+        @if (summary.OverdueIncidents.Count == 0)
+        {
+            <div class="card empty" role="status">
+                No active incidents are currently past their SLA due date.
+            </div>
+        }
+        else
+        {
+            <div class="card table-wrap">
+                <table aria-label="Overdue incidents">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due At (UTC)</th>
+                            <th>Overrun</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in summary.OverdueIncidents)
+                        {
+                            <tr>
+                                <td><strong>@item.ReferenceNumber</strong></td>
+                                <td>@item.Title</td>
+                                <td>@item.CategoryName</td>
+                                <td><span class="badge badge-high">@item.PriorityName</span></td>
+                                <td><span class="badge badge-open">@item.StatusDisplay</span></td>
+                                <td>@item.DueAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@($"{item.OverrunMinutes:0} min overdue")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="section grid grid-2">
+        <div>
+            <h2>Requests by Category &amp; Status (FR-17)</h2>
+            <div class="card table-wrap">
+                <table aria-label="Category and status breakdown">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Open</th>
+                            <th>In Progress</th>
+                            <th>Overdue</th>
+                            <th>Resolved</th>
+                            <th>Closed</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cat in summary.CategoryBreakdown)
+                        {
+                            <tr>
+                                <td><strong>@cat.CategoryName</strong></td>
+                                <td>@cat.OpenCount</td>
+                                <td>@cat.InProgressCount</td>
+                                <td>@cat.OverdueCount</td>
+                                <td>@cat.ResolvedCount</td>
+                                <td>@cat.ClosedCount</td>
+                                <td><strong>@cat.TotalCount</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <h2>Service Team Performance (FR-17)</h2>
+            <div class="card table-wrap">
+                <table aria-label="Service team performance">
+                    <thead>
+                        <tr>
+                            <th>Service Team</th>
+                            <th>Active</th>
+                            <th>Resolved</th>
+                            <th>Closed</th>
+                            <th>Resolution Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var team in summary.TeamBreakdown)
+                        {
+                            <tr>
+                                <td><strong>@team.TeamName</strong></td>
+                                <td>@team.ActiveCount</td>
+                                <td>@team.ResolvedCount</td>
+                                <td>@team.ClosedCount</td>
+                                <td>@($"{team.ResolutionRatePercent:0.#}%")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (summary.PriorityTurnaround.Count > 0)
+    {
+        <div class="section">
+            <h2>Priority SLA &amp; Turnaround Summary (FR-17)</h2>
+            <div class="card table-wrap">
+                <table aria-label="Priority SLA turnaround">
+                    <thead>
+                        <tr>
+                            <th>Priority</th>
+                            <th>SLA Target</th>
+                            <th>Resolved Count</th>
+                            <th>SLA Met</th>
+                            <th>SLA Missed</th>
+                            <th>Avg. Turnaround</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in summary.PriorityTurnaround)
+                        {
+                            <tr>
+                                <td><strong>@row.PriorityName (#@row.PriorityId)</strong></td>
+                                <td>@row.TargetMinutes min</td>
+                                <td>@row.ResolvedCount</td>
+                                <td>@row.MetCount</td>
+                                <td>@row.MissedCount</td>
+                                <td>@(row.ResolvedCount > 0 ? $"{row.AvgTurnaroundMinutes:0.#} min" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="section">
+        <h2>Audit Trail &amp; Change History (FR-08)</h2>
+        @if (summary.RecentAuditEntries.Count == 0)
+        {
+            <div class="card empty" role="status">
+                No audit trail entries recorded yet in the current session.
+            </div>
+        }
+        else
+        {
+            <div class="card table-wrap">
+                <table aria-label="Audit trail">
+                    <thead>
+                        <tr>
+                            <th>Timestamp (UTC)</th>
+                            <th>Actor</th>
+                            <th>Entity</th>
+                            <th>Action</th>
+                            <th>Previous State</th>
+                            <th>New State</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in summary.RecentAuditEntries)
+                        {
+                            <tr>
+                                <td>@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td>@entry.Actor</td>
+                                <td>@entry.EntityType (@entry.EntityId)</td>
+                                <td><span class="badge badge-progress">@entry.Action</span></td>
+                                <td><code>@(entry.PreviousState ?? "—")</code></td>
+                                <td><code>@(entry.NewState ?? "—")</code></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private ManagementDashboardSummary? summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            summary = await Data.GetManagementDashboardSummaryAsync(Tickets, Audit);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unable to load management dashboard summary.");
+        }
+    }
+}

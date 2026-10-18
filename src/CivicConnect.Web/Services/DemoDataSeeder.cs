@@ -3,7 +3,7 @@ using Npgsql;
 
 namespace CivicConnect.Web.Services;
 
-/// Ensures the demo accounts exist, including two distinct reporters for ownership checks.
+/// Ensures the demo accounts and baseline service categories exist for workspace operations.
 public static class DemoDataSeeder
 {
     private static readonly IPasswordHashingService Hasher = Argon2idPasswordHasher.Instance;
@@ -22,6 +22,15 @@ public static class DemoDataSeeder
         "Facilities"
     };
 
+    private static readonly (string Name, string Description, short UrgencyLevel, string DefaultTeamName)[] DefaultCategories =
+    {
+        ("IT Support", "Workstation, network, connectivity, and software access incidents.", 3, "IT Support"),
+        ("Facilities", "Building maintenance, HVAC, plumbing, and room equipment requests.", 2, "Facilities"),
+        ("Electrical", "Power faults, lighting outages, and electrical safety hazards.", 4, "Facilities"),
+        ("Safety Incident", "Urgent physical safety, access control, or workplace hazard reports.", 4, "Facilities"),
+        ("HR Request", "Human resources policy, onboarding, and staff administration requests.", 1, "IT Support")
+    };
+
     public static async Task EnsureDemoUsersAsync(NpgsqlDataSource dataSource)
     {
         await using var conn = await dataSource.OpenConnectionAsync();
@@ -37,6 +46,27 @@ public static class DemoDataSeeder
                 """;
             ensureTeam.Parameters.AddWithValue(teamName);
             await ensureTeam.ExecuteNonQueryAsync();
+        }
+
+        foreach (var (name, description, urgencyLevel, defaultTeamName) in DefaultCategories)
+        {
+            await using var ensureCategory = conn.CreateCommand();
+            ensureCategory.CommandText =
+                """
+                INSERT INTO category (name, description, urgency_level, default_service_team_id, is_active)
+                SELECT $1, $2, $3, st.id, true
+                FROM service_team st
+                WHERE st.name = $4
+                  AND NOT EXISTS (
+                      SELECT 1 FROM category c
+                      WHERE c.name = $1 AND c.is_active = true
+                  )
+                """;
+            ensureCategory.Parameters.AddWithValue(name);
+            ensureCategory.Parameters.AddWithValue(description);
+            ensureCategory.Parameters.AddWithValue(urgencyLevel);
+            ensureCategory.Parameters.AddWithValue(defaultTeamName);
+            await ensureCategory.ExecuteNonQueryAsync();
         }
 
         foreach (var (email, fullName, roleName) in Accounts)
@@ -104,4 +134,3 @@ public static class DemoDataSeeder
         await ensureStaffTeam.ExecuteNonQueryAsync();
     }
 }
-

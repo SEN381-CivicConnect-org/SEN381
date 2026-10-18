@@ -120,9 +120,16 @@
     <li><strong>Milestone 3 Restore Drill Evidence Record (<code>OPS-BKP-02</code>):</strong> <code>docs/deployment/restore-drill-record-M3.md</code> &mdash; restored backup archive and role export into an isolated <code>postgres:15-alpine</code> instance (<code>civicconnect-drill-db</code>), verified all 22 domain tables and 13 EF Core migrations, and passed 32/32 integration tests in <strong>12.268 seconds</strong> (well within the 4-hour RTO threshold).</li>
   </ul>
 
+  <h2>Phase 4: Production Deployment Decision</h2>
+  <p>Under SEN381 Master Project Brief &sect;17 and &sect;18, the production deployment decision reconciles early architecture assumptions against empirical staging evidence, cost limits, and South African regulatory standards (POPIA). CivicConnect establishes a single-tenant containerized deployment orchestrated via Docker Compose and Caddy edge reverse proxy, delivering exact dev/staging/production parity at a fixed cost of ~$19/month (Azure South Africa North B2s baseline).</p>
+  <ul>
+    <li><strong>Architecture Decision Record ADR-005:</strong> <code>docs/decisions/0005-production-deployment-decision.md</code> &mdash; formal architectural justification, candidate evaluation matrix, and compliance sign-off.</li>
+    <li><strong>Production Deployment &amp; Operability Specification:</strong> <code>docs/deployment/deployment-decision-and-operational-readiness-V1.0.md</code> (<code>OPS-DEP-01</code>) &mdash; complete project analysis, release gating checklist, rollback runbook, and observability architecture.</li>
+  </ul>
+
   <div class="note">
     <span class="label">Traceability</span>
-    <p>See PED v2.0 &sect;6.1 (ASR-04), &sect;5.3 (FEC-02) and NFR-01/NFR-03/NFR-09 in <code>docs/requirements/Non-Functional Requirements/</code>.</p>
+    <p>See PED v4.0 &sect;11 (Phase 4 Deployment Decision), PED v2.0 &sect;6.1 (ASR-04), &sect;5.3 (FEC-02), ADR-005, and NFR-01/NFR-02/NFR-03/NFR-07/NFR-08/NFR-09/NFR-10.</p>
   </div>
 </main>
 </body>

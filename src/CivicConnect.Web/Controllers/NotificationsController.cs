@@ -57,7 +57,7 @@ public sealed class NotificationsController : ControllerBase
     }
 
     // Shared read projection for the HTTP endpoint and the authenticated Blazor circuit.
-    internal static async Task<List<NotificationDto>> ReadUnreadAsync(CivicConnectDbContext context, Guid recipientId)
+    public static async Task<List<NotificationDto>> ReadUnreadAsync(CivicConnectDbContext context, Guid recipientId)
     {
         var unreadItems = await context.Notifications
             .AsNoTracking()

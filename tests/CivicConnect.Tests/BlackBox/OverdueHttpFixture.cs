@@ -29,11 +29,60 @@ public sealed class OverdueHttpFixture : IAsyncLifetime
     private int location;
     public HttpClient Client { get; private set; } = null!;
 
+    private static string? ResolveConnectionString()
+    {
+        var envValue = Environment.GetEnvironmentVariable("FR12_CONNECTION_STRING")
+            ?? Environment.GetEnvironmentVariable("MIGRATION_CONNECTION_STRING")
+            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
+        if (!string.IsNullOrWhiteSpace(envValue))
+        {
+            return envValue;
+        }
+
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            var envFile = Path.Combine(dir.FullName, ".env");
+            if (File.Exists(envFile))
+            {
+                string? connStr = null;
+                string? migConnStr = null;
+                foreach (var line in File.ReadAllLines(envFile))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("MIGRATION_CONNECTION_STRING=", StringComparison.Ordinal))
+                    {
+                        var raw = trimmed["MIGRATION_CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
+                        migConnStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else if (trimmed.StartsWith("CONNECTION_STRING=", StringComparison.Ordinal))
+                    {
+                        var raw = trimmed["CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
+                        connStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+
+                if (migConnStr is not null)
+                {
+                    return migConnStr;
+                }
+
+                if (connStr is not null)
+                {
+                    return connStr;
+                }
+            }
+
+            dir = dir.Parent;
+        }
+
+        return null;
+    }
+
     public async Task InitializeAsync()
     {
-        var input = Environment.GetEnvironmentVariable("FR12_CONNECTION_STRING")
-            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
-            ?? "Host=localhost;Port=5432;Database=postgres;Username=civicconnect;Password=changeme";
+        var input = ResolveConnectionString()
+            ?? throw new InvalidOperationException("Set FR12_CONNECTION_STRING to a local PostgreSQL connection with CREATE DATABASE permission. FR-12 creates and deletes only its unique test database.");
         var settings = new NpgsqlConnectionStringBuilder(input) { Pooling = false };
         settings.Database = "postgres";
         adminConnection = settings.ConnectionString;
