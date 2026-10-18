@@ -1,5 +1,5 @@
 using CivicConnect.Data;
-Using CivicConnect.Data.Entities'
+using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -34,10 +34,15 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
     }
 
     /// <inheritdoc />
+    public Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default) =>
+        DeIdentifyUserAsync(userId, actorId: null, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
         Guid userId,
-        Guid ActorId,
-        Guid actorId
+        Guid? actorId,
         CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty)
@@ -78,16 +83,22 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
                 tm.LeftAt = DateTimeOffset.UtcNow;
                 tm.UpdatedAt = DateTimeOffset.UtcNow;
             }
-// Erasure is an auditable event ; no personal data in the payload.
+
+            // Erasure is an auditable event; no personal data in the payload.
+            var effectiveActorId = actorId.HasValue && actorId.Value != Guid.Empty
+                ? actorId.Value
+                : user.Id;
+
             _dbContext.AuditLogs.Add(new AuditLog
             {
-                ActorId = actorId,
+                ActorId = effectiveActorId,
                 EntityType = AuditEntityType.User,
                 EntityId = user.Id.ToString("D"),
                 Action = AuditAction.Update,
                 AfterState = "{\"operation\":\"de-identify\"}",
                 OccurredAt = DateTimeOffset.UtcNow
             });
+
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Tally preserved tickets and incidents to verify data integrity under IT-RET-02
@@ -106,9 +117,7 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
 
             _logger?.LogInformation(
                 "Irreversibly de-identified user {UserId}: isActive=false, preservedTickets={Tickets}, preservedIncidents={Incidents}.",
-
                 user.Id,
-                anonymizedEmail,
                 ticketsPreserved,
                 incidentsPreserved);
 

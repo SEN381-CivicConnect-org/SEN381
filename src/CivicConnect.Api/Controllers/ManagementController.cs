@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CivicConnect.Api.Services;
 using CivicConnect.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -124,7 +125,10 @@ public sealed class ManagementController : ControllerBase
             ?? throw new InvalidOperationException("User de-identification service is not available.");
         try
         {
-            var result = await service.DeIdentifyUserAsync(id, cancellationToken);
+            var actorClaim = User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? User?.FindFirstValue("sub");
+            Guid? actorId = Guid.TryParse(actorClaim, out var parsedActorId) && parsedActorId != Guid.Empty ? parsedActorId : null;
+
+            var result = await service.DeIdentifyUserAsync(id, actorId, cancellationToken);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

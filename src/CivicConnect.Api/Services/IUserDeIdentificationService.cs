@@ -54,6 +54,7 @@ public interface IUserDeIdentificationService
     ///   <item><description>Scrubs <c>password_hash</c> to a permanently invalid sentinel hash (<c>*DEIDENTIFIED*</c>).</description></item>
     ///   <item><description>Sets <c>is_active = false</c>.</description></item>
     ///   <item><description>Closes any active team memberships (<c>left_at = now()</c>).</description></item>
+    ///   <item><description>Records an audit log entry for the de-identification operation.</description></item>
     ///   <item><description>Preserves associated <c>ticket</c> and <c>incident</c> records intact with reference numbers readable.</description></item>
     /// </list>
     /// </summary>
@@ -62,5 +63,17 @@ public interface IUserDeIdentificationService
     /// <returns>A summary DTO confirming de-identification and preserved historical links.</returns>
     Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
         Guid userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Irreversibly de-identifies an application user attributing the operation to the specified actor:
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to de-identify.</param>
+    /// <param name="actorId">Optional identifier of the administrator/staff member performing the de-identification.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A summary DTO confirming de-identification and preserved historical links.</returns>
+    Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
+        Guid userId,
+        Guid? actorId,
         CancellationToken cancellationToken = default);
 }
