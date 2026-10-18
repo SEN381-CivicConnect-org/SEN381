@@ -1,25 +1,47 @@
 @page "/notifications"
 @attribute [Authorize]
+@inject WorkspaceDataService Data
+@inject ILogger<Notifications> Logger
 
-<div class="page-head">
-    <div>
-        <h1>Notifications</h1>
-        <p>Sample notifications. Live updates and read tracking are not available in this demo.</p>
+<div class="page-head"><div><h1>Notifications</h1><p>Unread notifications for your account.</p></div></div>
+@if (error is not null)
+{
+    <div class="card empty" role="status">@error</div>
+}
+else if (notifications is null)
+{
+    <div class="card empty" role="status">Loading notifications…</div>
+}
+else if (notifications.Count == 0)
+{
+    <div class="card empty" role="status">You have no unread notifications.</div>
+}
+else
+{
+    <div class="card">
+        @foreach (var notification in notifications)
+        {
+            <div class="setting-row">
+                <div>
+                    <h4>@notification.Message</h4>
+                    <p><time datetime="@notification.CreatedAt.ToString("O")">@notification.CreatedAt.ToUniversalTime().ToString("d MMM yyyy HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture)</time></p>
+                </div>
+                <span class="badge badge-progress">Unread</span>
+            </div>
+        }
     </div>
-</div>
-<div class="card">
-    <div class="setting-row">
-        <div>
-            <h4>CC-014 was updated to In Progress.</h4>
-            <p>12 minutes ago</p>
-        </div>
-        <span class="badge badge-progress">New</span>
-    </div>
-    <div class="setting-row">
-        <div>
-            <h4>CC-012 was resolved successfully.</h4>
-            <p>3 days ago</p>
-        </div>
-        <span class="badge badge-closed">Read</span>
-    </div>
-</div>
+}
+
+@code {
+    private List<CivicConnect.Web.Controllers.NotificationDto>? notifications;
+    private string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try { notifications = await Data.GetUnreadNotificationsAsync(); }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unable to load unread notifications.");
+            error = "Notifications are currently unavailable.";
+        }
+    }
+}

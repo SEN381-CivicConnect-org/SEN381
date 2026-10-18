@@ -122,6 +122,14 @@ public sealed class TicketService
         return Create(ticket, AuditService.ActorFor(user));
     }
 
+    // Legacy snapshots have display-name assignees; require an authenticated, nonblank staff identity.
+    public IEnumerable<Ticket> GetAssignedTickets(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true && user.IsInRole("Staff") &&
+        !string.IsNullOrWhiteSpace(user.Identity.Name)
+            ? Tickets.Where(ticket => string.Equals(ticket.Assignee, user.Identity.Name, StringComparison.Ordinal)
+                && ticket.Status != "Resolved")
+            : Array.Empty<Ticket>();
+
     public IEnumerable<Ticket> GetStaffQueue(string? teamName = null, string? staffName = null) =>
         Tickets.Where(ticket =>
             ticket.Status != "Resolved" &&
