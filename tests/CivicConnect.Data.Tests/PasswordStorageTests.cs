@@ -45,7 +45,11 @@ public sealed class PasswordStorageTests
         // Reload directly from PostgreSQL without tracking
         var reloaded = await context.AppUsers
             .AsNoTracking()
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .SingleAsync(u => u.Id == createdUser.Id);
+
+        Assert.Contains(reloaded.UserRoles, ur => ur.Role.Name == "reporter");
 
         // 1. Stored password_hash is a PHC-format string with v=19, m=19456, t=2, p=1
         Assert.Matches(

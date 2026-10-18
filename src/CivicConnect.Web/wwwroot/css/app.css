@@ -544,3 +544,38 @@ select { appearance: none; background-image: url('assets/icons/chevron.svg') !im
         width: 100%;
     }
 }
+
+/* Sign-up and authentication form enhancements. */
+.login-box form .btn {
+    min-height: 48px;
+    margin-top: 7px;
+}
+
+.auth-switch {
+    margin: 18px 0 0;
+    font-size: 13.44px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.auth-switch a {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-switch a:hover {
+    color: var(--primary-dark);
+}
+
+.validation-message {
+    color: var(--error-text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.field input.invalid {
+    border-color: var(--danger);
+}
+

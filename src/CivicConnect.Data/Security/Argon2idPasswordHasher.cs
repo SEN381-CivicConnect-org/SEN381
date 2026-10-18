@@ -2,8 +2,10 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using CivicConnect.Data.Configurations;
 using CivicConnect.Data.Entities;
 using Konscious.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace CivicConnect.Data.Security;
@@ -330,20 +332,38 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
         var normalizedFullName = fullName.Trim();
         var phcHash = HashPassword(plaintextPassword);
 
+        var defaultRoleId = await dbContext.Roles
+            .AsNoTracking()
+            .Where(r => r.Name == "reporter")
+            .Select(r => (short?)r.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? RoleConfiguration.BaselineRoles.First(r => r.Name == "reporter").Id;
+
+        var userId = Guid.NewGuid();
         var user = new AppUser
         {
+            Id = userId,
             Email = normalizedEmail,
             FullName = normalizedFullName,
             PasswordHash = phcHash,
             IsActive = true
         };
 
+        user.UserRoles.Add(new UserRole
+        {
+            UserId = userId,
+            User = user,
+            RoleId = defaultRoleId,
+            GrantedByUserId = userId,
+            GrantedByUser = user
+        });
+
         dbContext.AppUsers.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var targetLogger = auditLogger ?? _logger;
         targetLogger?.LogInformation(
-            "Created user account {UserId} for {Email} ({FullName}) with {Algorithm} parameters v={Version}, m={MemoryCostKiB}, t={Iterations}, p={Parallelism}.",
+            "Created user account {UserId} for {Email} ({FullName}) with default role 'reporter' and {Algorithm} parameters v={Version}, m={MemoryCostKiB}, t={Iterations}, p={Parallelism}.",
             user.Id,
             user.Email,
             user.FullName,

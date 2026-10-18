@@ -28,6 +28,13 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
     CivicConnectDbContext.Configure((DbContextOptionsBuilder<CivicConnectDbContext>)options, connectionString));
 builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<Argon2idPasswordHasher>();
+builder.Services.AddScoped<IUserRegistrationService>(sp =>
+    new UserRegistrationService(
+        sp.GetRequiredService<IServiceScopeFactory>(),
+        sp.GetRequiredService<IPasswordHashingService>(),
+        sp.GetService<ILogger<UserRegistrationService>>()));
+builder.Services.AddScoped<UserRegistrationService>(sp =>
+    (UserRegistrationService)sp.GetRequiredService<IUserRegistrationService>());
 builder.Services.AddScoped<AppAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AppAuthenticationStateProvider>());
 builder.Services.AddScoped<WorkspaceNavigation>();
