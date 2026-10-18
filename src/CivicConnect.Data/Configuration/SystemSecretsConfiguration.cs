@@ -449,6 +449,24 @@ public static class SystemSecretsConfiguration
         }
 
         var trimmed = connectionString.Trim();
+        if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var uriBuilder = new Npgsql.NpgsqlConnectionStringBuilder(trimmed);
+                if (uriBuilder.SslMode == Npgsql.SslMode.Disable || uriBuilder.SslMode == Npgsql.SslMode.Allow)
+                {
+                    uriBuilder.SslMode = Npgsql.SslMode.Require;
+                }
+                return uriBuilder.ConnectionString;
+            }
+            catch
+            {
+                // Fall back to standard string manipulation
+            }
+        }
+
         ValidateConnectionStringTls(trimmed, requireExplicitTls: false);
 
         if (!SslModeValueRegex.IsMatch(trimmed))

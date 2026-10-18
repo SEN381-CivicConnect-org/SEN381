@@ -1064,20 +1064,17 @@ In accordance with SEN381 Master Project Brief §17 (*Environments, Deployment a
 ### 11.2 Evaluation of Candidate Hosting Architectures
 Four architectural deployment candidates were evaluated:
 - **Candidate A: Hyperscaler Managed Cloud (AWS ECS Fargate + RDS PostgreSQL + Amazon MQ):** Enterprise availability, but prohibitive cost ($\ge \$100\text{--}\$140\text{/month}$ / $\sim\text{R}1,800\text{--}\text{R}2,500\text{/mo}$) directly breaches RSK-01. **REJECTED.**
-- **Candidate B: Serverless Multi-Platform PaaS (Render / Railway / Neon / CloudAMQP):** Low initial setup, but free-tier limitations introduce fatal operational risks: Neon 0.5 GB ceiling breached by audit logs (RSK-13), 5–15 second cold starts breach NFR-09 availability probes, and foreign data residency breaches POPIA s72. **REJECTED.**
-- **Candidate C: Single-Tenant Containerized Cloud VM / VPS (Azure South Africa North B2s / Hetzner CPX21) [SELECTED]:** Runs the exact verified `docker-compose.yml` topology, ensures zero cold-start latency, provides full local volume access for WAL archiving and automated backups, eliminates third-party sub-processors (POPIA s21), and incurs a flat, predictable cost of $\sim\$18\text{--}\$19.45\text{/month}$ ($\sim\text{R}350\text{/month}$). **ACCEPTED (ADR-005).**
+- **Candidate B: Unmanaged Bare VPS / Cloud VM:** High administrative overhead managing Linux OS patching, manual Caddy reverse proxy setup, and manual backup scripts for a 3-person team with academic constraints (RSK-05). **REJECTED.**
+- **Candidate C: Render Cloud Application Platform [SELECTED]:** Native multi-stage Dockerfile deployment directly from GitHub, managed PostgreSQL with SSL enforced (`SslMode=Require`), automated TLS certificates, zero cold-start on Starter tiers, and declarative Infrastructure as Code via `render.yaml`. Operates on Free Tier ($0) for evaluation and Starter ($7–$14/mo) well within the low-cost ceiling ($\le \$25\text{/mo}$). **ACCEPTED (ADR-005).**
 - **Candidate D: Managed Kubernetes Cluster (Azure AKS / AWS EKS):** $\ge \$75\text{--}\$120\text{/mo}$ cluster fee alone, with excessive cognitive maintenance overhead for a 3-person team, violating RSK-05. **REJECTED.**
 
-### 11.3 Production Topology & Infrastructure Specification
-The production system is deployed to a single-tenant cloud virtual machine running Ubuntu 24.04 LTS:
-- **Edge Reverse Proxy:** **Caddy 2** terminates public TLS 1.3 on ports 80/443 with automated Let's Encrypt certificate renewal.
-- **Service Containers:**
-  - `frontend-web`: Blazor Web App on .NET 10 Kestrel (HTTP port 8085).
-  - `backend-api`: ASP.NET Core Web API on .NET 10 Kestrel (HTTP port 5060) with Argon2id password hashing and JWT authentication.
-  - `db`: PostgreSQL 15 Alpine (port 5432) with SSL enforced, WAL archiving volume mounted, and dedicated init-db scripts.
-  - `rabbitmq`: RabbitMQ 3 Management Alpine (AMQP port 5672) for asynchronous citizen notification processing (ADR-003).
-  - `db-backup`: Automated daily logical backup cron service executing `backup-db.sh` with 30-day retention and encrypted off-site push.
-- **Network Isolation:** Only ports 80 and 443 are exposed externally. All inter-container communication occurs over the isolated private bridge network `civicconnect-net`.
+### 11.3 Production Topology & Infrastructure Specification (Render Blueprint)
+The production system is deployed to Render via Infrastructure-as-Code (`render.yaml`) in the Frankfurt (EU) region for GDPR/POPIA adequacy:
+- **Presentation Layer (`civicconnect-web`):** Blazor Web App container running on .NET 10 Kestrel (HTTP port 8085), monitored via health check `/`.
+- **Core Service Layer (`civicconnect-api`):** ASP.NET Core Web API container on .NET 10 Kestrel (HTTP port 5060), monitored via `/health/live`.
+- **Relational Persistence (`civicconnect-db`):** Managed PostgreSQL 15 instance with automatic TLS encryption, automated backups, and encrypted storage.
+- **Asynchronous Messaging Seam:** Configured via `RabbitMQ__Host=none` to activate the resilient in-process queue handler with optional external CloudAMQP binding.
+- **Edge Routing & Ingress:** Render Global Edge Proxy automatically provisions and renews TLS 1.3 certificates, routing public HTTPS traffic seamlessly.
 
 ### 11.4 Continuous Delivery & Release Gating Controls
 In accordance with Jez Humble and David Farley (*Continuous Delivery*):
