@@ -68,8 +68,15 @@ public sealed class UserRegistrationTests
 
     [Theory]
     [InlineData("", "valid@example.com", "ValidPass123!", "ValidPass123!")]
+    [InlineData("   ", "valid@example.com", "ValidPass123!", "ValidPass123!")]
+    [InlineData("A", "valid@example.com", "ValidPass123!", "ValidPass123!")]
+    [InlineData("Nomsa Khumalo", "", "ValidPass123!", "ValidPass123!")]
+    [InlineData("Nomsa Khumalo", "   ", "ValidPass123!", "ValidPass123!")]
     [InlineData("Nomsa Khumalo", "invalid-email", "ValidPass123!", "ValidPass123!")]
+    [InlineData("Nomsa Khumalo", "user@nodot", "ValidPass123!", "ValidPass123!")]
+    [InlineData("Nomsa Khumalo", "valid@example.com", "", "")]
     [InlineData("Nomsa Khumalo", "valid@example.com", "short", "short")]
+    [InlineData("Nomsa Khumalo", "valid@example.com", "ValidPass123!", "")]
     [InlineData("Nomsa Khumalo", "valid@example.com", "ValidPass123!", "Mismatch123!")]
     public async Task RegisterAsync_RejectsInvalidInputBeforeDatabaseCall(
         string fullName,
@@ -87,9 +94,23 @@ public sealed class UserRegistrationTests
     }
 
     [Fact]
+    public void AppAuthenticationStateProvider_DoesNotExposeRedundantRegisterAsync()
+    {
+        var registerMethods = typeof(AppAuthenticationStateProvider)
+            .GetMethods()
+            .Where(m => m.Name == "RegisterAsync")
+            .ToArray();
+
+        Assert.Empty(registerMethods);
+    }
+
+    [Fact]
     public void DefaultLowestRoleName_IsReporter()
     {
         Assert.Equal("reporter", UserRegistrationService.DefaultLowestRoleName);
+        Assert.Equal(
+            CivicConnect.Data.Security.Argon2idPasswordHasher.DefaultLowestRoleName,
+            UserRegistrationService.DefaultLowestRoleName);
     }
 
     private static List<ValidationResult> ValidateModel(SignUpFormModel model)

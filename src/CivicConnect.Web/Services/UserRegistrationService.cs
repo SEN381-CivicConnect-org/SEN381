@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CivicConnect.Data;
-using CivicConnect.Data.Configurations;
-using CivicConnect.Data.Entities;
 using CivicConnect.Data.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +14,10 @@ namespace CivicConnect.Web.Services;
 public sealed class SignUpFormModel
 {
     [Required(ErrorMessage = "Full name is required.")]
-    [StringLength(120, MinimumLength = 2, ErrorMessage = "Full name must be between 2 and 120 characters.")]
+    [StringLength(
+        UserRegistrationService.MaxFullNameLength,
+        MinimumLength = UserRegistrationService.MinFullNameLength,
+        ErrorMessage = "Full name must be between 2 and 120 characters.")]
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Email address is required.")]
@@ -24,7 +25,7 @@ public sealed class SignUpFormModel
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required.")]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters long.")]
+    [MinLength(UserRegistrationService.MinPasswordLength, ErrorMessage = "Password must be at least 8 characters long.")]
     public string Password { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Please confirm your password.")]
@@ -76,43 +77,47 @@ public interface IUserRegistrationService
 }
 
 /// <summary>
-/// Persists new user registrations to PostgreSQL inside a database transaction, applying Argon2id
-/// PHC password hashing (NFR-11) and automatically granting the lowest baseline role (<c>reporter</c>)
-/// before saving the record.
+/// Validates registration inputs and coordinates transactional user creation by delegating
+/// account persistence and Argon2id PHC password hashing (NFR-11) to <see cref="IPasswordHashingService.CreateUserAccountAsync"/>.
 /// </summary>
 public sealed class UserRegistrationService : IUserRegistrationService
 {
-    public const string DefaultLowestRoleName = "reporter";
-    public const int MaxFullNameLength = 120;
-    public const int MinPasswordLength = 8;
-
-    private static readonly EmailAddressAttribute EmailValidator = new();
+    public const string DefaultLowestRoleName = Argon2idPasswordHasher.DefaultLowestRoleName;
+    public const int MinFullNameLength = Argon2idPasswordHasher.MinFullNameLength;
+    public const int MaxFullNameLength = Argon2idPasswordHasher.MaxFullNameLength;
+    public const int MinPasswordLength = Argon2idPasswordHasher.MinPasswordLength;
 
     private readonly CivicConnectDbContext? _dbContext;
     private readonly IServiceScopeFactory? _scopeFactory;
     private readonly IPasswordHashingService _passwordHasher;
     private readonly ILogger<UserRegistrationService>? _logger;
 
+    private UserRegistrationService(
+        IPasswordHashingService? passwordHasher,
+        ILogger<UserRegistrationService>? logger)
+    {
+        _passwordHasher = passwordHasher ?? Argon2idPasswordHasher.Instance;
+        _logger = logger;
+    }
+
     public UserRegistrationService(
         IServiceScopeFactory scopeFactory,
         IPasswordHashingService? passwordHasher = null,
         ILogger<UserRegistrationService>? logger = null)
+        : this(passwordHasher, logger)
     {
         ArgumentNullException.ThrowIfNull(scopeFactory);
         _scopeFactory = scopeFactory;
-        _passwordHasher = passwordHasher ?? Argon2idPasswordHasher.Instance;
-        _logger = logger;
     }
 
     public UserRegistrationService(
         CivicConnectDbContext dbContext,
         IPasswordHashingService? passwordHasher = null,
         ILogger<UserRegistrationService>? logger = null)
+        : this(passwordHasher, logger)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
-        _passwordHasher = passwordHasher ?? Argon2idPasswordHasher.Instance;
-        _logger = logger;
     }
 
     public Task<UserRegistrationResult> RegisterAsync(
@@ -138,34 +143,15 @@ public sealed class UserRegistrationService : IUserRegistrationService
         var normalizedFullName = fullName?.Trim() ?? string.Empty;
         var normalizedEmail = email?.Trim() ?? string.Empty;
 
-        if (string.IsNullOrWhiteSpace(normalizedFullName))
-        {
-            return UserRegistrationResult.ValidationFailed("Full name is required.");
-        }
+        var validationFailure = ValidateRegistrationInput(
+            normalizedFullName,
+            normalizedEmail,
+            password,
+            confirmPassword);
 
-        if (normalizedFullName.Length < 2 || normalizedFullName.Length > MaxFullNameLength)
+        if (validationFailure is not null)
         {
-            return UserRegistrationResult.ValidationFailed("Full name must be between 2 and 120 characters.");
-        }
-
-        if (string.IsNullOrWhiteSpace(normalizedEmail) || !EmailValidator.IsValid(normalizedEmail))
-        {
-            return UserRegistrationResult.ValidationFailed("Enter a valid email address.");
-        }
-
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            return UserRegistrationResult.ValidationFailed("Password is required.");
-        }
-
-        if (password.Length < MinPasswordLength)
-        {
-            return UserRegistrationResult.ValidationFailed($"Password must be at least {MinPasswordLength} characters long.");
-        }
-
-        if (!string.Equals(password, confirmPassword, StringComparison.Ordinal))
-        {
-            return UserRegistrationResult.ValidationFailed("Passwords do not match.");
+            return validationFailure;
         }
 
         if (_scopeFactory is not null)
@@ -186,6 +172,57 @@ public sealed class UserRegistrationService : IUserRegistrationService
             normalizedEmail,
             password,
             cancellationToken);
+    }
+
+    private static UserRegistrationResult? ValidateRegistrationInput(
+        string normalizedFullName,
+        string normalizedEmail,
+        string? password,
+        string? confirmPassword)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedFullName))
+        {
+            return UserRegistrationResult.ValidationFailed("Full name is required.");
+        }
+
+        if (normalizedFullName.Length < MinFullNameLength || normalizedFullName.Length > MaxFullNameLength)
+        {
+            return UserRegistrationResult.ValidationFailed(
+                $"Full name must be between {MinFullNameLength} and {MaxFullNameLength} characters.");
+        }
+
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return UserRegistrationResult.ValidationFailed("Email address is required.");
+        }
+
+        if (!Argon2idPasswordHasher.IsValidEmailAddress(normalizedEmail))
+        {
+            return UserRegistrationResult.ValidationFailed("Enter a valid email address.");
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return UserRegistrationResult.ValidationFailed("Password is required.");
+        }
+
+        if (password.Length < MinPasswordLength)
+        {
+            return UserRegistrationResult.ValidationFailed(
+                $"Password must be at least {MinPasswordLength} characters long.");
+        }
+
+        if (string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            return UserRegistrationResult.ValidationFailed("Please confirm your password.");
+        }
+
+        if (!string.Equals(password, confirmPassword, StringComparison.Ordinal))
+        {
+            return UserRegistrationResult.ValidationFailed("Passwords do not match.");
+        }
+
+        return null;
     }
 
     private async Task<UserRegistrationResult> ExecuteRegistrationTransactionAsync(
@@ -216,49 +253,18 @@ public sealed class UserRegistrationService : IUserRegistrationService
                 return UserRegistrationResult.DuplicateEmail();
             }
 
-            // Look up the lowest authorization role ("reporter") from the baseline role table
-            var reporterRoleId = await dbContext.Roles
-                .AsNoTracking()
-                .Where(r => r.Name == DefaultLowestRoleName)
-                .Select(r => (short?)r.Id)
-                .FirstOrDefaultAsync(cancellationToken)
-                ?? RoleConfiguration.BaselineRoles.First(r => r.Name == DefaultLowestRoleName).Id;
-
-            // Hash password using Argon2id PHC string format (NFR-11: v=19, m=19456, t=2, p=1)
-            var phcPasswordHash = _passwordHasher.HashPassword(plaintextPassword);
-
-            var userId = Guid.NewGuid();
-            var newUser = new AppUser
-            {
-                Id = userId,
-                Email = normalizedEmail,
-                FullName = normalizedFullName,
-                PasswordHash = phcPasswordHash,
-                IsActive = true
-            };
-
-            // Assign the lowest possible authorization role ("reporter") BEFORE saving to PostgreSQL
-            newUser.UserRoles.Add(new UserRole
-            {
-                UserId = userId,
-                User = newUser,
-                RoleId = reporterRoleId,
-                GrantedByUserId = userId,
-                GrantedByUser = newUser
-            });
-
-            dbContext.AppUsers.Add(newUser);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            var newUser = await _passwordHasher.CreateUserAccountAsync(
+                dbContext,
+                normalizedEmail,
+                normalizedFullName,
+                plaintextPassword,
+                _logger,
+                cancellationToken);
 
             if (transaction is not null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
-
-            _logger?.LogInformation(
-                "Registered new user account {UserId} with default role '{RoleName}'.",
-                newUser.Id,
-                DefaultLowestRoleName);
 
             return UserRegistrationResult.Success(newUser.Id, DefaultLowestRoleName);
         }
