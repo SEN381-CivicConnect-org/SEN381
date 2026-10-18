@@ -153,6 +153,14 @@ public sealed class TicketService
         return Create(ticket, AuditService.ActorFor(user));
     }
 
+    // Legacy snapshots have display-name assignees; require an authenticated, nonblank staff identity.
+    public IEnumerable<Ticket> GetAssignedTickets(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true && user.IsInRole("Staff") &&
+        !string.IsNullOrWhiteSpace(user.Identity.Name)
+            ? Tickets.Where(ticket => string.Equals(ticket.Assignee, user.Identity.Name, StringComparison.Ordinal)
+                && ticket.Status != "Resolved")
+            : Array.Empty<Ticket>();
+
     // Backwards-compatible overload for staging components/tests
     public string Create(Ticket ticket, ClaimsPrincipal user) => CreateForRequester(ticket, user);
 

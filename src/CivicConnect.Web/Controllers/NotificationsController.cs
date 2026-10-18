@@ -53,7 +53,13 @@ public sealed class NotificationsController : ControllerBase
             return Unauthorized(new { message = "User identifier claim was not found in the authentication token." });
         }
 
-        var unreadItems = await _context.Notifications
+        return Ok(await ReadUnreadAsync(_context, recipientId));
+    }
+
+    // Shared read projection for the HTTP endpoint and the authenticated Blazor circuit.
+    internal static async Task<List<NotificationDto>> ReadUnreadAsync(CivicConnectDbContext context, Guid recipientId)
+    {
+        var unreadItems = await context.Notifications
             .AsNoTracking()
             .Where(n => n.RecipientId == recipientId && n.ReadAt == null)
             .OrderByDescending(n => n.CreatedAt)
@@ -62,7 +68,7 @@ public sealed class NotificationsController : ControllerBase
                 n.Id,
                 n.IncidentId,
                 IncidentReferenceNumber = n.Incident.ReferenceNumber,
-                TicketReferenceNumber = _context.Tickets
+                TicketReferenceNumber = context.Tickets
                     .Where(t => t.IncidentId == n.IncidentId && t.ReporterId == recipientId)
                     .OrderByDescending(t => t.SubmittedAt)
                     .Select(t => t.ReferenceNumber)
@@ -70,7 +76,7 @@ public sealed class NotificationsController : ControllerBase
                 n.RecipientId,
                 n.Kind,
                 CurrentStatus = n.Incident.Status,
-                ResolutionSummary = _context.Resolutions
+                ResolutionSummary = context.Resolutions
                     .Where(r => r.IncidentId == n.IncidentId && r.SupersededAt == null)
                     .Select(r => r.Summary)
                     .FirstOrDefault(),
@@ -106,7 +112,7 @@ public sealed class NotificationsController : ControllerBase
             })
             .ToList();
 
-        return Ok(unreadNotifications);
+        return unreadNotifications;
     }
 
     /// <summary>

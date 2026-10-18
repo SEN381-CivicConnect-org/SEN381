@@ -45,7 +45,7 @@ builder.Services.AddScoped<IRoleDelegationService, RoleDelegationService>();
 builder.Services.AddScoped<RoleDelegationService>();
 builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
-builder.Services.AddScoped<WorkspaceNavigation>();
+builder.Services.AddScoped<WorkspaceDataService>();
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
     ?? Environment.GetEnvironmentVariable("API_BASE_URL")
