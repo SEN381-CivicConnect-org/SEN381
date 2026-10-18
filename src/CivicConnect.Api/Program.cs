@@ -95,6 +95,9 @@ builder.Services.AddHostedService<RetentionSweepHostedService>();
 
 var app = builder.Build();
 
+// Verify that application connects under least-privilege role (NFR-10, IT-SEC-02)
+await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
+
 // 2. HTTP Request Pipeline
 
 if (app.Environment.IsDevelopment())
