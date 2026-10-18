@@ -1,0 +1,34 @@
+# CivicConnect Technical Debt Register - V1.0
+
+*Shortcuts, deferrals and verification gaps found so far. Built from PED v1.0, PED v3.0 (sections 10.4 and 10.5), the repository (dev, pulled 2026-10-18), the test, CI and deployment docs, the RTM evidence sheet and the defect register. Nothing was re-run to produce this register.*
+
+**final.pdf was not available when this was written, so its requirements are not reflected. Check the columns and scale against it.**
+
+## Priority scale
+
+- **Priority:** High means it weakens a requirement or a security control. Medium means it reduces reliability or verification. Low means a cleanup or documentation issue.
+
+## Register
+
+| ID | Debt item | Type | Related | Impact if left | Priority | Proposed remediation |
+|---|---|---|---|---|---|---|
+| TD-01 | Web ticket state (tickets, notes, audit entries) lives in the in-memory TicketService and resets on restart. Legacy tickets fall back to display-name ownership matching. | Code | FR-01, FR-07, FR-08, FR-11, FR-14 to FR-16 (DEF-06) | Data lost on restart. Most staff and requester evidence does not prove the database-backed path. | High | Back the Web workflows with the database through the API or a data service (WorkspaceDataService is a start). Retire the name-matching fallback. |
+| TD-02 | Role passwords are hardcoded in the roles and report-role migrations and in scripts/provision-roles.sql. | Security | NFR-01, NFR-10 (DEF-05) | Secrets in source. The config-scan test cannot catch them, and the passwords are in git history. | High | Read role passwords from environment variables. Extend SystemSecretsConfigurationTests to scan migrations and scripts. Rotate the existing passwords. |
+| TD-03 | Six console Checks projects are outside CivicConnect.sln and CI. NavigationChecks and ConfigurationChecks stopped building and nobody noticed. | Test | FR-02, FR-07, FR-08, FR-09, FR-14 to FR-16 (DEF-07 to DEF-09) | Silent drift. Black-box evidence is not repeatable in CI. | Medium | Add the projects to the solution and a CI step, or port them to xUnit. Fix both broken ones. Verify the NavigationChecks fix from the latest pull. |
+| TD-04 | The CI quality gate is not a required status check on either branch ruleset. The dependency-vulnerability step reports but does not fail. There is no third-party static analysis. | CI / Process | RSK-07 (DEF-10) | A failing build can still be merged. Vulnerable packages do not block a merge. | Medium | Add a required-status-check rule. Make the vulnerability step fail on a finding. Decide whether extra static analysis is needed. |
+| TD-05 | Required tests from the RTM are missing: IT-OVR-01, IT-SM-02, IT-AUD-01, IT-SLA-01/02, IT-NOTIF-01, IT-REP-01, IT-SEC-01 and IT-SEC-02. Many existing tests are untagged. | Test | FR-06, FR-07, FR-08, FR-12, FR-13, FR-17, NFR-04, NFR-10 | Eight requirements have no executed evidence or only partial evidence. | Medium | Write the missing tests against the database and tag every test with its RTM ID. |
+| TD-06 | Traceability and documentation have drifted: IT-CFG-01 is used twice, RTM design names refer to files that do not exist, and test counts disagree (43, 78, 88, 98; 32 for Data.Tests). | Documentation | All (DEF-12, DEF-13) | Reviewers cannot trust the RTM or the test docs without re-checking them. | Low | Rename one IT-CFG-01. Update the RTM design column and the test docs. Record counts from one dated run. |
+| TD-07 | Backups are scripted but unproven on schedule: all four backups were made in about 10 minutes, there is no off-site encrypted copy, and WAL archiving is a spec only. The restore drill ran before the three newest migrations. | Operations | NFR-02, NFR-03, RSK-08 | Recovery point is unverified in practice. The drill record is already out of date. | Medium | Run the scheduler for several days and keep evidence. Add an off-site encrypted copy. Repeat the drill on the current schema each milestone. |
+| TD-08 | Availability monitoring has no real data: 2 live samples, none in working hours, and reports 100% PASS from zero samples. AvailabilityCalculator has no tests. | Operations | NFR-09 (DEF-11) | The 99% target is untested on live data and the evidence is misleading. | Low | Run sample-health.ps1 for a representative period. Report "insufficient data" when there are no samples. Add unit tests for the calculator. |
+| TD-09 | Performance evidence is a manually-run report. PERF-D-01 (dashboard) was not updated, and PERF-Q-01 is not run in CI. | Test | NFR-07, NFR-08 | Results can go stale after schema or index changes. | Low | Re-run the benchmark for the dashboard queries at 20,000 incidents with p95. Consider a scheduled CI job. |
+| TD-10 | Retention rules are unfinished: periods are not agreed with the client, the audit-log sweep is not evidenced, and free-text columns can hold third-party personal information. | Code / Process | NFR-05, RSK-10, RSK-11, RSK-13 | POPIA risk and audit-table growth on the free tier. | Medium | Confirm periods with the client (OQ-12). Add and test the audit-log sweep. Document the free-text redaction step. |
+| TD-11 | Configuration-row auditing is deferred: category, location, asset, app_user and user_role changes are not audited because those tables have no actor column. | Code | FR-08, FR-09 | Configuration changes are not accountable, which the PED requires. | Medium | Add actor columns and audit triggers or service calls alongside the configuration CRUD. |
+| TD-12 | CI runs PostgreSQL 16 with a placeholder password, while local and the restore drill use PostgreSQL 15. | CI / Process | NFR-01, NFR-03 | Version drift can hide migration or backup problems. | Low | Standardise one PostgreSQL major version across CI, compose and the drill. |
+| TD-13 | E2E and staging verification are manual: the Playwright suite is not in CI, a live re-run failed on 16 Oct from an incomplete .env, and no staging deployment evidence exists. | CI / Process | FR-11, FR-14, FR-15; PED 10.5 | The browser-level evidence cannot be reproduced on demand. | Medium | Add a documented .env template for the compose stack, run E2E in CI or on a schedule, and record a staging run. |
+| TD-14 | Same-named files exist in both the Api and Web projects (PriorityMatrix.cs, ResolutionService.cs, IncidentsController.cs). Confirm whether they duplicate logic. | Code | FR-05, FR-10 | Duplicated rules can drift apart. | Low | Confirm the overlap. If it is duplicated, move shared logic into CivicConnect.Data or one project. |
+
+## Notes
+
+- **Defects:** items that are broken now are in the Defect Register (DEF IDs). This register holds the underlying debt that caused or allowed them.
+- **Not debt:** the Release Evidence Summary, Residual Risk Statement and release-candidate identifier are still-missing M3 deliverables (PED v3.0 section 10.5). They are not listed here.
+- **TD-03:** the latest pull includes a possible fix for NavigationChecks that I could not verify.
