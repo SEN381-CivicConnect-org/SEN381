@@ -104,7 +104,11 @@ secrets.json
 
 *.sql.gz
 *.dump
+*.dump.sha256
+*.dump.meta.json
 *.backup
+backups/*
+!backups/.gitkeep
 pgdata/
 postgres-data/
 db-data/
@@ -191,4 +195,5 @@ docker-compose.override.yml
 
 .scratch/
 
-
+#Secure the staging variables
+.env.staging

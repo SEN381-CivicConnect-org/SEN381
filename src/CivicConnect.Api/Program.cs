@@ -2,8 +2,11 @@ using CivicConnect.Api.Services;
 using CivicConnect.Data;
 using CivicConnect.Data.Configuration;
 using CivicConnect.Data.Entities;
+using CivicConnect.Data.Operations;
 using CivicConnect.Data.Security;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+using System.Net.Sockets;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +24,7 @@ builder.Services.AddControllers()
 // Authorization & Authentication
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
 
 // Swagger / OpenAPI documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -63,7 +67,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
 var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration);
 builder.Services.AddSingleton(systemSecrets);
-var connectionString = systemSecrets.ConnectionString;
+var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
+SystemSecretsConfiguration.EnsureServerTlsReady(connectionString);
 
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 {
@@ -72,12 +77,19 @@ builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 
 builder.Services.AddSingleton<IPasswordHashingService, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<Argon2idPasswordHasher>();
+builder.Services.AddSingleton<IDatabaseBackupManager, DatabaseBackupManager>();
+builder.Services.AddSingleton<DatabaseBackupManager>();
 builder.Services.AddSingleton<IPriorityMatrix, PriorityMatrix>();
 builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<SubmissionService>();
 builder.Services.AddScoped<IIncidentReportingService, IncidentReportingService>();
+builder.Services.AddScoped<IRetentionSweepService, RetentionSweepJob>();
+builder.Services.AddScoped<RetentionSweepJob>();
+builder.Services.AddScoped<IUserDeIdentificationService, UserDeIdentificationService>();
+builder.Services.AddScoped<UserDeIdentificationService>();
+builder.Services.AddHostedService<RetentionSweepHostedService>();
 
 var app = builder.Build();
 
@@ -107,38 +119,143 @@ app.MapGet("/", () => Results.Ok(new
     version = "1.0.0-net10",
     environment = app.Environment.EnvironmentName,
     swagger = "/swagger",
-    health = "/health"
+    health = "/health",
+    healthReady = "/health/ready",
+    healthLive = "/health/live"
 }))
 .WithName("RootInfo")
 .WithTags("System");
 
-// Health Probe for System Readiness
-app.MapGet("/health", async (CivicConnectDbContext dbContext) =>
+// Liveness Probe (NFR-09: Fast process responsiveness)
+app.MapGet("/health/live", () => Results.Ok(new
 {
-    var checks = new Dictionary<string, string>();
-    var isHealthy = true;
+    status = "Healthy",
+    timestamp = DateTimeOffset.UtcNow,
+    check = "live",
+    message = "CivicConnect Kestrel runtime process is responsive"
+}))
+.WithName("HealthCheckLive")
+.WithTags("System")
+.WithSummary("Liveness probe verifying Kestrel runtime process responsiveness");
 
+// Readiness Probe (NFR-09: PostgreSQL and RabbitMQ critical dependencies)
+static async Task<IResult> HandleReadinessCheckAsync(
+    CivicConnectDbContext dbContext,
+    IConfiguration configuration,
+    CancellationToken cancellationToken)
+{
+    var totalSw = Stopwatch.StartNew();
+    var components = new Dictionary<string, HealthComponentStatus>();
+    var allHealthy = true;
+
+    // 1. PostgreSQL connectivity check (CanConnectAsync)
+    var dbSw = Stopwatch.StartNew();
     try
     {
-        var canConnect = await dbContext.Database.CanConnectAsync();
-        checks["database"] = canConnect ? "Healthy" : "Degraded (Cannot connect)";
-        if (!canConnect) isHealthy = false;
+        var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
+        dbSw.Stop();
+        if (canConnect)
+        {
+            components["database"] = new HealthComponentStatus(
+                "Healthy",
+                "PostgreSQL database connection established",
+                Math.Round(dbSw.Elapsed.TotalMilliseconds, 2));
+        }
+        else
+        {
+            components["database"] = new HealthComponentStatus(
+                "Unhealthy",
+                "PostgreSQL database returned false for CanConnectAsync",
+                Math.Round(dbSw.Elapsed.TotalMilliseconds, 2));
+            allHealthy = false;
+        }
     }
     catch (Exception ex)
     {
-        checks["database"] = $"Unhealthy: {ex.Message}";
-        isHealthy = false;
+        dbSw.Stop();
+        components["database"] = new HealthComponentStatus(
+            "Unhealthy",
+            $"PostgreSQL database connection failed: {ex.Message}",
+            Math.Round(dbSw.Elapsed.TotalMilliseconds, 2));
+        allHealthy = false;
     }
 
-    return Results.Ok(new
+    // 2. RabbitMQ message broker responsiveness check
+    var rabbitEnabled = configuration.GetValue<bool?>("RabbitMQ:Enabled") ?? true;
+    var rabbitHost = configuration["RabbitMQ:Host"]
+        ?? Environment.GetEnvironmentVariable("RabbitMQ__Host")
+        ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+
+    if (string.IsNullOrWhiteSpace(rabbitHost))
     {
-        status = isHealthy ? "Healthy" : "Degraded",
-        timestamp = DateTimeOffset.UtcNow,
-        components = checks
-    });
-})
+        rabbitHost = "localhost";
+    }
+
+    if (!rabbitEnabled || rabbitHost.Equals("none", StringComparison.OrdinalIgnoreCase))
+    {
+        components["rabbitmq"] = new HealthComponentStatus(
+            "Healthy",
+            "RabbitMQ message broker check bypassed (disabled or set to none)",
+            0.0);
+    }
+    else
+    {
+        var portStr = configuration["RabbitMQ:Port"]
+            ?? Environment.GetEnvironmentVariable("RabbitMQ__Port")
+            ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT")
+            ?? "5672";
+
+        if (!int.TryParse(portStr, out var rabbitPort))
+        {
+            rabbitPort = 5672;
+        }
+
+        var rmqSw = Stopwatch.StartNew();
+        try
+        {
+            using var tcpClient = new TcpClient();
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(2));
+            await tcpClient.ConnectAsync(rabbitHost, rabbitPort, cts.Token);
+            rmqSw.Stop();
+            components["rabbitmq"] = new HealthComponentStatus(
+                "Healthy",
+                $"RabbitMQ message broker reachable at {rabbitHost}:{rabbitPort}",
+                Math.Round(rmqSw.Elapsed.TotalMilliseconds, 2));
+        }
+        catch (Exception ex)
+        {
+            rmqSw.Stop();
+            components["rabbitmq"] = new HealthComponentStatus(
+                "Unhealthy",
+                $"RabbitMQ message broker unreachable at {rabbitHost}:{rabbitPort}: {ex.Message}",
+                Math.Round(rmqSw.Elapsed.TotalMilliseconds, 2));
+            allHealthy = false;
+        }
+    }
+
+    totalSw.Stop();
+
+    var response = new HealthCheckResponse(
+        Status: allHealthy ? "Healthy" : "Unhealthy",
+        Timestamp: DateTimeOffset.UtcNow,
+        DurationMs: Math.Round(totalSw.Elapsed.TotalMilliseconds, 2),
+        Components: components);
+
+    return allHealthy
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+}
+
+app.MapGet("/health/ready", HandleReadinessCheckAsync)
+.WithName("HealthCheckReady")
+.WithTags("System")
+.WithSummary("Readiness probe verifying PostgreSQL and RabbitMQ critical dependencies (NFR-09)");
+
+app.MapGet("/health", HandleReadinessCheckAsync)
 .WithName("HealthCheck")
-.WithTags("System");
+.WithTags("System")
+.WithSummary("Readiness probe verifying PostgreSQL and RabbitMQ critical dependencies (NFR-09)");
 
 // 4. Reference Data Endpoints
 
@@ -469,6 +586,9 @@ app.MapGet("/api/requests", async (
 .WithName("GetIncidents")
 .WithTags("Incidents");
 
+// NFR-10 (IT-SEC-02): Verify running application database connection is not a superuser and not the migration role
+await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
+
 app.Run();
 
 public partial class Program;
@@ -500,3 +620,14 @@ public record CreateIncidentRequestDto(
     Guid? ReporterId = null,
     Guid? RequesterId = null,
     string? IdempotencyKey = null);
+
+public record HealthComponentStatus(
+    string Status,
+    string Description,
+    double DurationMs);
+
+public record HealthCheckResponse(
+    string Status,
+    DateTimeOffset Timestamp,
+    double DurationMs,
+    Dictionary<string, HealthComponentStatus> Components);

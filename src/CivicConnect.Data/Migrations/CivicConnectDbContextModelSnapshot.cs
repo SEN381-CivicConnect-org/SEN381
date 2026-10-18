@@ -406,6 +406,11 @@ namespace CivicConnect.Data.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_incident_status");
 
+                    b.HasIndex("AssignedTeamId", "OpenedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("incident_team_queue_idx")
+                        .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
                     b.HasIndex("Status", "AssignedTeamId")
                         .HasDatabaseName("ix_incident_status_assigned_team_id");
 
@@ -419,7 +424,7 @@ namespace CivicConnect.Data.Migrations
                         {
                             t.HasCheckConstraint("incident_merge_not_self_ck", "id <> merged_into_id");
 
-                            t.HasCheckConstraint("incident_override_ck", "(NOT priority_overridden\n                      AND override_reason IS NULL AND override_by IS NULL AND override_at IS NULL\n                      AND priority = computed_priority)\n                  OR (priority_overridden\n                      AND override_reason IS NOT NULL AND btrim(override_reason) <> ''\n                      AND override_by IS NOT NULL AND override_at IS NOT NULL)");
+                            t.HasCheckConstraint("incident_override_ck", "(NOT priority_overridden\r\n                      AND override_reason IS NULL AND override_by IS NULL AND override_at IS NULL\r\n                      AND priority = computed_priority)\r\n                  OR (priority_overridden\r\n                      AND override_reason IS NOT NULL AND btrim(override_reason) <> ''\r\n                      AND override_by IS NOT NULL AND override_at IS NOT NULL)");
                         });
                 });
 
@@ -1133,6 +1138,42 @@ namespace CivicConnect.Data.Migrations
                         .HasDatabaseName("ix_service_team_name");
 
                     b.ToTable("service_team", (string)null);
+                });
+
+            modelBuilder.Entity("CivicConnect.Data.Entities.StaffDirectory", b =>
+                {
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("full_name");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int?>("ServiceTeamId")
+                        .HasColumnType("integer")
+                        .HasColumnName("service_team_id");
+
+                    b.Property<string>("TeamName")
+                        .HasColumnType("text")
+                        .HasColumnName("team_name");
+
+                    b.Property<string>("TeamRole")
+                        .HasColumnType("text")
+                        .HasColumnName("team_role");
+
+                    b.Property<short?>("TeamRoleId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("team_role_id");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("staff_directory", (string)null);
                 });
 
             modelBuilder.Entity("CivicConnect.Data.Entities.SubmissionRequest", b =>

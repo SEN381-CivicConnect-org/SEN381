@@ -1,0 +1,12 @@
+{
+    "requirementId":  "NFR-02",
+    "operation":  "logical_backup",
+    "timestampUtc":  "2026-10-16T20:53:41.627Z",
+    "database":  "civicconnect",
+    "archiveFile":  "civicconnect_backup_20261016_205341Z.dump",
+    "archiveSizeBytes":  95452,
+    "sha256":  "56947859ae88a79451d46bebb2f7c488e8d5db7babd506b0fee3855f7643d0ed",
+    "rolesExportFile":  "civicconnect_backup_20261016_205341Z_roles.sql",
+    "elapsedDurationMs":  864,
+    "exitCode":  0
+}

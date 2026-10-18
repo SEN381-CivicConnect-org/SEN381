@@ -114,7 +114,11 @@
   <p>Docker packages the API, Blazor client, and PostgreSQL database into immutable images, giving environment parity between local development, automated testing pipelines and staging (see <code>docs/decisions/technology-stack-V1.0.html</code> for the full ADR-004 rationale). Environment variables passed into the containers decouple secrets and environment-specific configuration from source code, satisfying NFR-01 and the repository secrets rule.</p>
 
   <h2>Restore-drill and deployment evidence</h2>
-  <p>NFR-03 requires backups to be verified by a restore drill every milestone: restoring into a clean PostgreSQL instance, passing the integration test suite within a four-hour recovery time objective, and committing a drill record with the elapsed time to this folder. No drill has been recorded yet at the time of this baseline.</p>
+  <p>NFR-03 requires backups to be verified by a restore drill every milestone: restoring into a clean PostgreSQL instance, passing the integration test suite within a four-hour recovery time objective, and committing a drill record with the elapsed time to this folder.</p>
+  <ul>
+    <li><strong>Milestone Restore Drill Runbook (SOP):</strong> <code>docs/deployment/restore-drill-runbook-V1.0.md</code> (automated via <code>scripts/run-restore-drill.ps1</code> and <code>scripts/run-restore-drill.sh</code>).</li>
+    <li><strong>Milestone 3 Restore Drill Evidence Record (<code>OPS-BKP-02</code>):</strong> <code>docs/deployment/restore-drill-record-M3.md</code> &mdash; restored backup archive and role export into an isolated <code>postgres:15-alpine</code> instance (<code>civicconnect-drill-db</code>), verified all 22 domain tables and 13 EF Core migrations, and passed 32/32 integration tests in <strong>12.268 seconds</strong> (well within the 4-hour RTO threshold).</li>
+  </ul>
 
   <div class="note">
     <span class="label">Traceability</span>

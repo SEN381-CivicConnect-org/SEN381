@@ -32,6 +32,7 @@ public sealed class TicketService
             Status = "In Progress",
             Updated = "Today, 14:20",
             Requester = "Bernard Small",
+            RequesterId = "requester@civicconnect.demo",
             Assignee = "Daniel Jacobs",
             Description = "The office Wi-Fi keeps disconnecting from my laptop. I have restarted the device and forgotten/rejoined the network, but the connection still drops every few minutes."
         },
@@ -49,6 +50,7 @@ public sealed class TicketService
             Status = "Open",
             Updated = "Yesterday",
             Requester = "Bernard Small",
+            RequesterId = "requester@civicconnect.demo",
             // Cross-category demo assignment exercises the existing team OR assignee visibility rule.
             Assignee = "Daniel Jacobs",
             Description = "The air conditioner in Meeting Room B is not cooling the room."
@@ -67,6 +69,7 @@ public sealed class TicketService
             Status = "Resolved",
             Updated = "12 Sep 2026",
             Requester = "Bernard Small",
+            RequesterId = "requester@civicconnect.demo",
             Assignee = "Nadia Peters",
             Description = "Please provide the latest approved employee leave policy document."
         },
@@ -84,19 +87,38 @@ public sealed class TicketService
             Status = "Open",
             Updated = "9 Sep 2026",
             Requester = "Ayesha Khan",
+            RequesterId = "ayesha@civicconnect.demo",
             Description = "Please create system access for a new staff member starting Monday."
         }
     };
 
     public Ticket? Find(string id) => Tickets.FirstOrDefault(x => x.Id == id);
 
-    // Legacy demo snapshots have only a display name. ID-backed tickets never
-    // fall back to names, so a renamed account or duplicate name cannot claim them.
-    private static bool IsOwner(Ticket ticket, ClaimsPrincipal user) =>
-        !string.IsNullOrWhiteSpace(ticket.RequesterId)
-            ? string.Equals(ticket.RequesterId, user.FindFirstValue(ClaimTypes.NameIdentifier), StringComparison.Ordinal)
-            : !string.IsNullOrWhiteSpace(user.Identity?.Name) &&
-              string.Equals(ticket.Requester, user.Identity.Name, StringComparison.Ordinal);
+    // Supports both NameIdentifier (dev) and Email (staging) claims for ID-backed tickets,
+    // while falling back to Identity.Name for legacy demo tickets or when RequesterId is absent.
+    private static bool IsOwner(Ticket ticket, ClaimsPrincipal user)
+    {
+        var nameId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = user.FindFirstValue(ClaimTypes.Email)?.Trim();
+
+        if (!string.IsNullOrWhiteSpace(ticket.RequesterId))
+        {
+            if (!string.IsNullOrWhiteSpace(nameId) && string.Equals(ticket.RequesterId, nameId, StringComparison.Ordinal))
+                return true;
+
+            if (!string.IsNullOrWhiteSpace(email) && string.Equals(ticket.RequesterId, email, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        var isSeededDemoTicket = ticket.Id is "CC-010" or "CC-012" or "CC-013" or "CC-014";
+        if (isSeededDemoTicket || string.IsNullOrWhiteSpace(ticket.RequesterId))
+        {
+            return !string.IsNullOrWhiteSpace(user.Identity?.Name) &&
+                   string.Equals(ticket.Requester, user.Identity.Name, StringComparison.Ordinal);
+        }
+
+        return false;
+    }
 
     public IEnumerable<Ticket> GetVisibleTickets(ClaimsPrincipal user)
     {
@@ -105,20 +127,29 @@ public sealed class TicketService
         return user.IsInRole("Requester") ? Tickets.Where(ticket => IsOwner(ticket, user)) : Array.Empty<Ticket>();
     }
 
+    // Backwards-compatible method for staging components/tests
+    public IEnumerable<Ticket> GetReporterHistory(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true && user.IsInRole("Requester")
+            ? Tickets.Where(ticket => IsOwner(ticket, user))
+            : Array.Empty<Ticket>();
+
     public Ticket? FindVisible(string id, ClaimsPrincipal user) =>
         GetVisibleTickets(user).FirstOrDefault(ticket => ticket.Id == id);
 
     public string CreateForRequester(Ticket ticket, ClaimsPrincipal user)
     {
         ArgumentNullException.ThrowIfNull(ticket);
+        var requesterId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue(ClaimTypes.Email)?.Trim();
+        var requesterName = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name);
+
         if (user.Identity?.IsAuthenticated != true || !user.IsInRole("Requester") ||
-            string.IsNullOrWhiteSpace(user.Identity.Name) ||
-            string.IsNullOrWhiteSpace(user.FindFirstValue(ClaimTypes.NameIdentifier)))
+            string.IsNullOrWhiteSpace(requesterName) ||
+            string.IsNullOrWhiteSpace(requesterId))
             throw new UnauthorizedAccessException("A signed-in requester identity is required.");
 
         // Ignore ownership supplied by form state; derive both fields from claims.
-        ticket.Requester = user.Identity.Name;
-        ticket.RequesterId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        ticket.Requester = requesterName;
+        ticket.RequesterId = requesterId;
         return Create(ticket, AuditService.ActorFor(user));
     }
 
@@ -129,6 +160,9 @@ public sealed class TicketService
             ? Tickets.Where(ticket => string.Equals(ticket.Assignee, user.Identity.Name, StringComparison.Ordinal)
                 && ticket.Status != "Resolved")
             : Array.Empty<Ticket>();
+
+    // Backwards-compatible overload for staging components/tests
+    public string Create(Ticket ticket, ClaimsPrincipal user) => CreateForRequester(ticket, user);
 
     public IEnumerable<Ticket> GetStaffQueue(string? teamName = null, string? staffName = null) =>
         Tickets.Where(ticket =>

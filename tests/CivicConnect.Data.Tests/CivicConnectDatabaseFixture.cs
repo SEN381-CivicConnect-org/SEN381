@@ -18,7 +18,8 @@ public sealed class CivicConnectDatabaseFixture : IAsyncLifetime
 
     private static string? ResolveConnectionString()
     {
-        var envValue = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+        var envValue = Environment.GetEnvironmentVariable("MIGRATION_CONNECTION_STRING")
+            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
         if (!string.IsNullOrWhiteSpace(envValue))
         {
             return envValue;
@@ -30,14 +31,31 @@ public sealed class CivicConnectDatabaseFixture : IAsyncLifetime
             var envFile = Path.Combine(dir.FullName, ".env");
             if (File.Exists(envFile))
             {
+                string? connStr = null;
+                string? migConnStr = null;
                 foreach (var line in File.ReadAllLines(envFile))
                 {
                     var trimmed = line.Trim();
-                    if (trimmed.StartsWith("CONNECTION_STRING=", StringComparison.Ordinal))
+                    if (trimmed.StartsWith("MIGRATION_CONNECTION_STRING=", StringComparison.Ordinal))
+                    {
+                        var raw = trimmed["MIGRATION_CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
+                        migConnStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else if (trimmed.StartsWith("CONNECTION_STRING=", StringComparison.Ordinal))
                     {
                         var raw = trimmed["CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
-                        return raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                        connStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
                     }
+                }
+
+                if (migConnStr is not null)
+                {
+                    return migConnStr;
+                }
+
+                if (connStr is not null)
+                {
+                    return connStr;
                 }
             }
 
