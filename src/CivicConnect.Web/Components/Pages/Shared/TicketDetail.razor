@@ -1,91 +1,191 @@
 @page "/tickets/{Id}"
-@attribute [Authorize]
 @inject TicketService Tickets
-@inject AuthenticationStateProvider AuthState
 @inject WorkspaceNavigation Workspace
+@inject AuthenticationStateProvider Authentication
 
 @if (ticket is null)
 {
-    <PageTitle>Ticket not found | CivicConnect</PageTitle>
-    <div class="page-head">
-        <div>
-            <h1>Ticket not found</h1>
-            <p>This ticket is unavailable. Return to your workspace to choose another ticket.</p>
+    <div class="card empty">
+        <span class="badge">Ticket</span>
+        <h2>Ticket not found</h2>
+        <p>The ticket you selected is not available in the demo dataset.</p>
+        <div class="form-actions" style="justify-content:center">
+            <button class="btn btn-primary" @onclick="Workspace.GoBack">Back to dashboard</button>
         </div>
     </div>
-    <button
-        type="button"
-        class="btn btn-primary"
-        @onclick="Workspace.GoBack">Return to my workspace</button>
 }
 else
 {
+    <PageTitle>#@ticket.Id @ticket.Title | CivicConnect</PageTitle>
+
     <div class="page-head">
         <div>
             <button class="btn btn-ghost" @onclick="Workspace.GoBack">Back</button>
             <h1 style="margin-top:8px">@ticket.Title</h1>
-            <p>#@ticket.Id · @ticket.Category</p>
+            <p>#@ticket.Id · @ticket.Category · @ticket.Location</p>
         </div>
-        <span class="badge">@ticket.Status</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="badge @PriorityMatrix.GetPriorityBadgeClass(ticket.PriorityId)">@ticket.Priority Priority</span>
+            <span class="badge">@ticket.Status</span>
+        </div>
     </div>
+
     <div class="detail-grid">
         <div class="card detail-card">
             <div class="meta-grid">
-                <div class="meta-item">
+                <div>
                     <span>Requester</span>
                     <strong>@ticket.Requester</strong>
                 </div>
-                <div class="meta-item">
+                <div>
                     <span>Assigned to</span>
                     <strong>@ticket.Assignee</strong>
                 </div>
-                <div class="meta-item">
-                    <span>Priority</span>
-                    <strong>@ticket.Priority</strong>
+                <div>
+                    <span>Created</span>
+                    <strong>@ticket.Created</strong>
                 </div>
-                <div class="meta-item">
-                    <span>Last updated</span>
+                <div>
+                    <span>Updated</span>
                     <strong>@ticket.Updated</strong>
                 </div>
             </div>
+
+            <!-- FR-05 Priority Calculation Snapshot Breakdown -->
+            <div style="margin: 20px 0; padding: 14px 16px; background: var(--surface-subtle, #f8fafc); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Priority Calculation Snapshot (FR-05 / STK-CFL-01)</span>
+                    <span style="font-size: 10.5px; font-weight: normal; color: var(--muted);">PriorityMatrix (DD-02)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12.5px;">
+                    <div>
+                        <span style="color: var(--muted); display: block;">Location Impact</span>
+                        <strong>@ticket.ImpactName Impact (Level @ticket.ImpactLevel)</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--muted); display: block;">Category Urgency</span>
+                        <strong>@ticket.UrgencyName Urgency (Level @ticket.UrgencyLevel)</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--muted); display: block;">Calculated Priority</span>
+                        <strong>@ticket.Priority (Target #@ticket.PriorityId)</strong>
+                    </div>
+                </div>
+            </div>
+
             <div class="description">
                 <strong>Description</strong>
                 <p>@ticket.Description</p>
             </div>
+
             <div class="section-head" style="margin-top:28px">
                 <h2>Activity</h2>
             </div>
             <div class="timeline">
+                @foreach (var entry in ticket.StatusHistory.AsEnumerable().Reverse())
+                {
+                    <div class="timeline-item">
+                        <div class="dot"></div>
+                        <div>
+                            <strong>@entry.PreviousStatus → @entry.NewStatus</strong>
+                            <p>@entry.Actor · @entry.ChangedAt.ToString("u")</p>
+                        </div>
+                    </div>
+                }
+                @foreach (var note in notes)
+                {
+                    <div class="timeline-item">
+                        <div class="dot"></div>
+                        <div>
+                            <strong>@(note.IsInternal ? "Internal note" : "Public note")</strong>
+                            <p style="white-space:pre-wrap;overflow-wrap:anywhere">@note.Text</p>
+                            <p>@note.Timestamp.ToLocalTime().ToString("d MMM yyyy, HH:mm zzz") · @note.Author</p>
+                        </div>
+                    </div>
+                }
                 <div class="timeline-item">
                     <div class="dot"></div>
                     <div>
                         <strong>Status: @ticket.Status</strong>
-                        <p>@ticket.Updated · System activity</p>
+                        <p>Assigned to @ticket.Assignee · Updated @ticket.Updated</p>
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="dot"></div>
                     <div>
-                        <strong>Ticket created</strong>
-                        <p>Request submitted by @ticket.Requester.</p>
+                        <strong>Ticket created with Priority: @ticket.Priority</strong>
+                        <p>Request submitted by @ticket.Requester (Impact: @ticket.ImpactName [@ticket.ImpactLevel], Urgency: @ticket.UrgencyName [@ticket.UrgencyLevel]).</p>
                     </div>
                 </div>
             </div>
+            @if (canAddNotes)
+            {
+                <form @onsubmit="AddNote" @onsubmit:preventDefault="true">
+                    <div class="field">
+                        <label for="ticket-note">Add a note</label>
+                        <textarea id="ticket-note" @bind="noteText" required></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="note-visibility">Visibility</label>
+                        <select id="note-visibility" @bind="isInternal">
+                            <option value="true">Internal (staff and management)</option>
+                            <option value="false">Public (visible to requester)</option>
+                        </select>
+                    </div>
+                    @if (noteError is not null)
+                    {
+                        <p class="validation-message" role="alert">@noteError</p>
+                    }
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add note</button>
+                    </div>
+                </form>
+            }
         </div>
+
         <div class="side-stack">
             <div class="card side-card">
                 <h3>Ticket information</h3>
+                <AuthorizeView Roles="Staff">
+                    <Authorized>
+                        <label for="ticket-status">Change status</label>
+                        <select id="ticket-status" @bind="requestedStatus" disabled="@(TicketService.GetNextStatus(ticket.Status) is null)">
+                            <option value="">Select a status</option>
+                            @if (TicketService.GetNextStatus(ticket.Status) is { } nextStatus)
+                            {
+                                <option value="@nextStatus">@TicketService.DisplayStatus(nextStatus)</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrEmpty(requestedStatus))" @onclick="ChangeStatus">Update status</button>
+                        @if (transitionMessage is not null)
+                        {
+                            <p role="status">@transitionMessage</p>
+                        }
+                    </Authorized>
+                </AuthorizeView>
                 <div class="kv">
-                    <span>Ticket ID</span>
-                    <strong>@ticket.Id</strong>
+                    <span>Reference</span>
+                    <strong>#@ticket.Id</strong>
                 </div>
                 <div class="kv">
                     <span>Category</span>
                     <strong>@ticket.Category</strong>
                 </div>
                 <div class="kv">
+                    <span>Location</span>
+                    <strong>@ticket.Location</strong>
+                </div>
+                <div class="kv">
+                    <span>Location Impact</span>
+                    <strong>@ticket.ImpactName (@ticket.ImpactLevel)</strong>
+                </div>
+                <div class="kv">
+                    <span>Category Urgency</span>
+                    <strong>@ticket.UrgencyName (@ticket.UrgencyLevel)</strong>
+                </div>
+                <div class="kv">
                     <span>Priority</span>
-                    <strong>@ticket.Priority</strong>
+                    <strong class="badge @PriorityMatrix.GetPriorityBadgeClass(ticket.PriorityId)">@ticket.Priority</strong>
                 </div>
                 <div class="kv">
                     <span>Status</span>
@@ -96,16 +196,72 @@ else
     </div>
 }
 
-@code
-{
+@code {
     [Parameter]
     public string Id { get; set; } = "";
 
     Ticket? ticket;
+    string requestedStatus = "";
+    string? transitionMessage;
+    IReadOnlyList<TicketNote> notes = Array.Empty<TicketNote>();
+    string noteText = "";
+    string? noteError;
+    bool isInternal = true;
+    bool canAddNotes;
 
     protected override async Task OnParametersSetAsync()
     {
-        var state = await AuthState.GetAuthenticationStateAsync();
-        ticket = Tickets.FindVisible(Id, state.User);
+        ticket = null;
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        ticket = Tickets.FindVisible(Id, user);
+        requestedStatus = "";
+        transitionMessage = null;
+        noteText = "";
+        noteError = null;
+        isInternal = true;
+        notes = Array.Empty<TicketNote>();
+        canAddNotes = false;
+        if (ticket is not null) await LoadNotes();
+    }
+
+    async Task LoadNotes()
+    {
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        canAddNotes = user.Identity?.IsAuthenticated == true &&
+            (user.IsInRole("Staff") || user.IsInRole("Management"));
+        notes = Tickets.GetNotes(Id, user);
+    }
+
+    async Task AddNote()
+    {
+        noteError = null;
+        if (string.IsNullOrWhiteSpace(noteText))
+        {
+            noteError = "Enter a note before saving.";
+            return;
+        }
+
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        try
+        {
+            Tickets.AddNote(Id, noteText, isInternal, user);
+            noteText = "";
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException)
+        {
+            noteError = ex.Message;
+        }
+        await LoadNotes();
+    }
+
+    async Task ChangeStatus()
+    {
+        var state = await Authentication.GetAuthenticationStateAsync();
+        var result = Tickets.ChangeStatus(Id, requestedStatus, state.User);
+        transitionMessage = result.Message;
+        if (result.Success)
+        {
+            requestedStatus = "";
+        }
     }
 }

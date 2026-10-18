@@ -1,0 +1,23 @@
+$ dotnet --list-sdks
+6.0.408 [/usr/local/share/dotnet/sdk]
+6.0.425 [/usr/local/share/dotnet/sdk]
+7.0.302 [/usr/local/share/dotnet/sdk]
+7.0.317 [/usr/local/share/dotnet/sdk]
+8.0.425 [/usr/local/share/dotnet/sdk]
+9.0.102 [/usr/local/share/dotnet/sdk]
+
+Exit code: 0
+
+$ dotnet --version
+9.0.102
+
+Exit code: 0
+
+$ find .. -name global.json -print
+
+Exit code: 0
+
+STATUS: .NET 10 SDK is not listed. EP test execution remains blocked.
+No test command was run during this check. No cases executed.
+Pass/fail/skipped results are unavailable because the test runner did not start.
+No defects confirmed by execution. Existing evidence, README, tests, and production code preserved.

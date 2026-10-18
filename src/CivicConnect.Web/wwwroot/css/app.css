@@ -516,3 +516,31 @@ select { appearance: none; background-image: url('assets/icons/chevron.svg') !im
   .btn, .filter-btn, .link-btn, .icon-btn { min-height: 44px; min-width: 44px; }
   .icon-btn { width: 44px; flex-basis: 44px; }
 }
+
+/* Staff Queue search, filters, and sorting. */
+.staff-queue-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.staff-queue-controls .field {
+    flex: 1 1 160px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.staff-queue-controls .queue-search {
+    flex: 2 1 220px;
+}
+
+@media (max-width: 480px) {
+    .staff-queue-controls .field,
+    .staff-queue-controls .queue-search,
+    .staff-queue-controls .btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}

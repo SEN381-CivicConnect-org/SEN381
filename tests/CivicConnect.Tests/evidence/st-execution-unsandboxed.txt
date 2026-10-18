@@ -1,0 +1,33 @@
+$ dotnet test tests/CivicConnect.Tests/CivicConnect.Tests.csproj --filter FullyQualifiedName~RequestStatusStateTransitionTests --no-restore --logger 'console;verbosity=detailed' --logger 'trx;LogFileName=st-results.trx' --results-directory tests/CivicConnect.Tests/evidence -m:1
+  CivicConnect.Data -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Data/bin/Debug/net10.0/CivicConnect.Data.dll
+  CivicConnect.Web -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/src/CivicConnect.Web/bin/Debug/net10.0/CivicConnect.Web.dll
+  CivicConnect.Tests -> /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+Test run for /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+/Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/bin/Debug/net10.0/CivicConnect.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)
+[xUnit.net 00:00:00.04]   Discovering: CivicConnect.Tests
+[xUnit.net 00:00:00.08]   Discovered:  CivicConnect.Tests
+[xUnit.net 00:00:00.09]   Starting:    CivicConnect.Tests
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: null) [6 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: "Management") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_RestrictedActorAssignAction_IsRejectedAndRemainsOpen(role: "Requester") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Assigned", action: "IN_PROGRESS", expected: "In Progress", previousHistory: "ASSIGNED", nextHistory: "IN_PROGRESS") [28 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Open", action: "ASSIGNED", expected: "Assigned", previousHistory: "NEW", nextHistory: "ASSIGNED") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "Resolved", action: "CLOSED", expected: "Closed", previousHistory: "RESOLVED", nextHistory: "CLOSED") [2 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_ForwardLifecycle_StaffAction_TransitionsToDocumentedNextState(initial: "In Progress", action: "RESOLVED", expected: "Resolved", previousHistory: "IN_PROGRESS", nextHistory: "RESOLVED") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Open", action: "ASSIGNED", expected: "Assigned") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Resolved", action: "CLOSED", expected: "Closed") [< 1 ms]
+[xUnit.net 00:00:00.17]   Finished:    CivicConnect.Tests
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "Assigned", action: "IN_PROGRESS", expected: "In Progress") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_AcceptedTransition_ReadAgain_RetainsNextState(initial: "In Progress", action: "RESOLVED", expected: "Resolved") [< 1 ms]
+  Passed CivicConnect.Tests.RequestStatusStateTransitionTests.ST_OpenRequest_DirectResolveAction_IsRejectedAndRemainsOpen [< 1 ms]
+
+Test Run Successful.
+Total tests: 12
+     Passed: 12
+ Total time: 0,4893 Seconds
+WARNING: Overwriting results file: /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/evidence/st-results.trx
+Results File: /Users/bernard/Desktop/CivicConnect-Blazor-Role-Auth/SEN381/tests/CivicConnect.Tests/evidence/st-results.trx
+
+Exit code: 0

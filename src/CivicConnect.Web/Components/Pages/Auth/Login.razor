@@ -32,12 +32,12 @@
             <h2>Welcome back</h2>
             <p>Sign in to continue to your workspace.</p>
             <div class="field">
-                <label>Email address</label>
-                <input @bind="email" type="email" />
+                <label for="login-email">Email address</label>
+                <input id="login-email" @bind="email" type="email" />
             </div>
             <div class="field">
-                <label>Password</label>
-                <input @bind="password" type="password" @onkeydown="HandleKey" />
+                <label for="login-password">Password</label>
+                <input id="login-password" @bind="password" type="password" @onkeydown="HandleKey" />
             </div>
             @if (!string.IsNullOrWhiteSpace(error))
             {
