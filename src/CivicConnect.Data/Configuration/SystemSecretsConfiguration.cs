@@ -77,7 +77,10 @@ public static class SystemSecretsConfiguration
         var connectionString = envGetter(ConnectionStringEnvVar);
         if (string.IsNullOrWhiteSpace(connectionString) && getEnvironmentVariable is null && configuration is not null)
         {
-            TryGetFromEnvironmentProvider(configuration, ConnectionStringEnvVar, out connectionString);
+            if (!TryGetFromEnvironmentProvider(configuration, ConnectionStringEnvVar, out connectionString))
+            {
+                TryGetFromEnvironmentProvider(configuration, "ConnectionStrings:DefaultConnection", out connectionString);
+            }
         }
 
         connectionString = NormalizeToAdoNetConnectionString(connectionString);
@@ -89,10 +92,14 @@ public static class SystemSecretsConfiguration
             TryGetFromEnvironmentProvider(configuration, MigrationConnectionStringEnvVar, out migrationConnectionString);
         }
 
-        migrationConnectionString = NormalizeToAdoNetConnectionString(migrationConnectionString);
         if (!string.IsNullOrWhiteSpace(migrationConnectionString))
         {
+            migrationConnectionString = NormalizeToAdoNetConnectionString(migrationConnectionString);
             ValidateMigrationConnectionString(migrationConnectionString);
+        }
+        else
+        {
+            migrationConnectionString = null;
         }
 
         var jwtSecret = envGetter(JwtSecretEnvVar) ?? envGetter(JwtSecretAltEnvVar);
@@ -112,7 +119,7 @@ public static class SystemSecretsConfiguration
         return new SystemSecrets(
             connectionString!.Trim(),
             (jwtSecret ?? string.Empty).Trim(),
-            migrationConnectionString?.Trim());
+            string.IsNullOrWhiteSpace(migrationConnectionString) ? null : migrationConnectionString.Trim());
     }
 
     /// <summary>
@@ -449,7 +456,7 @@ public static class SystemSecretsConfiguration
             return string.Empty;
         }
 
-        var trimmed = rawConnectionString.Trim();
+        var trimmed = rawConnectionString.Trim().Trim('"', '\'');
         if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
             trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
         {

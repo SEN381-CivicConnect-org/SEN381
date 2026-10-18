@@ -53,9 +53,10 @@ public sealed class SystemSecretsConfigurationTests
             configuration,
             key => envVars.GetValueOrDefault(key));
 
-        // Then both secrets are loaded from the environment variables
+        // Then both secrets are loaded from the environment variables and MigrationConnectionString is null
         Assert.Equal(ValidConnectionString, secrets.ConnectionString);
         Assert.Equal(ValidJwtSecret, secrets.JwtSecret);
+        Assert.Null(secrets.MigrationConnectionString);
     }
 
     [Theory]
@@ -186,6 +187,34 @@ public sealed class SystemSecretsConfigurationTests
             Assert.Equal(ValidConnectionString, secrets.ConnectionString);
             Assert.Equal(ValidJwtSecret, secrets.JwtSecret);
         }
+    }
+
+    [Theory]
+    [InlineData("postgresql://civic_app:sample_mock_db_password_123@dpg-dbaif1s9v7es738l1pq0-a/civicconnect_y4s7")]
+    [InlineData("postgresql://civic_app:sample_mock_db_password_123@dpg-dbaif1s9v7es738l1pq0-a/civicconnect_y4s7;sslmode")]
+    public void RenderPostgreSqlUri_NormalizesToValidAdoNetConnectionString(string renderUri)
+    {
+        var normalized = SystemSecretsConfiguration.NormalizeToAdoNetConnectionString(renderUri);
+        var tls = SystemSecretsConfiguration.EnsureTlsConnectionString(renderUri);
+
+        Assert.StartsWith("Host=dpg-dbaif1s9v7es738l1pq0-a", normalized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Database=civicconnect_y4s7", normalized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Username=civic_app", normalized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Password=sample_mock_db_password_123", normalized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Require", normalized, StringComparison.OrdinalIgnoreCase);
+
+        // Assert that NpgsqlConnectionStringBuilder can parse both strings without crashing
+        var builderNormalized = new Npgsql.NpgsqlConnectionStringBuilder(normalized);
+        var builderTls = new Npgsql.NpgsqlConnectionStringBuilder(tls);
+
+        Assert.Equal("dpg-dbaif1s9v7es738l1pq0-a", builderNormalized.Host);
+        Assert.Equal("civicconnect_y4s7", builderNormalized.Database);
+        Assert.Equal("civic_app", builderNormalized.Username);
+        Assert.Equal("dpg-dbaif1s9v7es738l1pq0-a", builderTls.Host);
+
+        // Assert that NpgsqlDataSource.Create succeeds with the normalized connection string
+        using var dataSource = Npgsql.NpgsqlDataSource.Create(tls);
+        Assert.NotNull(dataSource);
     }
 
     private static string LocateRepositoryRoot()
