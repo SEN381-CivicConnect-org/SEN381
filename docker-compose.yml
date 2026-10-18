@@ -33,6 +33,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-civicconnect} -d ${POSTGRES_DB:-civicconnect}"]
       interval: 5s
@@ -67,7 +68,27 @@ services:
       - civicconnect-net
 
   # ============================================================================
-  # 3. Core Service Layer: ASP.NET Core Web API (.NET 10)
+  # 3. Database Migration Runner: Dedicated DDL Pipeline Task (NFR-10, IT-SEC-02)
+  # ============================================================================
+  db-migration:
+    build:
+      context: .
+      dockerfile: src/CivicConnect.Web/Dockerfile
+    container_name: civicconnect-db-migration
+    restart: "no"
+    command: ["--migrate-only"]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
+      - MIGRATION_CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_MIGRATE_USER:-civic_migrate};Password=${CIVIC_MIGRATE_PASSWORD:-civic_migrate_secure_pass};SslMode=Require
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - civicconnect-net
+
+  # ============================================================================
+  # 4. Core Service Layer: ASP.NET Core Web API (.NET 10)
   # ============================================================================
   backend-api:
     build:
@@ -80,8 +101,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=5060
-      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - JWT_SECRET=${JWT_SECRET:-}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
@@ -90,6 +111,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-migration:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
     healthcheck:
@@ -102,7 +125,7 @@ services:
       - civicconnect-net
 
   # ============================================================================
-  # 4. Presentation Layer: Blazor Web App (.NET 10 Kestrel)
+  # 5. Presentation Layer: Blazor Web App (.NET 10 Kestrel)
   # ============================================================================
   frontend-web:
     build:
@@ -115,12 +138,14 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8085
-      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${POSTGRES_USER:-civicconnect};Password=${POSTGRES_PASSWORD:-changeme};SslMode=Require
+      - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - JWT_SECRET=${JWT_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
+      db-migration:
+        condition: service_completed_successfully
       backend-api:
         condition: service_started
     healthcheck:

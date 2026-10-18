@@ -12,18 +12,25 @@ namespace CivicConnect.Data.Configuration;
 /// <summary>
 /// Strongly-typed container for system secrets loaded exclusively from environment variables (NFR-01, IT-CFG-01).
 /// </summary>
-public sealed record SystemSecrets(string ConnectionString, string JwtSecret);
+public sealed record SystemSecrets(
+    string ConnectionString,
+    string JwtSecret,
+    string? MigrationConnectionString = null);
 
 /// <summary>
-/// Centralized startup loader and validator for application secrets (NFR-01: Protection of System Secrets)
-/// and database connection TLS enforcement (NFR-04: Protection of Personal Information).
+/// Centralized startup loader and validator for application secrets (NFR-01: Protection of System Secrets),
+/// database connection TLS enforcement (NFR-04: Protection of Personal Information),
+/// and least-privilege database role separation (NFR-10: Least-Privilege Database Access, IT-SEC-02).
 /// </summary>
 public static class SystemSecretsConfiguration
 {
     public const string ConnectionStringEnvVar = "CONNECTION_STRING";
+    public const string MigrationConnectionStringEnvVar = "MIGRATION_CONNECTION_STRING";
     public const string JwtSecretEnvVar = "JWT_SECRET";
     public const string JwtSecretAltEnvVar = "Jwt__Secret";
     public const string ReportingRoleName = "civic_report";
+    public const string AppRoleName = "civic_app";
+    public const string MigrationRoleName = "civic_migrate";
     public const int MinimumJwtSecretLength = 16;
 
     private static readonly ConcurrentDictionary<string, bool> VerifiedTlsEndpoints =
@@ -33,7 +40,8 @@ public static class SystemSecretsConfiguration
     [
         "ConnectionStrings:DefaultConnection",
         "DefaultConnection",
-        "CONNECTION_STRING"
+        "CONNECTION_STRING",
+        "MIGRATION_CONNECTION_STRING"
     ];
 
     private static readonly string[] ForbiddenConfigJwtKeys =
@@ -74,6 +82,17 @@ public static class SystemSecretsConfiguration
 
         ValidateConnectionString(connectionString);
 
+        var migrationConnectionString = envGetter(MigrationConnectionStringEnvVar);
+        if (string.IsNullOrWhiteSpace(migrationConnectionString) && getEnvironmentVariable is null && configuration is not null)
+        {
+            TryGetFromEnvironmentProvider(configuration, MigrationConnectionStringEnvVar, out migrationConnectionString);
+        }
+
+        if (!string.IsNullOrWhiteSpace(migrationConnectionString))
+        {
+            ValidateMigrationConnectionString(migrationConnectionString);
+        }
+
         var jwtSecret = envGetter(JwtSecretEnvVar) ?? envGetter(JwtSecretAltEnvVar);
         if (string.IsNullOrWhiteSpace(jwtSecret) && getEnvironmentVariable is null && configuration is not null)
         {
@@ -90,7 +109,8 @@ public static class SystemSecretsConfiguration
 
         return new SystemSecrets(
             connectionString!.Trim(),
-            (jwtSecret ?? string.Empty).Trim());
+            (jwtSecret ?? string.Empty).Trim(),
+            migrationConnectionString?.Trim());
     }
 
     /// <summary>
@@ -289,7 +309,8 @@ public static class SystemSecretsConfiguration
                 continue;
             }
 
-            if (string.Equals(key, ConnectionStringEnvVar, StringComparison.Ordinal))
+            if (string.Equals(key, ConnectionStringEnvVar, StringComparison.Ordinal) ||
+                string.Equals(key, MigrationConnectionStringEnvVar, StringComparison.Ordinal))
             {
                 if (replaceDockerDbHost && value.Contains("Host=db;", StringComparison.OrdinalIgnoreCase))
                 {
@@ -332,8 +353,10 @@ public static class SystemSecretsConfiguration
     }
 
     /// <summary>
-    /// Validates a database connection string against NFR-01 (secrets) and NFR-04 (in-transit TLS encryption).
-    /// Rejects unencrypted connections such as <c>SslMode=Disable</c> (<c>IT-SEC-01</c>).
+    /// Validates a database connection string against NFR-01 (secrets), NFR-04 (in-transit TLS encryption),
+    /// and NFR-10 (least-privilege database role separation).
+    /// Rejects unencrypted connections such as <c>SslMode=Disable</c> (<c>IT-SEC-01</c>)
+    /// and rejects runtime usage of the migration role (<c>IT-SEC-02</c>).
     /// </summary>
     public static void ValidateConnectionString(string? connectionString, bool requireExplicitTls = false)
     {
@@ -359,6 +382,54 @@ public static class SystemSecretsConfiguration
             {
                 throw new InvalidOperationException(
                     $"NFR-01 (IT-CFG-01): '{ConnectionStringEnvVar}' uses an insecure default or empty password ('{password}').");
+            }
+        }
+
+        // NFR-10 (IT-SEC-02): Disallow migration role for application runtime connections
+        try
+        {
+            var builder = new NpgsqlConnectionStringBuilder(trimmed);
+            if (string.Equals(builder.Username, MigrationRoleName, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"NFR-10 violation (IT-SEC-02): Runtime '{ConnectionStringEnvVar}' must not use the migration role ('{MigrationRoleName}'). " +
+                    $"Configure the application to connect using the least-privilege role '{AppRoleName}'.");
+            }
+        }
+        catch (ArgumentException)
+        {
+            // If connection string parsing fails, it will fail downstream with standard diagnostics
+        }
+
+        ValidateConnectionStringTls(trimmed, requireExplicitTls);
+    }
+
+    /// <summary>
+    /// Validates the dedicated migration connection string against NFR-01 (secrets) and NFR-04 (TLS encryption).
+    /// </summary>
+    public static void ValidateMigrationConnectionString(string? migrationConnectionString, bool requireExplicitTls = false)
+    {
+        if (string.IsNullOrWhiteSpace(migrationConnectionString))
+        {
+            return;
+        }
+
+        var trimmed = migrationConnectionString.Trim();
+        if (trimmed.Contains("${", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"NFR-01: '{MigrationConnectionStringEnvVar}' contains an unreplaced environment variable placeholder.");
+        }
+
+        var match = PasswordValueRegex.Match(trimmed);
+        if (match.Success)
+        {
+            var password = match.Groups[1].Value.Trim('"', '\'');
+            if (string.IsNullOrWhiteSpace(password) ||
+                string.Equals(password, "changeme", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"NFR-01 (IT-CFG-01): '{MigrationConnectionStringEnvVar}' uses an insecure default or empty password ('{password}').");
             }
         }
 
@@ -405,6 +476,54 @@ public static class SystemSecretsConfiguration
         };
 
         return builder.ConnectionString;
+    }
+
+    /// <summary>
+    /// Connects to the database and asserts that the current session role is neither a superuser
+    /// nor the dedicated migration role (NFR-10: Least-Privilege Database Access, IT-SEC-02).
+    /// </summary>
+    public static async Task EnforceLeastPrivilegeRoleAsync(string connectionString, CancellationToken cancellationToken = default)
+    {
+        EnsureServerTlsReady(connectionString);
+        var builder = new NpgsqlConnectionStringBuilder(EnsureTlsConnectionString(connectionString))
+        {
+            Timeout = 5,
+            Pooling = false
+        };
+
+        await using var conn = new NpgsqlConnection(builder.ConnectionString);
+        await conn.OpenAsync(cancellationToken);
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT current_user, usesuper FROM pg_user WHERE usename = current_user;";
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await reader.ReadAsync(cancellationToken))
+        {
+            var currentUser = reader.GetString(0);
+            var isSuperUser = reader.GetBoolean(1);
+
+            if (isSuperUser)
+            {
+                throw new InvalidOperationException(
+                    $"NFR-10 violation (IT-SEC-02): Application connected as superuser '{currentUser}'. " +
+                    $"Runtime application must connect using the least-privilege role '{AppRoleName}'.");
+            }
+
+            if (string.Equals(currentUser, MigrationRoleName, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"NFR-10 violation (IT-SEC-02): Application connected as migration role '{currentUser}'. " +
+                    $"Runtime application must connect using the least-privilege role '{AppRoleName}'.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Synchronously asserts that the current session role is neither a superuser nor the migration role (NFR-10).
+    /// </summary>
+    public static void EnforceLeastPrivilegeRole(string connectionString)
+    {
+        EnforceLeastPrivilegeRoleAsync(connectionString).GetAwaiter().GetResult();
     }
 
     /// <summary>
