@@ -96,8 +96,28 @@ namespace CivicConnect.Data.Migrations
             // 9. Default privileges for future tables
             migrationBuilder.Sql("""
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO civic_app;
-                ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO civic_app;
-                ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO civic_app;
+            """);
+
+            // ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate requires membership in civic_migrate.
+            // Managed PostgreSQL (e.g. Render) runs migrations as a non-superuser database owner, so
+            // membership is granted temporarily and revoked afterwards unless it was already held.
+            migrationBuilder.Sql("""
+                DO $defpriv$
+                DECLARE
+                    was_member boolean := pg_has_role(current_user, 'civic_migrate', 'MEMBER');
+                BEGIN
+                    IF NOT was_member THEN
+                        EXECUTE format('GRANT civic_migrate TO %I', current_user);
+                    END IF;
+
+                    ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO civic_app;
+                    ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO civic_app;
+
+                    IF NOT was_member THEN
+                        EXECUTE format('REVOKE civic_migrate FROM %I', current_user);
+                    END IF;
+                END
+                $defpriv$;
             """);
         }
 
@@ -115,9 +135,25 @@ namespace CivicConnect.Data.Migrations
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM civic_migrate;
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM civic_migrate;
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON ROUTINES FROM civic_migrate;
+            """);
 
-                ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public REVOKE SELECT, INSERT, UPDATE ON TABLES FROM civic_app;
-                ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public REVOKE USAGE, SELECT ON SEQUENCES FROM civic_app;
+            migrationBuilder.Sql("""
+                DO $defpriv$
+                DECLARE
+                    was_member boolean := pg_has_role(current_user, 'civic_migrate', 'MEMBER');
+                BEGIN
+                    IF NOT was_member THEN
+                        EXECUTE format('GRANT civic_migrate TO %I', current_user);
+                    END IF;
+
+                    ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public REVOKE SELECT, INSERT, UPDATE ON TABLES FROM civic_app;
+                    ALTER DEFAULT PRIVILEGES FOR ROLE civic_migrate IN SCHEMA public REVOKE USAGE, SELECT ON SEQUENCES FROM civic_app;
+
+                    IF NOT was_member THEN
+                        EXECUTE format('REVOKE civic_migrate FROM %I', current_user);
+                    END IF;
+                END
+                $defpriv$;
             """);
         }
     }
