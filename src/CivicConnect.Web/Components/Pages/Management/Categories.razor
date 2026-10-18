@@ -21,10 +21,12 @@ else
     <div class="grid grid-2">
         @foreach (var category in categories)
         {
-            <div class="card settings-card">
-                <h4>@category.Name</h4>
+            <div class="card settings-card category-card">
+                <div class="category-card-head">
+                    <h4>@category.Name</h4>
+                    <span class="badge @(category.IsActive ? "badge-resolved" : "badge-closed")">@(category.IsActive ? "Active" : "Inactive")</span>
+                </div>
                 <p>@category.Description</p>
-                <span class="badge">@(category.IsActive ? "Active" : "Inactive")</span>
             </div>
         }
     </div>

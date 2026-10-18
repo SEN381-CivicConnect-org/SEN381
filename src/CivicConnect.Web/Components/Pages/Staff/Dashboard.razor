@@ -1,4 +1,41 @@
 @page "/staff"
 @attribute [Authorize(Roles="Staff")]
 @inject TicketService Tickets
-<div class="page-head"><div><h1>Staff Dashboard</h1><p>Prioritise incoming requests and keep work moving.</p></div><button class="btn btn-secondary" @onclick='()=>Nav.NavigateTo("/staff/queue")'>Open Ticket Queue</button></div><div class="grid grid-4"><div class="card stat-card"><div class="stat-top">Open queue</div><div class="stat-value">@Tickets.Tickets.Count(t=>t.Status=="Open")</div></div><div class="card stat-card"><div class="stat-top">In progress</div><div class="stat-value">@Tickets.Tickets.Count(t=>t.Status=="In Progress")</div></div></div><div class="section"><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Status!="Resolved")'/></div>
+
+<PageTitle>Staff Dashboard | CivicConnect</PageTitle>
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Operations</p>
+        <h1>Staff Dashboard</h1>
+        <p>Prioritise incoming requests and keep work moving.</p>
+    </div>
+    <button class="btn btn-secondary" @onclick='()=>Nav.NavigateTo("/staff/queue")'>Open Ticket Queue</button>
+</div>
+
+<div class="grid grid-4">
+    <div class="card stat-card">
+        <div class="stat-top">Open queue</div>
+        <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "Open")</div>
+        <div class="stat-note">Awaiting initial triage</div>
+    </div>
+    <div class="card stat-card stat-total">
+        <div class="stat-top">Assigned</div>
+        <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "Assigned")</div>
+        <div class="stat-note">Allocated to technicians</div>
+    </div>
+    <div class="card stat-card stat-progress">
+        <div class="stat-top">In progress</div>
+        <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "In Progress")</div>
+        <div class="stat-note">Actively being worked</div>
+    </div>
+    <div class="card stat-card stat-resolved">
+        <div class="stat-top">Resolved</div>
+        <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "Resolved")</div>
+        <div class="stat-note">Completed requests</div>
+    </div>
+</div>
+
+<div class="section">
+    <TicketTable Tickets='Tickets.Tickets.Where(t=>t.Status!="Resolved")' />
+</div>

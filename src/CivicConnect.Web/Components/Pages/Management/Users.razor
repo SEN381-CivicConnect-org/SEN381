@@ -38,10 +38,14 @@ else
                 @foreach (var user in users)
                 {
                     <tr>
-                        <td>@user.Name</td>
+                        <td><span class="ticket-title">@user.Name</span></td>
                         <td>@(user.Roles.Count == 0 ? "No roles assigned" : string.Join(", ", user.Roles))</td>
                         <td>@user.Email</td>
-                        <td>@(user.IsActive ? "Active" : "Inactive")</td>
+                        <td>
+                            <span class="badge @(user.IsActive ? "badge-resolved" : "badge-closed")">
+                                @(user.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
                     </tr>
                 }
             </tbody>

@@ -1,34 +1,128 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject AppAuthenticationStateProvider Auth
 
 <aside class="sidebar" id="workspace-navigation">
-    <div class="brand"><div class="brand-mark">CC</div><div><strong>CivicConnect</strong><span>Service Management</span></div></div>
-    <div class="nav-label">Workspace</div>
+    <div class="brand">
+        <div class="brand-mark" aria-hidden="true">CC</div>
+        <div class="brand-text">
+            <strong>CivicConnect</strong>
+            <span>Service Management</span>
+        </div>
+    </div>
+
     <nav @ref="navigationElement" tabindex="-1" class="nav-section" aria-label="Workspace">
+        <div class="nav-label">Workspace</div>
         <AuthorizeView Roles="Requester">
-            <NavLink class="nav-item" href="/requester/tickets"><img class="icon" src="assets/icons/tickets.svg" alt=""/>My Tickets</NavLink>
-            <NavLink class="nav-item" href="/requester/new"><img class="icon" src="assets/icons/create.svg" alt=""/>New Ticket</NavLink>
+            <NavLink class="nav-item" href="/requester/tickets" Match="NavLinkMatch.Prefix">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="3" y="4" width="14" height="12" rx="2" />
+                    <path d="M7 8h6M7 12h4" stroke-linecap="round" />
+                </svg>
+                <span>My Tickets</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/requester/new">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <circle cx="10" cy="10" r="7" />
+                    <path d="M10 7v6M7 10h6" stroke-linecap="round" />
+                </svg>
+                <span>New Ticket</span>
+            </NavLink>
         </AuthorizeView>
+
         <AuthorizeView Roles="Staff">
-            <NavLink class="nav-item" href="/staff"><img class="icon" src="assets/icons/dashboard.svg" alt=""/>Dashboard</NavLink>
-            <NavLink class="nav-item" href="/staff/queue"><img class="icon" src="assets/icons/tickets.svg" alt=""/>Ticket Queue</NavLink>
-            <NavLink class="nav-item" href="/staff/assigned">My Assigned Tickets</NavLink>
+            <NavLink class="nav-item" href="/staff" Match="NavLinkMatch.All">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="3" y="3" width="6" height="6" rx="1.5" />
+                    <rect x="11" y="3" width="6" height="4" rx="1.5" />
+                    <rect x="11" y="9" width="6" height="8" rx="1.5" />
+                    <rect x="3" y="11" width="6" height="6" rx="1.5" />
+                </svg>
+                <span>Dashboard</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/staff/queue">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="3" y="4" width="14" height="12" rx="2" />
+                    <path d="M7 8h6M7 12h4" stroke-linecap="round" />
+                </svg>
+                <span>Ticket Queue</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/staff/assigned">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="M9 11l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" />
+                    <rect x="3" y="4" width="14" height="12" rx="2" />
+                </svg>
+                <span>My Assigned Tickets</span>
+            </NavLink>
         </AuthorizeView>
+
         <AuthorizeView Roles="Management">
-            <NavLink class="nav-item" href="/management"><img class="icon" src="assets/icons/dashboard.svg" alt=""/>Dashboard</NavLink>
-            <NavLink class="nav-item" href="/management/tickets"><img class="icon" src="assets/icons/tickets.svg" alt=""/>All Tickets</NavLink>
-            <NavLink class="nav-item" href="/management/users">Users &amp; Staff</NavLink>
-            <NavLink class="nav-item" href="/management/roles">Role Delegation</NavLink>
-            <NavLink class="nav-item" href="/management/categories">Categories</NavLink>
+            <NavLink class="nav-item" href="/management" Match="NavLinkMatch.All">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="3" y="3" width="6" height="6" rx="1.5" />
+                    <rect x="11" y="3" width="6" height="4" rx="1.5" />
+                    <rect x="11" y="9" width="6" height="8" rx="1.5" />
+                    <rect x="3" y="11" width="6" height="6" rx="1.5" />
+                </svg>
+                <span>Dashboard</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/management/tickets">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="3" y="4" width="14" height="12" rx="2" />
+                    <path d="M7 8h6M7 12h4" stroke-linecap="round" />
+                </svg>
+                <span>All Tickets</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/management/users">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <circle cx="8" cy="7" r="3" />
+                    <path d="M3.5 16c.6-2.5 2.4-4 4.5-4s3.9 1.5 4.5 4" stroke-linecap="round" />
+                    <circle cx="14" cy="8" r="2" />
+                    <path d="M14.5 12.2c1.4.4 2.5 1.6 2.8 3.5" stroke-linecap="round" />
+                </svg>
+                <span>Users &amp; Staff</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/management/roles">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="M10 2.5l6 2.5v4.5c0 4.2-2.6 7.4-6 8.5-3.4-1.1-6-4.3-6-8.5V5l6-2.5Z" stroke-linejoin="round" />
+                    <path d="M7.8 10.2l1.6 1.6 3-3.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Role Delegation</span>
+            </NavLink>
+            <NavLink class="nav-item" href="/management/categories">
+                <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="M3.5 5.5h5l1.5 2h6.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 2.5 15V7a1.5 1.5 0 0 1 1-1.5Z" stroke-linejoin="round" />
+                </svg>
+                <span>Categories</span>
+            </NavLink>
         </AuthorizeView>
-        <NavLink class="nav-item" href="/notifications">Notifications</NavLink>
-        <NavLink class="nav-item" href="/settings">Settings</NavLink>
+
+        <div class="nav-label nav-label-secondary">Account</div>
+        <NavLink class="nav-item" href="/notifications">
+            <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <path d="M8.5 16.5h3M14.5 7.5a4.5 4.5 0 1 0-9 0c0 4.5-2 4.5-2 6h13c0-1.5-2-1.5-2-6Z" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Notifications</span>
+        </NavLink>
+        <NavLink class="nav-item" href="/settings">
+            <svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <circle cx="10" cy="10" r="2.5" />
+                <path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.1 5.1l1.4 1.4M13.5 13.5l1.4 1.4M5.1 14.9l1.4-1.4M13.5 6.5l1.4-1.4" stroke-linecap="round" />
+            </svg>
+            <span>Settings</span>
+        </NavLink>
     </nav>
+
     <div class="sidebar-footer">
-        <div class="user-card"><div class="avatar">@Initials</div><div class="user-meta"><strong>@Name</strong><span>@Role</span></div></div>
-        <div class="workspace-panel"><span>Current workspace</span><strong>CivicConnect Office</strong></div>
-        <button class="btn btn-ghost" @onclick="SignOut">Sign out</button>
+        <div class="user-card">
+            <div class="avatar" aria-hidden="true">@Initials</div>
+            <div class="user-meta">
+                <strong>@Name</strong>
+                <span>@(string.IsNullOrWhiteSpace(Role) ? "CivicConnect Office" : $"{Role} · CivicConnect")</span>
+            </div>
+        </div>
+        <button type="button" class="btn btn-ghost signout-btn" @onclick="SignOut">Sign out</button>
     </div>
 </aside>
 
@@ -36,12 +130,40 @@
     ElementReference navigationElement;
     public Task FocusNavigationAsync() => navigationElement.FocusAsync().AsTask();
     string Name = "Signed in user", Role = "", Initials = "CC";
+
     protected override async Task OnInitializedAsync()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+        await SyncUserAsync();
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        await InvokeAsync(async () =>
+        {
+            await SyncUserAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task SyncUserAsync()
     {
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         Name = state.User.Identity?.Name ?? "Signed in user";
         Role = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
-        Initials = string.Join("", Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
+        Initials = string.IsNullOrWhiteSpace(Name)
+            ? "CC"
+            : string.Join("", Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
     }
-    void SignOut() { Auth.SignOut(); Nav.NavigateTo("/login"); }
+
+    void SignOut()
+    {
+        Auth.SignOut();
+        Nav.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
+    }
 }
