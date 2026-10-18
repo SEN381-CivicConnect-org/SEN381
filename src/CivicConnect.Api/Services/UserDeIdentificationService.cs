@@ -105,7 +105,8 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
             }
 
             _logger?.LogInformation(
-                "Irreversibly de-identified user {UserId}: anonymizedEmail={Email}, isActive=false, preservedTickets={Tickets}, preservedIncidents={Incidents}.",
+                "Irreversibly de-identified user {UserId}: isActive=false, preservedTickets={Tickets}, preservedIncidents={Incidents}.",
+
                 user.Id,
                 anonymizedEmail,
                 ticketsPreserved,
