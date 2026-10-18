@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scope Statement v2.0</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --green: #1b7f3d;
+    --amber: #b25e00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --green: #4ade80;
+      --amber: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 65rem; margin: 0 auto; }
+  h1 { font-size: 1.9rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 2rem; }
+  h2 { font-size: 1.15rem; margin: 2.5rem 0 1rem; padding-bottom: .4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .badge {
+    display: inline-block;
+    padding: .15rem .45rem;
+    border-radius: .25rem;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .badge-met { background: rgba(27, 127, 61, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: .4rem; padding: 1rem; }
+  .card h4 { margin: 0 0 .4rem; font-size: .95rem; }
+  .card p { margin: 0; font-size: .88rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>2.1 Scope Statement v2.0</h1>
+  <p class="sub">Baseline Version: 2.0 (Milestone 4 Final Operational Baseline) | Baseline Reference: SEN381 Master Project Brief §2, §6, §17–§21</p>
+
+  <div class="note">
+    <span class="label">Milestone 4 Scope Baseline Evolution</span>
+    <p>This Scope Statement v2.0 extends and finalizes the Milestone 1 Scope Baseline (preserved at <code>scope-statement-V1.0.html</code>). It reflects the complete delivery, verification, and operational readiness of the CivicConnect platform across all four project milestones.</p>
+  </div>
+
+  <h2>1. Platform Purpose &amp; Operational Context</h2>
+  <p>CivicConnect is engineered as an access-controlled, configurable municipal service request and incident tracking platform. It replaces fragmented, uncontrolled municipal communication practices &mdash; including ad-hoc WhatsApp messages, unindexed emails, telephone calls, scattered spreadsheets, and paper records &mdash; with an authoritative, traceable, and audited ticket lifecycle platform.</p>
+
+  <p>The platform provides unified service request intake, automated incident clustering, deterministic priority calculation, role-isolated triaging queues, ongoing commentary, asset replacement tracking, automated citizen notifications, and analytical management oversight while remaining strictly bounded against unnecessary enterprise complexity.</p>
+
+  <h2>2. Architectural &amp; Deployment Scope</h2>
+  <div class="grid">
+    <div class="card">
+      <h4>Relational Core Persistence</h4>
+      <p>Single PostgreSQL 15 engine with <code>citext</code> email uniqueness, <code>timestamptz</code> UTC timestamps, partial unique clustering indexes, and optimistic version concurrency tokens.</p>
+    </div>
+    <div class="card">
+      <h4>Separation of Concerns</h4>
+      <p>ASP.NET Core Web API (port 5060) providing business endpoints; Blazor Web App (port 8085) providing interactive, responsive role-based user interfaces.</p>
+    </div>
+    <div class="card">
+      <h4>Asynchronous Messaging Seam</h4>
+      <p>Store-and-forward notification queue boundary via RabbitMQ (with resilient in-process fallback), decoupling database transactions from carrier latency.</p>
+    </div>
+    <div class="card">
+      <h4>Production Deployment &amp; DR</h4>
+      <p>Deployable via Docker Compose multi-container topology and Render Infrastructure as Code (<code>render.yaml</code>). Verified disaster recovery restore drill RTO of 12.27 seconds.</p>
+    </div>
+  </div>
+
+  <h2>3. Multi-Role Organizational Boundary</h2>
+  <p>CivicConnect serves one municipal organization per deployed container stack (single-tenant per deployment), accommodating distinct operational personas without cross-role leakage:</p>
+  <ul>
+    <li><strong>Citizens / Requesters:</strong> Self-service submission, category selection, real-time status tracking, private ticket history with cryptographic ownership isolation, and automated notifications.</li>
+    <li><strong>Technicians / Service Staff:</strong> Department-isolated queues, unassigned ticket claiming, supervisor delegation, controlled lifecycle state transitions, ongoing progress notes, and asset-linked resolutions.</li>
+    <li><strong>Supervisors &amp; Operations Managers:</strong> Triage oversight, SLA overdue tracking, priority overrides with mandatory justification, categorical and team turnaround reporting, and append-only audit inspection.</li>
+    <li><strong>System Administrators:</strong> Controlled category catalogue configuration, location hierarchy maintenance, SLA priority targets, and user/role administration.</li>
+  </ul>
+
+  <h2>4. Regulatory Compliance &amp; Least Privilege Scope</h2>
+  <p>In accordance with the Protection of Personal Information Act (POPIA Act 4 of 2013), the scope incorporates strict statutory privacy protections:</p>
+  <ul>
+    <li><strong>POPIA s14(1) Retention &amp; Disposal:</strong> Automated sweeps purge expired idempotency keys (>7 days) and aged read notifications (>12 months), while de-identifying personal data on user retirement while preserving incident referential integrity (<code>NFR-05</code>).</li>
+    <li><strong>POPIA s19(1) Staff Information Protection:</strong> The keyless <code>staff_directory</code> database security view exposes safe staff names and team roles while omitting password hashes and personal contact details (<code>NFR-04</code>).</li>
+    <li><strong>Database Least Privilege:</strong> Three distinct PostgreSQL database roles (<code>civic_app</code> for runtime DML, <code>civic_migrate</code> for ephemeral DDL migrations, and <code>civic_report</code> for read-only access) enforce separation of duties at the database catalog level (<code>NFR-10</code>).</li>
+  </ul>
+</main>
+</body>
+</html>
