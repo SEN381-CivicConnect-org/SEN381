@@ -92,10 +92,14 @@ public static class SystemSecretsConfiguration
             TryGetFromEnvironmentProvider(configuration, MigrationConnectionStringEnvVar, out migrationConnectionString);
         }
 
-        migrationConnectionString = NormalizeToAdoNetConnectionString(migrationConnectionString);
         if (!string.IsNullOrWhiteSpace(migrationConnectionString))
         {
+            migrationConnectionString = NormalizeToAdoNetConnectionString(migrationConnectionString);
             ValidateMigrationConnectionString(migrationConnectionString);
+        }
+        else
+        {
+            migrationConnectionString = null;
         }
 
         var jwtSecret = envGetter(JwtSecretEnvVar) ?? envGetter(JwtSecretAltEnvVar);
@@ -115,7 +119,7 @@ public static class SystemSecretsConfiguration
         return new SystemSecrets(
             connectionString!.Trim(),
             (jwtSecret ?? string.Empty).Trim(),
-            migrationConnectionString?.Trim());
+            string.IsNullOrWhiteSpace(migrationConnectionString) ? null : migrationConnectionString.Trim());
     }
 
     /// <summary>

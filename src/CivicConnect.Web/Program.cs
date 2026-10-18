@@ -80,7 +80,9 @@ var shouldMigrate = isMigrateOnly || args.Contains("--migrate", StringComparer.O
 
 if (shouldMigrate)
 {
-    var migrationConn = systemSecrets.MigrationConnectionString ?? connectionString;
+    var migrationConn = !string.IsNullOrWhiteSpace(systemSecrets.MigrationConnectionString)
+        ? systemSecrets.MigrationConnectionString
+        : connectionString;
     var migrationTlsConn = SystemSecretsConfiguration.EnsureTlsConnectionString(migrationConn);
     SystemSecretsConfiguration.EnsureServerTlsReady(migrationTlsConn);
 
