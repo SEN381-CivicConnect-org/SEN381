@@ -155,13 +155,11 @@ public sealed class LocationHierarchyTests
         var site = await CreateLocationAsync(context, "Parent Site", "site", impactLevel: 2);
         var child = await CreateLocationAsync(context, "Child Floor", "floor", impactLevel: 2, site.Id);
 
-        // Untrack the child so EF does not null its FK client-side before deleting the parent;
-        // this forces the database's ON DELETE RESTRICT constraint to be the thing under test.
-        context.Entry(child).State = EntityState.Detached;
-
-        context.Locations.Remove(site);
-
-        await AssertPostgresFailureAsync(context, PostgresErrorCodes.ForeignKeyViolation);
+        // Bypasses the EF soft-delete redirect with raw SQL to exercise the
+        // ON DELETE RESTRICT foreign key constraint in PostgreSQL.
+        var pgEx = await Assert.ThrowsAsync<PostgresException>(
+            () => context.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM location WHERE id = {site.Id}"));
+        Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, pgEx.SqlState);
     }
 
     [Fact]
@@ -173,13 +171,11 @@ public sealed class LocationHierarchyTests
         var room = await CreateLocationAsync(context, "Equipped Room", "room", impactLevel: 2);
         var asset = await CreateAssetAsync(context, "Fixed Camera", room.Id);
 
-        // Untrack the asset so EF does not null its FK client-side before deleting the location;
-        // this forces the database's ON DELETE RESTRICT constraint to be the thing under test.
-        context.Entry(asset).State = EntityState.Detached;
-
-        context.Locations.Remove(room);
-
-        await AssertPostgresFailureAsync(context, PostgresErrorCodes.ForeignKeyViolation);
+        // Bypasses the EF soft-delete redirect with raw SQL to exercise the
+        // ON DELETE RESTRICT foreign key constraint in PostgreSQL.
+        var pgEx = await Assert.ThrowsAsync<PostgresException>(
+            () => context.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM location WHERE id = {room.Id}"));
+        Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, pgEx.SqlState);
     }
 
     /// Saves and asserts the database (not EF) rejected the change with the given Postgres SQLSTATE.
