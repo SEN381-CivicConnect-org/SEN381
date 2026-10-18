@@ -406,6 +406,11 @@ namespace CivicConnect.Data.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_incident_status");
 
+                    b.HasIndex("AssignedTeamId", "OpenedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("incident_team_queue_idx")
+                        .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
                     b.HasIndex("Status", "AssignedTeamId")
                         .HasDatabaseName("ix_incident_status_assigned_team_id");
 

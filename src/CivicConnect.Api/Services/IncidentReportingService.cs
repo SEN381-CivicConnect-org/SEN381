@@ -45,6 +45,14 @@ public interface IIncidentReportingService
         int? locationId = null,
         int page = 1,
         int pageSize = 50,
+        bool onlyOpen = false,
+        CancellationToken cancellationToken = default);
+
+    /// A service team's open incident queue (NFR-07, AP-04).
+    Task<IReadOnlyList<IncidentListItemDto>> GetTeamQueueAsync(
+        int teamId,
+        int page = 1,
+        int pageSize = 50,
         CancellationToken cancellationToken = default);
 
     /// A reporter's own tickets with each one's current incident status.
@@ -222,15 +230,21 @@ public sealed class IncidentReportingService : IIncidentReportingService
         int? locationId = null,
         int page = 1,
         int pageSize = 50,
+        bool onlyOpen = false,
         CancellationToken cancellationToken = default)
     {
         // Each filter is optional; whichever combination is given, Postgres bitmap-ANDs the
-        // single-column indexes on status/category_id/assigned_team_id/location_id.
+        // single-column indexes on status/category_id/assigned_team_id/location_id, or uses
+        // incident_team_queue_idx when filtering by team + open statuses.
         var query = _context.Incidents.AsNoTracking().AsQueryable();
 
         if (status.HasValue)
         {
             query = query.Where(i => i.Status == status.Value);
+        }
+        else if (onlyOpen)
+        {
+            query = query.Where(i => OpenStatuses.Contains(i.Status));
         }
 
         if (categoryId.HasValue)
@@ -249,6 +263,38 @@ public sealed class IncidentReportingService : IIncidentReportingService
         }
 
         return await query
+            .OrderByDescending(i => i.OpenedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(i => new IncidentListItemDto(
+                i.Id,
+                i.ReferenceNumber,
+                i.Title,
+                i.Status,
+                i.CategoryId,
+                i.Category.Name,
+                i.LocationId,
+                i.Location.Name,
+                i.AssignedTeamId,
+                i.AssignedTeam == null ? null : i.AssignedTeam.Name,
+                i.Priority,
+                i.OpenedAt,
+                i.DueAt,
+                i.ResolvedAt,
+                i.ClosedAt))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<IncidentListItemDto>> GetTeamQueueAsync(
+        int teamId,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        // Matches incident_team_queue_idx: (assigned_team_id, opened_at DESC) WHERE status IN (open)
+        return await _context.Incidents
+            .AsNoTracking()
+            .Where(i => i.AssignedTeamId == teamId && OpenStatuses.Contains(i.Status))
             .OrderByDescending(i => i.OpenedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
