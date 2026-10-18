@@ -38,9 +38,10 @@ builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
 builder.Services.AddScoped<WorkspaceDataService>();
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
+    ?? builder.Configuration["ApiBaseUrl"]
     ?? Environment.GetEnvironmentVariable("API_BASE_URL")
-    ?? "http://localhost:5060";
+    ?? "http://backend-api:5060";
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
