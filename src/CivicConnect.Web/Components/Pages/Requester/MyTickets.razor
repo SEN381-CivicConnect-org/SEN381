@@ -11,12 +11,16 @@
         <h1>My Tickets</h1>
         <p>View and track every request you have submitted.</p>
     </div>
-    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/requester/new")'>New Ticket</button>
+    <button
+        class="btn btn-primary"
+        @onclick='() => Nav.NavigateTo("/requester/new")'>New Ticket</button>
 </div>
 <div class="filters">
     @foreach (var f in new[] { "All", "Open", "In Progress", "Resolved" })
     {
-        <button class="filter-btn @(filter == f ? "active" : "")" @onclick="() => filter = f">@f</button>
+        <button
+            class="filter-btn @(filter == f ? "active" : "")"
+            @onclick="() => filter = f">@f</button>
     }
 </div>
 <TicketTable Tickets="Filtered" />
