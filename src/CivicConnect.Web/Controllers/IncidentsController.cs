@@ -104,11 +104,13 @@ public sealed class IncidentsController : ControllerBase
 {
     private readonly CivicConnectDbContext _context;
     private readonly IResolutionService _resolutionService;
+    private readonly TimeProvider _timeProvider;
 
-    public IncidentsController(CivicConnectDbContext context, IResolutionService? resolutionService = null)
+    public IncidentsController(CivicConnectDbContext context, IResolutionService? resolutionService = null, TimeProvider? timeProvider = null)
     {
         _context = context;
         _resolutionService = resolutionService ?? new ResolutionService(context);
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     [HttpPost("{id:long}/resolve")]
@@ -466,7 +468,7 @@ public sealed class IncidentsController : ControllerBase
     [Authorize(Roles = "Supervisor,Manager,Operations Manager,Administrator,supervisor,operations manager,administrator,Management")]
     public async Task<IActionResult> GetOverdueIncidents()
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = _timeProvider.GetUtcNow();
 
         var overdueIncidents = await _context.Incidents
             .AsNoTracking()
