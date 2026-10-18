@@ -75,6 +75,7 @@ var app = builder.Build();
 
 var isMigrateOnly = args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
 var shouldMigrate = isMigrateOnly || args.Contains("--migrate", StringComparer.OrdinalIgnoreCase) ||
+    app.Configuration.GetValue<bool?>("AUTO_MIGRATE") == true ||
     (app.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(systemSecrets.MigrationConnectionString));
 
 if (shouldMigrate)

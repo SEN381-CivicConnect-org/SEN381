@@ -95,6 +95,22 @@ builder.Services.AddHostedService<RetentionSweepHostedService>();
 
 var app = builder.Build();
 
+// Auto-migrate database schema on startup in cloud environments (Render) if configured
+var autoMigrate = app.Configuration.GetValue<bool?>("AUTO_MIGRATE") ?? true;
+if (autoMigrate)
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CivicConnectDbContext>();
+        await db.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic database migration skipped or failed: {Message}", ex.Message);
+    }
+}
+
 // Verify that application connects under least-privilege role (NFR-10, IT-SEC-02)
 await SystemSecretsConfiguration.EnforceLeastPrivilegeRoleAsync(connectionString);
 
