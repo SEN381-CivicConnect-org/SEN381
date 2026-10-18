@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,7 +12,8 @@ using Microsoft.Extensions.Logging;
 namespace CivicConnect.Data.Security;
 
 /// <summary>
-/// Contract for hashing and verifying user passwords using Argon2id in PHC string format (NFR-11).
+/// Contract for hashing and verifying user passwords using Argon2id in PHC string format (NFR-11),
+/// and creating persisted user accounts with the default lowest baseline role (<c>reporter</c>).
 /// </summary>
 public interface IPasswordHashingService
 {
@@ -32,6 +34,19 @@ public interface IPasswordHashingService
     /// the stored hash uses outdated parameters and should be transparently upgraded.
     /// </summary>
     bool VerifyPassword(string password, string phcHash, out bool needsRehash);
+
+    /// <summary>
+    /// Creates and persists a new <see cref="AppUser"/> with an Argon2id PHC password hash and the default
+    /// lowest baseline role (<c>reporter</c>), logging account metadata without ever logging the plaintext
+    /// password or raw hash.
+    /// </summary>
+    Task<AppUser> CreateUserAccountAsync(
+        CivicConnectDbContext dbContext,
+        string email,
+        string fullName,
+        string plaintextPassword,
+        ILogger? auditLogger = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -60,9 +75,16 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
     public const int SaltLengthBytes = 16;
     public const int HashLengthBytes = 32;
 
+    public const string DefaultLowestRoleName = "reporter";
+    public const int MinFullNameLength = 2;
+    public const int MaxFullNameLength = 120;
+    public const int MinPasswordLength = 8;
+
     public const string CheckConstraintName = "app_user_password_hash_argon2id_ck";
     public const string CheckConstraintSql =
         "password_hash ~ '^\\$argon2id\\$v=19\\$m=[0-9]+,t=[0-9]+,p=[0-9]+\\$[A-Za-z0-9+/]+\\$[A-Za-z0-9+/]+$'";
+
+    private static readonly EmailAddressAttribute EmailValidator = new();
 
     /// <summary>
     /// Shared stateless singleton instance for callers without DI.
@@ -304,10 +326,7 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
         return true;
     }
 
-    /// <summary>
-    /// Creates and persists a new <see cref="AppUser"/> with an Argon2id PHC password hash, logging account metadata
-    /// without ever logging the plaintext password or raw hash.
-    /// </summary>
+    /// <inheritdoc />
     public async Task<AppUser> CreateUserAccountAsync(
         CivicConnectDbContext dbContext,
         string email,
@@ -318,26 +337,50 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
     {
         ArgumentNullException.ThrowIfNull(dbContext);
 
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new ArgumentException("Email is required.", nameof(email));
-        }
-
-        if (string.IsNullOrWhiteSpace(fullName))
+        var normalizedFullName = fullName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedFullName))
         {
             throw new ArgumentException("Full name is required.", nameof(fullName));
         }
 
-        var normalizedEmail = email.Trim();
-        var normalizedFullName = fullName.Trim();
+        if (normalizedFullName.Length < MinFullNameLength || normalizedFullName.Length > MaxFullNameLength)
+        {
+            throw new ArgumentException(
+                $"Full name must be between {MinFullNameLength} and {MaxFullNameLength} characters.",
+                nameof(fullName));
+        }
+
+        var normalizedEmail = email?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            throw new ArgumentException("Email address is required.", nameof(email));
+        }
+
+        if (!IsValidEmailAddress(normalizedEmail))
+        {
+            throw new ArgumentException("Enter a valid email address.", nameof(email));
+        }
+
+        if (string.IsNullOrWhiteSpace(plaintextPassword))
+        {
+            throw new ArgumentException("Password is required.", nameof(plaintextPassword));
+        }
+
+        if (plaintextPassword.Length < MinPasswordLength)
+        {
+            throw new ArgumentException(
+                $"Password must be at least {MinPasswordLength} characters long.",
+                nameof(plaintextPassword));
+        }
+
         var phcHash = HashPassword(plaintextPassword);
 
         var defaultRoleId = await dbContext.Roles
             .AsNoTracking()
-            .Where(r => r.Name == "reporter")
+            .Where(r => r.Name == DefaultLowestRoleName)
             .Select(r => (short?)r.Id)
             .FirstOrDefaultAsync(cancellationToken)
-            ?? RoleConfiguration.BaselineRoles.First(r => r.Name == "reporter").Id;
+            ?? RoleConfiguration.BaselineRoles.First(r => r.Name == DefaultLowestRoleName).Id;
 
         var userId = Guid.NewGuid();
         var user = new AppUser
@@ -363,10 +406,11 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
 
         var targetLogger = auditLogger ?? _logger;
         targetLogger?.LogInformation(
-            "Created user account {UserId} for {Email} ({FullName}) with default role 'reporter' and {Algorithm} parameters v={Version}, m={MemoryCostKiB}, t={Iterations}, p={Parallelism}.",
+            "Created user account {UserId} for {Email} ({FullName}) with default role '{RoleName}' and {Algorithm} parameters v={Version}, m={MemoryCostKiB}, t={Iterations}, p={Parallelism}.",
             user.Id,
             user.Email,
             user.FullName,
+            DefaultLowestRoleName,
             AlgorithmIdentifier,
             Version,
             MemoryCostKiB,
@@ -374,6 +418,31 @@ public sealed partial class Argon2idPasswordHasher : IPasswordHashingService
             Parallelism);
 
         return user;
+    }
+
+    public static bool IsValidEmailAddress(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        var trimmed = email.Trim();
+        if (trimmed.Any(char.IsWhiteSpace) || !EmailValidator.IsValid(trimmed))
+        {
+            return false;
+        }
+
+        var atIndex = trimmed.IndexOf('@');
+        if (atIndex <= 0 || atIndex != trimmed.LastIndexOf('@') || atIndex == trimmed.Length - 1)
+        {
+            return false;
+        }
+
+        var domain = trimmed[(atIndex + 1)..];
+        return domain.Contains('.', StringComparison.Ordinal)
+            && !domain.StartsWith('.')
+            && !domain.EndsWith('.');
     }
 
     private static byte[] ComputeArgon2idBytes(
