@@ -1,4 +1,22 @@
 @page "/staff/assigned"
-@attribute [Authorize(Roles="Staff")]
+@attribute [Authorize(Roles = "Staff")]
 @inject TicketService Tickets
-<div class="page-head"><div><h1>My Assigned Tickets</h1><p>Tickets currently assigned to you.</p></div></div><TicketTable Tickets='Tickets.Tickets.Where(t=>t.Assignee=="Daniel Jacobs"&&t.Status!="Resolved")'/>
+@inject AuthenticationStateProvider Authentication
+
+<div class="page-head"><div><h1>My Assigned Tickets</h1><p>Tickets currently assigned to you.</p></div></div>
+@if (staff is null)
+{
+    <div class="card empty" role="status">Loading assigned tickets…</div>
+}
+else
+{
+    <TicketTable Tickets="Tickets.GetAssignedTickets(staff)" />
+}
+
+@code {
+    private System.Security.Claims.ClaimsPrincipal? staff;
+    protected override async Task OnInitializedAsync()
+    {
+        staff = (await Authentication.GetAuthenticationStateAsync()).User;
+    }
+}

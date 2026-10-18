@@ -36,7 +36,7 @@ builder.Services.AddScoped<IResolutionService, ResolutionService>();
 builder.Services.AddScoped<ResolutionService>();
 builder.Services.AddSingleton<AuditService>();
 builder.Services.AddSingleton<TicketService>();
-builder.Services.AddScoped<WorkspaceNavigation>();
+builder.Services.AddScoped<WorkspaceDataService>();
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
     ?? Environment.GetEnvironmentVariable("API_BASE_URL")
