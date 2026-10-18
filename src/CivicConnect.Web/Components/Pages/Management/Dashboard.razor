@@ -2,29 +2,34 @@
 @attribute [Authorize(Roles = "Management")]
 @inject TicketService Tickets
 
+<PageTitle>Management Dashboard | CivicConnect</PageTitle>
+
 <div class="page-head">
     <div>
+        <p class="eyebrow">Overview</p>
         <h1>Management Dashboard</h1>
         <p>View ticket counts for the current demo workspace.</p>
     </div>
 </div>
 <div class="grid grid-4">
-    <div class="card stat-card">
+    <div class="card stat-card stat-total">
         <div class="stat-top">Total tickets</div>
         <div class="stat-value">@Tickets.Tickets.Count</div>
+        <div class="stat-note">All recorded service requests</div>
     </div>
     <div class="card stat-card">
         <div class="stat-top">Open</div>
         <div class="stat-value">@Tickets.Tickets.Count(t => t.Status == "Open")</div>
+        <div class="stat-note">Currently open in queue</div>
     </div>
-    <div class="card stat-card">
+    <div class="card stat-card stat-resolved">
         <div class="stat-top">Resolution rate</div>
-        <div class="stat-value">Unavailable</div>
+        <div class="stat-value stat-value-text">Unavailable</div>
         <div class="stat-note">Reliable timing data is not available.</div>
     </div>
-    <div class="card stat-card">
+    <div class="card stat-card stat-progress">
         <div class="stat-top">Avg. response</div>
-        <div class="stat-value">Unavailable</div>
+        <div class="stat-value stat-value-text">Unavailable</div>
         <div class="stat-note">Reliable timing data is not available.</div>
     </div>
 </div>

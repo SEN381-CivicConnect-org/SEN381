@@ -14,6 +14,10 @@
 else
 {
     <div class="@AppShellCssClass" @onkeydown="HandleKey">
+        @if (menuOpen)
+        {
+            <div class="mobile-backdrop" aria-hidden="true" @onclick="ToggleMenu"></div>
+        }
         <NavMenu @ref="navigation" />
         <main class="main">
             <header class="topbar">
@@ -29,16 +33,24 @@ else
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <label class="search">
-                    <img class="icon" src="assets/icons/search.svg" alt="" />
-                    <input readonly aria-label="Search unavailable in this demo" placeholder="Search unavailable" />
-                </label>
+                <div class="topbar-context">
+                    <span class="workspace-pill">CivicConnect Office</span>
+                    <AuthorizeView Context="authContext">
+                        <Authorized>
+                            @if (!string.IsNullOrWhiteSpace(GetUserRole(authContext.User)))
+                            {
+                                <span class="topbar-divider" aria-hidden="true">/</span>
+                                <span class="topbar-role-label">@GetUserRole(authContext.User) Portal</span>
+                            }
+                        </Authorized>
+                    </AuthorizeView>
+                </div>
                 <div class="top-actions">
                     <ThemeToggle />
                     <AuthorizeView Context="auth">
                         <Authorized>
                             <div class="profile-chip">
-                                <span class="avatar">@Initials(auth.User.Identity?.Name)</span>
+                                <span class="avatar" aria-hidden="true">@Initials(auth.User.Identity?.Name)</span>
                                 <span class="profile-text">
                                     <strong>@auth.User.Identity?.Name</strong>
                                     <small>@GetUserRole(auth.User)</small>
