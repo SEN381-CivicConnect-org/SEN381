@@ -54,6 +54,15 @@ public sealed class IncidentConfiguration : IEntityTypeConfiguration<Incident>
         builder.HasIndex(i => new { i.Status, i.Priority })
             .HasDatabaseName("ix_incident_status_priority");
 
+        builder.HasIndex(i => i.AssignedTeamId)
+            .HasDatabaseName("ix_incident_assigned_team_id");
+
+        // Partial composite index for service team open queue (NFR-07, AP-04).
+        builder.HasIndex(i => new { i.AssignedTeamId, i.OpenedAt })
+            .HasDatabaseName("incident_team_queue_idx")
+            .IsDescending(false, true)
+            .HasFilter("status IN ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'ON_HOLD')");
+
         builder.Property(i => i.PriorityOverridden).HasDefaultValue(false);
 
         // Bumped by a database trigger on every update; the concurrency token EF uses to detect lost updates.
