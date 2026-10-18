@@ -36,6 +36,7 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
     /// <inheritdoc />
     public async Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
         Guid userId,
+        Guid actorId
         CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty)
