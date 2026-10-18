@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -20,6 +20,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "seed-benchmark", "tools\seed-benchmark\seed-benchmark.csproj", "{08FF7B44-545D-4EBB-9715-7C391E8422A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CivicConnect.Web.Tests", "tests\CivicConnect.Web.Tests\CivicConnect.Web.Tests.csproj", "{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +105,18 @@ Global
 		{08FF7B44-545D-4EBB-9715-7C391E8422A0}.Release|x64.Build.0 = Release|Any CPU
 		{08FF7B44-545D-4EBB-9715-7C391E8422A0}.Release|x86.ActiveCfg = Release|Any CPU
 		{08FF7B44-545D-4EBB-9715-7C391E8422A0}.Release|x86.Build.0 = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|x64.Build.0 = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Debug|x86.Build.0 = Debug|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|x64.ActiveCfg = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|x64.Build.0 = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|x86.ActiveCfg = Release|Any CPU
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -114,5 +128,6 @@ Global
 		{92D5B753-58BE-4A39-9751-5B4188EEDC3B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{B02A57A3-6F41-4C91-9540-735923692C82} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{08FF7B44-545D-4EBB-9715-7C391E8422A0} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{FF2A5C47-E72A-4590-81F1-728BB4BC08BC} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
