@@ -1,41 +1,64 @@
 @page "/management/users"
 @attribute [Authorize(Roles = "Management")]
+@inject WorkspaceDataService Data
+@inject ILogger<Users> Logger
 
 <div class="page-head">
     <div>
         <h1>Users & Staff</h1>
-        <p>Sample user directory. Editing accounts and roles is not available in this demo.</p>
+        <p>View users and their assigned roles. Accounts and roles are read-only.</p>
     </div>
 </div>
-<div class="card table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Email</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Bernard Small</td>
-                <td>Requester</td>
-                <td>bernard@civicconnect.demo</td>
-                <td>Active</td>
-            </tr>
-            <tr>
-                <td>Daniel Jacobs</td>
-                <td>Staff</td>
-                <td>daniel@civicconnect.demo</td>
-                <td>Active</td>
-            </tr>
-            <tr>
-                <td>Michael Adams</td>
-                <td>Management</td>
-                <td>michael@civicconnect.demo</td>
-                <td>Active</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+@if (error is not null)
+{
+    <div class="card empty" role="status">@error</div>
+}
+else if (users is null)
+{
+    <div class="card empty" role="status">Loading users…</div>
+}
+else if (users.Count == 0)
+{
+    <div class="card empty" role="status">No users are available.</div>
+}
+else
+{
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.Name</td>
+                        <td>@(user.Roles.Count == 0 ? "No roles assigned" : string.Join(", ", user.Roles))</td>
+                        <td>@user.Email</td>
+                        <td>@(user.IsActive ? "Active" : "Inactive")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+}
+
+@code {
+    private List<DirectoryUser>? users;
+    private string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try { users = await Data.GetUsersAsync(); }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unable to load the user directory.");
+            error = "The user directory is currently unavailable.";
+        }
+    }
+}
