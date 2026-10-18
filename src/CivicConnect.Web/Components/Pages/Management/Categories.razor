@@ -1,32 +1,120 @@
 @page "/management/categories"
 @attribute [Authorize(Roles = "Management")]
 @inject WorkspaceDataService Data
+@inject AuditService Audit
 @inject ILogger<Categories> Logger
 
-<div class="page-head"><div><h1>Categories</h1><p>Service categories, including inactive categories. Categories are read-only.</p></div></div>
-@if (error is not null)
+<PageTitle>Service Categories | CivicConnect</PageTitle>
+
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Configuration &amp; Administration</p>
+        <h1>Categories</h1>
+        <p>Manage controlled service categories, urgency classifications (1–4), and default routing teams. Deactivating a category preserves all historical tickets and incidents (FR-09).</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(successMessage))
+{
+    <div class="alert alert-success" role="status">@successMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(error))
 {
     <div class="card empty" role="status">@error</div>
 }
-else if (categories is null)
+
+<div class="card form-card section">
+    <h3>Add Controlled Category</h3>
+    <form @onsubmit="CreateCategoryAsync" @onsubmit:preventDefault="true">
+        <div class="form-grid">
+            <div class="field">
+                <label for="category-name">Category name *</label>
+                <input id="category-name"
+                       @bind="newName"
+                       placeholder="e.g. Plumbing & Water Supply"
+                       maxlength="80"
+                       required />
+            </div>
+            <div class="field">
+                <label for="category-urgency">Default urgency level *</label>
+                <select id="category-urgency" @bind="newUrgencyLevel">
+                    <option value="1">1 — Low Urgency</option>
+                    <option value="2">2 — Medium Urgency</option>
+                    <option value="3">3 — High Urgency</option>
+                    <option value="4">4 — Critical Urgency</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="category-team">Default routing team *</label>
+                <select id="category-team" @bind="newTeamId">
+                    @if (teams is not null)
+                    {
+                        @foreach (var team in teams)
+                        {
+                            <option value="@team.Id">@team.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="field full">
+                <label for="category-description">Description *</label>
+                <input id="category-description"
+                       @bind="newDescription"
+                       placeholder="Describe the scope of requests routed under this category"
+                       maxlength="300"
+                       required />
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                @(isSaving ? "Saving…" : "Add Category")
+            </button>
+        </div>
+    </form>
+</div>
+
+@if (categories is null && error is null)
 {
     <div class="card empty" role="status">Loading categories…</div>
 }
-else if (categories.Count == 0)
+else if (categories is not null && categories.Count == 0)
 {
     <div class="card empty" role="status">No service categories are configured.</div>
 }
-else
+else if (categories is not null)
 {
     <div class="grid grid-2">
         @foreach (var category in categories)
         {
             <div class="card settings-card category-card">
                 <div class="category-card-head">
-                    <h4>@category.Name</h4>
-                    <span class="badge @(category.IsActive ? "badge-resolved" : "badge-closed")">@(category.IsActive ? "Active" : "Inactive")</span>
+                    <div>
+                        <h4>@category.Name</h4>
+                        <span class="ticket-sub">
+                            Urgency: <strong>@PriorityMatrix.GetLevelName(category.UrgencyLevel) (@category.UrgencyLevel)</strong>
+                            @if (!string.IsNullOrWhiteSpace(category.DefaultServiceTeamName))
+                            {
+                                <span> · Default Team: <strong>@category.DefaultServiceTeamName</strong></span>
+                            }
+                        </span>
+                    </div>
+                    <span class="badge @(category.IsActive ? "badge-resolved" : "badge-closed")">
+                        @(category.IsActive ? "Active" : "Inactive")
+                    </span>
                 </div>
                 <p>@category.Description</p>
+                @if (category.Id > 0)
+                {
+                    <div class="form-actions">
+                        <button type="button"
+                                class="btn @(category.IsActive ? "btn-secondary" : "btn-primary")"
+                                disabled="@isSaving"
+                                @onclick="() => ToggleCategoryAsync(category)">
+                            @(category.IsActive ? "Deactivate (Preserve History)" : "Reactivate Category")
+                        </button>
+                    </div>
+                }
             </div>
         }
     </div>
@@ -34,14 +122,94 @@ else
 
 @code {
     private List<DirectoryCategory>? categories;
+    private List<ServiceTeamOption>? teams;
     private string? error;
+    private string? successMessage;
+    private bool isSaving;
+
+    private string newName = string.Empty;
+    private string newDescription = string.Empty;
+    private short newUrgencyLevel = PriorityMatrix.LevelMedium;
+    private int newTeamId;
+
     protected override async Task OnInitializedAsync()
     {
-        try { categories = await Data.GetCategoriesAsync(); }
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            categories = await Data.GetCategoriesAsync();
+            teams = await Data.GetServiceTeamsAsync();
+            if (newTeamId == 0 && teams.Count > 0)
+            {
+                newTeamId = teams[0].Id;
+            }
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Unable to load service categories.");
             error = "Service categories are currently unavailable.";
+        }
+    }
+
+    private async Task CreateCategoryAsync()
+    {
+        error = null;
+        successMessage = null;
+        isSaving = true;
+
+        try
+        {
+            var created = await Data.CreateCategoryAsync(
+                newName,
+                newDescription,
+                newUrgencyLevel,
+                newTeamId,
+                Audit);
+
+            newName = string.Empty;
+            newDescription = string.Empty;
+            newUrgencyLevel = PriorityMatrix.LevelMedium;
+            await ReloadAsync();
+            successMessage = $"Category '{created.Name}' created and routed to {created.DefaultServiceTeamName}.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Unable to create service category.");
+            error = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ToggleCategoryAsync(DirectoryCategory category)
+    {
+        error = null;
+        successMessage = null;
+        isSaving = true;
+
+        try
+        {
+            var targetActive = !category.IsActive;
+            var updated = await Data.SetCategoryActiveAsync(category.Id, targetActive, Audit);
+            await ReloadAsync();
+            successMessage = updated.IsActive
+                ? $"Category '{updated.Name}' reactivated for new submissions."
+                : $"Category '{updated.Name}' deactivated. Existing historical requests remain intact.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Unable to update category status.");
+            error = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
         }
     }
 }
