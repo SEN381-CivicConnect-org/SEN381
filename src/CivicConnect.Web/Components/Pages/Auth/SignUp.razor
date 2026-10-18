@@ -1,0 +1,177 @@
+@page "/signup"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@using System.ComponentModel.DataAnnotations
+@using CivicConnect.Web.Components.Shared
+@using CivicConnect.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@inject IUserRegistrationService Registration
+@inject AppAuthenticationStateProvider Auth
+@inject WorkspaceNavigation Workspace
+
+<PageTitle>Create Account | CivicConnect</PageTitle>
+<div class="login-page">
+    <section class="login-visual">
+        <div class="brand">
+            <div class="brand-mark">CC</div>
+            <div>
+                <strong>CivicConnect</strong>
+                <span>Service Management</span>
+            </div>
+        </div>
+        <div class="login-copy">
+            <h1>Join your service workspace.</h1>
+            <p>Create a CivicConnect account to submit service requests and track resolution updates in real time.</p>
+            <ul class="login-feature-list">
+                <li>Report municipal and facility incidents</li>
+                <li>Track ticket progress and status updates</li>
+                <li>Protected with Argon2id credential security</li>
+            </ul>
+        </div>
+        <small class="login-prototype">SEN381 Blazor Prototype</small>
+    </section>
+    <section class="login-panel">
+        <div class="login-theme-toggle">
+            <ThemeToggle />
+        </div>
+        <div class="login-box">
+            <h2>Create your account</h2>
+            <p>Register as a citizen reporter to submit and track requests.</p>
+
+            <EditForm Model="@model" OnValidSubmit="HandleSignUpAsync" FormName="SignUpForm">
+                <DataAnnotationsValidator />
+
+                <div class="field">
+                    <label for="signup-fullname">Full Name</label>
+                    <input
+                        id="signup-fullname"
+                        name="full-name"
+                        type="text"
+                        @bind="model.FullName"
+                        autocomplete="name"
+                        maxlength="120"
+                        placeholder="e.g. Nomsa Khumalo"
+                        required />
+                    <ValidationMessage For="@(() => model.FullName)" />
+                </div>
+
+                <div class="field">
+                    <label for="signup-email">Email Address</label>
+                    <input
+                        id="signup-email"
+                        name="email"
+                        type="email"
+                        @bind="model.Email"
+                        autocomplete="username"
+                        placeholder="name@example.com"
+                        required />
+                    <ValidationMessage For="@(() => model.Email)" />
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <label for="new-password">Password</label>
+                        <button
+                            type="button"
+                            class="link-btn"
+                            @onclick="TogglePasswordVisibility">
+                            @PasswordToggleLabel
+                        </button>
+                    </div>
+                    <input
+                        id="new-password"
+                        name="new-password"
+                        type="@PasswordInputType"
+                        @bind="model.Password"
+                        autocomplete="new-password"
+                        minlength="8"
+                        required />
+                    <small>Use at least 8 characters.</small>
+                    <ValidationMessage For="@(() => model.Password)" />
+                </div>
+
+                <div class="field">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input
+                        id="confirm-password"
+                        name="confirm-password"
+                        type="@PasswordInputType"
+                        @bind="model.ConfirmPassword"
+                        autocomplete="new-password"
+                        minlength="8"
+                        required />
+                    <ValidationMessage For="@(() => model.ConfirmPassword)" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(error))
+                {
+                    <p class="login-error" role="alert">@error</p>
+                }
+
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @SubmitButtonLabel
+                </button>
+            </EditForm>
+
+            <p class="auth-switch">Already have an account? <a href="/login">Sign in</a></p>
+        </div>
+    </section>
+</div>
+
+@code
+{
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private readonly SignUpFormModel model = new();
+    private string? error;
+    private bool showPassword;
+    private bool isSubmitting;
+
+    private string PasswordInputType => showPassword ? "text" : "password";
+
+    private string PasswordToggleLabel => showPassword ? "Hide password" : "Show password";
+
+    private string SubmitButtonLabel => isSubmitting ? "Creating Account…" : "Create Account";
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
+    private async Task HandleSignUpAsync()
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+
+        error = null;
+        isSubmitting = true;
+
+        try
+        {
+            var result = await Registration.RegisterAsync(model);
+            if (!result.Succeeded)
+            {
+                error = result.ErrorMessage ?? "Unable to create your account right now. Please try again.";
+                return;
+            }
+
+            if (await Auth.SignInAsync(model.Email, model.Password))
+            {
+                Nav.NavigateTo(Workspace.AfterSignIn(ReturnUrl), replace: true);
+            }
+            else
+            {
+                Nav.NavigateTo("/login", replace: true);
+            }
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
