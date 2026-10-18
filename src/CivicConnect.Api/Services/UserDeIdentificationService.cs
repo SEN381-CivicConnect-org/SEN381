@@ -36,6 +36,7 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
     /// <inheritdoc />
     public async Task<UserDeIdentificationResultDto> DeIdentifyUserAsync(
         Guid userId,
+        Guid ActorId,
         Guid actorId
         CancellationToken cancellationToken = default)
     {
