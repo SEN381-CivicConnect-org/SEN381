@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Risk Register</title>
+<title>Risk Register - V1.0</title>
 <style>
   :root {
     --bg: #ffffff;
@@ -90,9 +90,22 @@
 </head>
 <body>
 <main>
-  <h1>Risk Register</h1>
-  <p class="sub">Identified risks for the CivicConnect project, with their causes, ratings, planned mitigation and contingency responses.</p>
+  <h1>CivicConnect Risk Register - V1.0</h1>
+  <p class="sub"><em>Reproduced from PED v3.0 section 5.2 (RSK-01 to RSK-15), which mirrors this controlled register. Wording, ratings and status are as in the PED; nothing has been re-rated or closed here.</em></p>
 
+  <div class="note">
+    <span class="label">Scope note</span>
+    <p><strong>final.pdf was not available when this was written, so its requirements are not reflected. Check the columns and rating scale against it.</strong></p>
+  </div>
+
+  <h2>Rating scale</h2>
+  <ul>
+    <li><strong>Probability and impact:</strong> Low, Medium or High, as rated in the PED.</li>
+    <li><strong>Priority:</strong> the combined rating from the PED (High, Medium or Low). The PED does not publish the matrix behind it.</li>
+    <li><strong>Status:</strong> all fifteen risks are Open in the PED.</li>
+  </ul>
+
+  <h2>Register</h2>
   <div class="scroll">
     <table>
       <thead>
@@ -199,13 +212,13 @@
         </tr>
         <tr>
           <td class="name">RSK-09</td>
-          <td>The Mass-Report event serializes all reports on a single incident row, which reduces acknowledgment during the actual event that the system is supposed to address.</td>
-          <td>ON CONFLICT DO UPDATE on the clustering row is both the duplicate defence and the counter increment.</td>
+          <td>A mass-reporting event (e.g. a network outage) could produce duplicate incidents or duplicate technician notifications under concurrent load.</td>
+          <td>High-concurrency writes to the same clustering key without a serialising constraint.</td>
           <td class="rating">Low</td>
           <td class="rating">Medium</td>
           <td class="rating">Medium</td>
-          <td>Keep transactions short and free of external calls. Measure with a concurrent-submission load test before M4.</td>
-          <td>Shard the counter or move the report count to a timed aggregate; both add a second source of truth and need an ADR.</td>
+          <td>The clustering invariant is enforced as a partial unique index plus INSERT ... ON CONFLICT DO UPDATE, not as application-level check-then-insert (section 6.3.1, section 6.3.5).</td>
+          <td>Accept the resulting brief lock contention on the affected row &mdash; modelled at roughly two seconds to clear 200 reports at 100 transactions/second &mdash; as intended behaviour, not a fault (section 6.3.6).</td>
           <td class="rating">Open</td>
         </tr>
         <tr>
@@ -277,6 +290,13 @@
       </tbody>
     </table>
   </div>
+
+  <h2>Notes</h2>
+  <ul>
+    <li><strong>Counts:</strong> 11 High priority (RSK-01 to 05, 07, 08, 10, 11, 12, 15) and 4 Medium (RSK-06, 09, 13, 14). None is rated Low.</li>
+    <li><strong>Cross-references (not re-ratings):</strong> RSK-03 relates to DEF-01 to DEF-03 (fixed, PR #133). RSK-07 relates to DEF-10 and TD-04. RSK-08 relates to NFR-02/NFR-03 and TD-07 (a restore drill passed on 2026-10-16). RSK-10, RSK-11 and RSK-13 relate to NFR-05 and TD-10. RSK-12 is guarded by IT-CONC-02. See the Defect Register and Technical Debt Register for detail.</li>
+    <li><strong>Review needed:</strong> every status is still Open as written in the PED. Whether any should change (for example RSK-14, now that CI applies migrations, or RSK-08 after the restore drill) is a team decision and has not been made here.</li>
+  </ul>
 </main>
 </body>
 </html>
