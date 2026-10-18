@@ -116,7 +116,7 @@ services:
     restart: "no"
     command: ["--migrate-only"]
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - MIGRATION_CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_MIGRATE_USER:-civic_migrate};Password=${CIVIC_MIGRATE_PASSWORD:-civic_migrate_secure_pass};SslMode=Require
     depends_on:
@@ -137,7 +137,7 @@ services:
     ports:
       - "${BACKEND_PORT:-5060}:5060"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_HTTP_PORTS=5060
       - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
@@ -174,11 +174,14 @@ services:
     ports:
       - "${FRONTEND_PORT:-8085}:8085"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_HTTP_PORTS=8085
       - CONNECTION_STRING=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-civicconnect};Username=${CIVIC_APP_USER:-civic_app};Password=${CIVIC_APP_PASSWORD:-civic_app_secure_dev_pass};SslMode=Require
       - JWT_SECRET=${JWT_SECRET:-}
+      - API_BASE_URL=${API_BASE_URL:-http://backend-api:5060}
+      - ApiBaseUrl=${API_BASE_URL:-http://backend-api:5060}
+      - ApiSettings__BaseUrl=${API_BASE_URL:-http://backend-api:5060}
     depends_on:
       db:
         condition: service_healthy
