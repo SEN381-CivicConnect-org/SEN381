@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivicConnect — Scope Baseline v2.0</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f5;
+    --text: #1c1c1a;
+    --muted: #5c5c56;
+    --border: #d9d9d3;
+    --accent: #8a4b2a;
+    --green: #1b7f3d;
+    --amber: #b25e00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --surface: #1f1f24;
+      --text: #ececea;
+      --muted: #a3a39c;
+      --border: #33333a;
+      --accent: #d9a07a;
+      --green: #4ade80;
+      --amber: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 70rem; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 2rem; font-size: .95rem; }
+  h2 { font-size: 1.25rem; margin: 2.5rem 0 1rem; padding-bottom: .4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 1.6rem 0 .4rem; color: var(--accent); }
+  p { margin: 0 0 1rem; }
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: .5rem; }
+  .summary-cards {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .4rem;
+    padding: .8rem 1.2rem;
+    min-width: 12rem;
+    flex: 1;
+  }
+  .card-val { font-size: 1.6rem; font-weight: 700; margin-bottom: .2rem; }
+  .card-lbl { font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 50rem; margin: 1rem 0; }
+  th, td { text-align: left; padding: .75rem .85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 2px solid var(--border); }
+  tbody tr:nth-child(odd) { background: var(--surface); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .badge {
+    display: inline-block;
+    padding: .15rem .45rem;
+    border-radius: .25rem;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .badge-met { background: rgba(27, 127, 61, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .badge-part { background: rgba(178, 94, 0, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: .4rem;
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note .label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .nav-pills { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  .nav-pill {
+    padding: .4rem .8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .3rem;
+    font-size: .85rem;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .nav-pill:hover { border-color: var(--accent); color: var(--accent); }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CivicConnect — Scope Baseline v2.0</h1>
+  <p class="sub">Milestone 4 Final Delivery &amp; Operational Verification | SEN381 Master Project Brief §2, §6, §17–§22</p>
+
+  <div class="summary-cards">
+    <div class="card">
+      <div class="card-val" style="color: var(--green);">17 / 17</div>
+      <div class="card-lbl">Functional Scope (FRs Delivered)</div>
+    </div>
+    <div class="card">
+      <div class="card-val" style="color: var(--green);">11 / 11</div>
+      <div class="card-lbl">Non-Functional Scope (NFRs)</div>
+    </div>
+    <div class="card">
+      <div class="card-val">277 / 278</div>
+      <div class="card-lbl">Solution Tests (99.64% Pass)</div>
+    </div>
+    <div class="card">
+      <div class="card-val" style="color: var(--green);">$19.45 / mo</div>
+      <div class="card-lbl">Cost Ceiling (&le; $25/mo Met)</div>
+    </div>
+  </div>
+
+  <div class="nav-pills">
+    <a class="nav-pill" href="statement/scope-statement-V2.0.html">&rarr; Scope Statement v2.0</a>
+    <a class="nav-pill" href="in-scope/in-scope-capabilities-V2.0.html">&rarr; In-Scope Capabilities v2.0</a>
+    <a class="nav-pill" href="out-of-scope/out-of-scope-capabilities-V2.0.html">&rarr; Out-of-Scope Capabilities v2.0</a>
+    <a class="nav-pill" href="deferred/deferred-scope-V2.0.html">&rarr; Deferred Scope v2.0</a>
+    <a class="nav-pill" href="constraints/scope-constraints-V2.0.html">&rarr; Scope Constraints v2.0</a>
+    <a class="nav-pill" href="change-control/scope-change-control-V2.0.html">&rarr; Change Control v2.0</a>
+  </div>
+
+  <div class="note">
+    <span class="label">Scope Baseline Summary</span>
+    <p>This master document synthesizes the six operational scope dimensions of the CivicConnect platform. It confirms the delivery of 100% of committed business capabilities across citizens, staff, management, and administrators, verified through 277 automated tests and audited against statutory POPIA provisions.</p>
+  </div>
+
+  <h2>1. Scope Architecture Overview</h2>
+  <p>The CivicConnect platform delivers an integrated municipal incident tracking lifecycle across five major architectural layers:</p>
+  <ul>
+    <li><strong>Request Intake &amp; Deduplication:</strong> Atomic submission (<code>TKT-xxxxxx</code> / <code>INC-xxxxxx</code>) with partial index clustering and citizen auto-subscription (<code>FR-01</code>, <code>FR-03</code>).</li>
+    <li><strong>Triage &amp; Prioritization:</strong> Mathematical impact &times; urgency priority calculation (<code>FR-05</code>) with supervisor override auditing (<code>FR-06</code>).</li>
+    <li><strong>Staff Workflow &amp; Maintenance:</strong> Department-isolated technician queue (<code>FR-14</code>), unassigned ticket claim (<code>FR-04</code>), status transitions with history (<code>FR-07</code>), ongoing comments (<code>FR-16</code>), and physical asset linkage (<code>FR-10</code>).</li>
+    <li><strong>Management Analytics &amp; Privacy:</strong> Executive oversight dashboards (<code>FR-17</code>), overdue SLA tracking (<code>FR-12</code>), append-only audit trail (<code>FR-08</code>), and keyless POPIA staff directory projection (<code>NFR-04</code>).</li>
+    <li><strong>Disaster Recovery &amp; Infrastructure:</strong> Ephemeral database migrations, automated backup scripts with proven 12.27s restore RTO (<code>NFR-03</code>), and dual-probe health monitoring on Render cloud (<code>NFR-09</code>).</li>
+  </ul>
+
+  <h2>2. Scope Traceability to Solution Requirements</h2>
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Scope Domain</th>
+        <th>Requirements Covered</th>
+        <th>Architectural Artifacts</th>
+        <th>Test Suite Verification</th>
+        <th>Delivery Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Citizen Portal &amp; Intake</td>
+        <td><code>FR-01</code>, <code>FR-02</code>, <code>FR-03</code>, <code>FR-11</code>, <code>FR-13</code></td>
+        <td><code>SubmissionService</code>, <code>TicketSubmissionForm.razor</code>, <code>MyTickets.razor</code>, <code>incident_subscription</code></td>
+        <td><code>SubmissionServiceTests</code>, <code>ConcurrencyTests</code>, <code>RequestVisibilityEquivalencePartitionTests</code></td>
+        <td><span class="badge badge-met">Delivered &amp; Verified</span></td>
+      </tr>
+      <tr>
+        <td class="name">Staff Queue &amp; Triaging</td>
+        <td><code>FR-04</code>, <code>FR-07</code>, <code>FR-10</code>, <code>FR-14</code>, <code>FR-15</code>, <code>FR-16</code></td>
+        <td><code>StaffQueue.razor</code>, <code>TicketDetail.razor</code>, <code>incident_status_history</code>, <code>incident_note</code></td>
+        <td><code>ClaimAndAssignOwnershipTests</code>, <code>RequestStatusStateTransitionTests</code>, <code>TicketWorkflowRegressionTests</code></td>
+        <td><span class="badge badge-met">Delivered &amp; Verified</span></td>
+      </tr>
+      <tr>
+        <td class="name">Management &amp; SLA Oversight</td>
+        <td><code>FR-05</code>, <code>FR-06</code>, <code>FR-08</code>, <code>FR-12</code>, <code>FR-17</code></td>
+        <td><code>ManagerDashboard.razor</code>, <code>PriorityMatrix</code>, <code>audit_log</code>, <code>incident.due_at</code></td>
+        <td><code>PriorityMatrixTests</code>, <code>IncidentDueAtTests</code>, <code>RtmScopeCompletionTests</code></td>
+        <td><span class="badge badge-met">Delivered &amp; Verified</span></td>
+      </tr>
+      <tr>
+        <td class="name">Security, POPIA &amp; Governance</td>
+        <td><code>NFR-01</code>, <code>NFR-04</code>, <code>NFR-05</code>, <code>NFR-10</code>, <code>NFR-11</code></td>
+        <td><code>staff_directory</code> view, <code>RetentionSweepJob</code>, Argon2id hasher, PostgreSQL roles</td>
+        <td><code>SystemSecretsConfigurationTests</code>, <code>RetentionAndDisposalTests</code>, <code>PasswordStorageTests</code></td>
+        <td><span class="badge badge-met">Delivered &amp; Verified</span></td>
+      </tr>
+      <tr>
+        <td class="name">Operations &amp; Durability</td>
+        <td><code>NFR-02</code>, <code>NFR-03</code>, <code>NFR-06</code>, <code>NFR-07</code>, <code>NFR-08</code>, <code>NFR-09</code></td>
+        <td><code>backup-db.sh</code>, <code>restore-db.sh</code>, <code>render.yaml</code>, health probes</td>
+        <td>Restore drill record (12.27s RTO), <code>PERF-Q-01</code> benchmark (1.68 ms p95), health endpoints</td>
+        <td><span class="badge badge-met">Delivered &amp; Verified</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</main>
+</body>
+</html>
