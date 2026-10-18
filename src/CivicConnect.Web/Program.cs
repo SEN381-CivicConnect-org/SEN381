@@ -14,7 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
 var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration, requireJwtSecret: false);
 builder.Services.AddSingleton(systemSecrets);
-var connectionString = systemSecrets.ConnectionString;
+var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
+SystemSecretsConfiguration.EnsureServerTlsReady(connectionString);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddControllers();
