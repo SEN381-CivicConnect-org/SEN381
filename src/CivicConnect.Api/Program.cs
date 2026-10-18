@@ -64,7 +64,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 SystemSecretsConfiguration.LoadDotEnvIfPresent();
 var systemSecrets = SystemSecretsConfiguration.LoadAndValidate(builder.Configuration);
 builder.Services.AddSingleton(systemSecrets);
-var connectionString = systemSecrets.ConnectionString;
+var connectionString = SystemSecretsConfiguration.EnsureTlsConnectionString(systemSecrets.ConnectionString);
 
 builder.Services.AddDbContext<CivicConnectDbContext>(options =>
 {
