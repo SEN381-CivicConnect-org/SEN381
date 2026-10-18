@@ -1423,43 +1423,6 @@ namespace CivicConnect.Data.Migrations
                     b.ToTable("user_role", (string)null);
                 });
 
-            modelBuilder.Entity("CivicConnect.Data.Entities.StaffDirectory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("text")
-                        .HasColumnName("full_name");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<int?>("ServiceTeamId")
-                        .HasColumnType("integer")
-                        .HasColumnName("service_team_id");
-
-                    b.Property<string>("TeamName")
-                        .HasMaxLength(80)
-                        .HasColumnType("text")
-                        .HasColumnName("team_name");
-
-                    b.Property<string>("TeamRole")
-                        .HasMaxLength(80)
-                        .HasColumnType("text")
-                        .HasColumnName("team_role");
-
-                    b.Property<short?>("TeamRoleId")
-                        .HasColumnType("smallint")
-                        .HasColumnName("team_role_id");
-
-                    b.ToView("staff_directory");
-                });
-
             modelBuilder.Entity("CivicConnect.Data.Entities.Asset", b =>
                 {
                     b.HasOne("CivicConnect.Data.Entities.Location", "Location")
