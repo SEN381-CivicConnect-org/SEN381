@@ -3,7 +3,7 @@ using CivicConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 // Run against a migrated test database. All inserted rows are rolled back.
-var connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING")
+var connectionString = ResolveConnectionString()
     ?? throw new InvalidOperationException("Set TEST_CONNECTION_STRING to a migrated PostgreSQL test database.");
 var options = CivicConnectDbContext.Configure(
     new DbContextOptionsBuilder<CivicConnectDbContext>(), connectionString).Options;
@@ -16,7 +16,7 @@ var category = new Category
     Name = team.Name,
     Description = "Historical category details",
     DefaultServiceTeam = team,
-    PriorityTargetId = await context.PriorityTargets.Select(p => p.Id).FirstAsync()
+    UrgencyLevel = 2
 };
 var location = new Location
 {
@@ -42,7 +42,10 @@ Assert(await context.ActiveLocations.AnyAsync(l => l.Id == locationId), "Active 
 Assert(await context.ActiveAssets.AnyAsync(a => a.Id == assetId), "Active asset selectable.");
 
 context.Remove(category);
-context.Remove(location);
+await context.SaveChangesAsync();
+context.ChangeTracker.Clear();
+var locToRemove = await context.Locations.FindAsync(locationId);
+context.Remove(locToRemove!);
 await context.SaveChangesAsync();
 context.ChangeTracker.Clear();
 var historicalAsset = await context.Assets.Include(a => a.Location).SingleAsync(a => a.Id == assetId);
@@ -76,4 +79,54 @@ static void Assert(bool condition, string message)
     {
         throw new Exception(message);
     }
+}
+
+static string? ResolveConnectionString()
+{
+    var envValue = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING")
+        ?? Environment.GetEnvironmentVariable("MIGRATION_CONNECTION_STRING")
+        ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
+    if (!string.IsNullOrWhiteSpace(envValue))
+    {
+        return envValue;
+    }
+
+    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    while (dir is not null)
+    {
+        var envFile = Path.Combine(dir.FullName, ".env");
+        if (File.Exists(envFile))
+        {
+            string? connStr = null;
+            string? migConnStr = null;
+            foreach (var line in File.ReadAllLines(envFile))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("MIGRATION_CONNECTION_STRING=", StringComparison.Ordinal))
+                {
+                    var raw = trimmed["MIGRATION_CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
+                    migConnStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                }
+                else if (trimmed.StartsWith("CONNECTION_STRING=", StringComparison.Ordinal))
+                {
+                    var raw = trimmed["CONNECTION_STRING=".Length..].Trim().Trim('"', '\'');
+                    connStr = raw.Replace("Host=db;", "Host=localhost;", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            if (migConnStr is not null)
+            {
+                return migConnStr;
+            }
+
+            if (connStr is not null)
+            {
+                return connStr;
+            }
+        }
+
+        dir = dir.Parent;
+    }
+
+    return null;
 }

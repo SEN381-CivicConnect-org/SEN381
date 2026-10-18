@@ -1,0 +1,100 @@
+# ==============================================================================
+# CivicConnect - Render Blueprint Infrastructure as Code Specification
+# Lifecycle Phase: Phase 4 Production Deployment (SEN381 Milestone 4)
+# ==============================================================================
+# This blueprint defines the production deployment topology on Render:
+# 1. Managed PostgreSQL database instance (civicconnect-db)
+# 2. Core Service Layer: ASP.NET Core Web API (civicconnect-api)
+# 3. Presentation Layer: Blazor Web App (civicconnect-web)
+# ==============================================================================
+
+databases:
+  - name: civicconnect-db
+    databaseName: civicconnect
+    user: civic_app
+    plan: free # Can be upgraded to 'starter' for persistent backup retention
+    region: frankfurt # Low-latency EU region; select oregon/ohio/singapore as preferred
+    postgresMajorVersion: "15"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Core Service Layer: ASP.NET Core Web API (.NET 10 Kestrel)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: civicconnect-api
+    runtime: docker
+    dockerfilePath: src/CivicConnect.Api/Dockerfile
+    dockerContext: .
+    plan: free # Can be upgraded to 'starter' to eliminate idle sleep
+    region: frankfurt
+    healthCheckPath: /health/live
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "5060"
+      - key: PORT
+        value: "5060"
+      - key: CONNECTION_STRING
+        fromDatabase:
+          name: civicconnect-db
+          property: connectionString
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: civicconnect-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: RabbitMQ__Host
+        value: none # Disables external RabbitMQ requirement in PaaS environment
+      - key: RabbitMQ__Enabled
+        value: "false"
+
+  # ----------------------------------------------------------------------------
+  # 2. Presentation Layer: Blazor Web App (.NET 10 Kestrel)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: civicconnect-web
+    runtime: docker
+    dockerfilePath: src/CivicConnect.Web/Dockerfile
+    dockerContext: .
+    plan: free # Can be upgraded to 'starter'
+    region: frankfurt
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "8085"
+      - key: PORT
+        value: "8085"
+      - key: API_BASE_URL
+        fromService:
+          type: web
+          name: civicconnect-api
+          property: host
+      - key: ApiBaseUrl
+        fromService:
+          type: web
+          name: civicconnect-api
+          property: host
+      - key: ApiSettings__BaseUrl
+        fromService:
+          type: web
+          name: civicconnect-api
+          property: host
+      - key: CONNECTION_STRING
+        fromDatabase:
+          name: civicconnect-db
+          property: connectionString
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: civicconnect-db
+          property: connectionString
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: civicconnect-api
+          envVarKey: JWT_SECRET
+      - key: DetailedErrors
+        value: "false"

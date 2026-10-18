@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CivicConnect.Data\CivicConnect.Data.csproj" />
     <ProjectReference Include="..\..\src\CivicConnect.Api\CivicConnect.Api.csproj" />
+    <ProjectReference Include="..\..\src\CivicConnect.Web\CivicConnect.Web.csproj" />
   </ItemGroup>
 
 </Project>

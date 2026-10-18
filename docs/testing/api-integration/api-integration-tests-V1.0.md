@@ -18,8 +18,8 @@ Assessment Area C/D.
 - Connection string: read from the `CONNECTION_STRING` environment variable (falling
   back to the repo's `.env`), per `README.md`.
 - Test runner: `dotnet test tests/CivicConnect.Data.Tests/CivicConnect.Data.Tests.csproj`.
-- Last executed: 2026-10-15, against the running local container →
-  **32 passed, 0 failed, 0 skipped** (32 total, 3 s, `net10.0`).
+- Last executed: 2026-10-18, against the running local container →
+  **44 passed, 0 failed, 0 skipped** (44 total, 4 s, `net10.0`).
 
 ## `ClaimAndAssignOwnershipTests.cs` — FR-04, FR-07, NFR-06
 
@@ -100,6 +100,27 @@ Direct `DbContext` tests (no controller) against the real schema and seeded
   `needsRehash = true`; re-hashing on login upgrades it in place to the current
   parameters without a password reset.
 
+## `SubmissionServiceTests.cs` — FR-01 (Submit and Categorise a Service Request)
+
+Six test methods (nine cases, with the theory) against `SubmissionService` and the real
+`category`/`location`/`ticket`/`incident` schema; each opens its own uncommitted transaction
+so disposal rolls it back, needing no manual cleanup.
+
+- `IT_SUB_01_SubmitCreatesTicketAndIncident` — happy path: submitting required issue details
+  with a selected category creates a new incident and a ticket carrying the submitted title,
+  description, category and location, with `CreatedNewIncident = true` and a generated
+  `INC-`/`TKT-` reference pair standing in for the success confirmation.
+- `SubmitRequest_SelectedCategoryIsPersistedOnTheGeneratedTicket` — the chosen category is
+  persisted on both the result and the stored ticket.
+- `SubmitRequest_MissingRequiredIssueDetails_IsRejected` (`[Theory]`, 4 cases) — blank/
+  whitespace `Title` or `Description` is rejected with `ArgumentException`.
+- `SubmitRequest_WithoutSelectingAnExistingCategory_IsRejected` — a nonexistent `CategoryId`
+  is rejected with `KeyNotFoundException`.
+- `SubmitRequest_WithDeactivatedCategory_IsRejected` — a deactivated category can no longer
+  be selected for a new submission.
+- `SubmitRequest_WithNonexistentLocation_IsRejected` — a nonexistent `LocationId` is rejected
+  with `KeyNotFoundException`.
+
 ## `ServiceCatalogueTests.cs` — FR-09 (Configuration Deactivation Preserves History)
 
 Nine tests against the real `category`/`incident` schema and constraints:
@@ -120,6 +141,7 @@ Nine tests against the real `category`/`incident` schema and constraints:
 
 | RTM ID | Requirement | Covered by |
 | --- | --- | --- |
+| IT-SUB-01 | FR-01 submit and categorise a service request | `SubmissionServiceTests` |
 | IT-CLM-01 / IT-CLM-02 | FR-04 claim/assign, NFR-06 double-claim | `ClaimAndAssignOwnershipTests`, `ConcurrencyTests` |
 | IT-CONC-01 / IT-CONC-02 / IT-TXN-01 | NFR-06 concurrency correctness | `ConcurrencyTests` |
 | IT-RES-01 / IT-RES-02 | FR-10 asset linkage on resolution | `ResolutionTests` |

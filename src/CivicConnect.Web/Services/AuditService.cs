@@ -68,6 +68,17 @@ public sealed class AuditService
         }
     }
 
+    public IReadOnlyList<AuditEntry> GetRecentEntries(int maxCount = 50)
+    {
+        lock (auditLock)
+        {
+            return entries
+                .OrderByDescending(e => e.Timestamp)
+                .Take(Math.Max(1, maxCount))
+                .ToArray();
+        }
+    }
+
     private static string? Sanitize(IReadOnlyDictionary<string, object?>? values)
     {
         if (values is null)
