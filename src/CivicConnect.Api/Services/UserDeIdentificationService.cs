@@ -78,7 +78,16 @@ public sealed class UserDeIdentificationService : IUserDeIdentificationService
                 tm.LeftAt = DateTimeOffset.UtcNow;
                 tm.UpdatedAt = DateTimeOffset.UtcNow;
             }
-
+// Erasure is an auditable event ; no personal data in the payload.
+            _dbContext.AuditLogs.Add(new AuditLog
+            {
+                ActorId = actorId,
+                EntityType = AuditEntityType.User,
+                EntityId = user.Id.ToString("D"),
+                Action = AuditAction.Update,
+                AfterState = "{\"operation\":\"de-identify\"}",
+                OccurredAt = DateTimeOffset.UtcNow
+            });
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Tally preserved tickets and incidents to verify data integrity under IT-RET-02
