@@ -53,9 +53,10 @@ public sealed class SystemSecretsConfigurationTests
             configuration,
             key => envVars.GetValueOrDefault(key));
 
-        // Then both secrets are loaded from the environment variables
+        // Then both secrets are loaded from the environment variables and MigrationConnectionString is null
         Assert.Equal(ValidConnectionString, secrets.ConnectionString);
         Assert.Equal(ValidJwtSecret, secrets.JwtSecret);
+        Assert.Null(secrets.MigrationConnectionString);
     }
 
     [Theory]
