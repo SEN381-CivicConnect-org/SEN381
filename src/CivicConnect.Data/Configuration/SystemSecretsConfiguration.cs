@@ -80,6 +80,7 @@ public static class SystemSecretsConfiguration
             TryGetFromEnvironmentProvider(configuration, ConnectionStringEnvVar, out connectionString);
         }
 
+        connectionString = NormalizeToAdoNetConnectionString(connectionString);
         ValidateConnectionString(connectionString);
 
         var migrationConnectionString = envGetter(MigrationConnectionStringEnvVar);
@@ -88,6 +89,7 @@ public static class SystemSecretsConfiguration
             TryGetFromEnvironmentProvider(configuration, MigrationConnectionStringEnvVar, out migrationConnectionString);
         }
 
+        migrationConnectionString = NormalizeToAdoNetConnectionString(migrationConnectionString);
         if (!string.IsNullOrWhiteSpace(migrationConnectionString))
         {
             ValidateMigrationConnectionString(migrationConnectionString);
@@ -366,7 +368,7 @@ public static class SystemSecretsConfiguration
                 $"NFR-01: '{ConnectionStringEnvVar}' environment variable is not set or is empty. Copy .env.example to .env and fill it in.");
         }
 
-        var trimmed = connectionString.Trim();
+        var trimmed = NormalizeToAdoNetConnectionString(connectionString);
         if (trimmed.Contains("${", StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -414,7 +416,7 @@ public static class SystemSecretsConfiguration
             return;
         }
 
-        var trimmed = migrationConnectionString.Trim();
+        var trimmed = NormalizeToAdoNetConnectionString(migrationConnectionString);
         if (trimmed.Contains("${", StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -437,6 +439,56 @@ public static class SystemSecretsConfiguration
     }
 
     /// <summary>
+    /// Normalizes PostgreSQL URI-formatted connection strings (such as those provided by Render, Heroku, or Neon)
+    /// into standard ADO.NET Npgsql connection strings with enforced TLS and server certificate trust.
+    /// </summary>
+    public static string NormalizeToAdoNetConnectionString(string? rawConnectionString)
+    {
+        if (string.IsNullOrWhiteSpace(rawConnectionString))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = rawConnectionString.Trim();
+        if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                // Strip any trailing key-values appended with a semicolon before URI parsing
+                var semiIdx = trimmed.IndexOf(';');
+                var uriPart = semiIdx >= 0 ? trimmed[..semiIdx] : trimmed;
+                var uri = new Uri(uriPart);
+
+                var userInfo = uri.UserInfo.Split(':');
+                var username = Uri.UnescapeDataString(userInfo[0]);
+                var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+                var host = uri.Host;
+                var port = uri.Port > 0 ? uri.Port : 5432;
+                var database = uri.AbsolutePath.TrimStart('/');
+
+                var builder = new Npgsql.NpgsqlConnectionStringBuilder
+                {
+                    Host = host,
+                    Port = port,
+                    Database = database,
+                    Username = username,
+                    Password = password,
+                    SslMode = Npgsql.SslMode.Require
+                };
+
+                return builder.ConnectionString;
+            }
+            catch
+            {
+                // Fall back to original string if not a parseable URI
+            }
+        }
+
+        return trimmed;
+    }
+
+    /// <summary>
     /// Validates that a connection string does not disable TLS (NFR-04, IT-SEC-01) and ensures
     /// <c>SslMode=Require</c> (or <c>VerifyCA</c>/<c>VerifyFull</c>) is enforced on the returned connection string.
     /// </summary>
@@ -448,33 +500,15 @@ public static class SystemSecretsConfiguration
                 $"NFR-04 (IT-SEC-01): Database connection string cannot be null or empty.");
         }
 
-        var trimmed = connectionString.Trim();
-        if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        var normalized = NormalizeToAdoNetConnectionString(connectionString);
+        ValidateConnectionStringTls(normalized, requireExplicitTls: false);
+
+        if (!SslModeValueRegex.IsMatch(normalized))
         {
-            try
-            {
-                var uriBuilder = new Npgsql.NpgsqlConnectionStringBuilder(trimmed);
-                if (uriBuilder.SslMode == Npgsql.SslMode.Disable || uriBuilder.SslMode == Npgsql.SslMode.Allow)
-                {
-                    uriBuilder.SslMode = Npgsql.SslMode.Require;
-                }
-                return uriBuilder.ConnectionString;
-            }
-            catch
-            {
-                // Fall back to standard string manipulation
-            }
+            return normalized.TrimEnd(';') + ";SslMode=Require";
         }
 
-        ValidateConnectionStringTls(trimmed, requireExplicitTls: false);
-
-        if (!SslModeValueRegex.IsMatch(trimmed))
-        {
-            return trimmed.TrimEnd(';') + ";SslMode=Require";
-        }
-
-        return trimmed;
+        return normalized;
     }
 
     /// <summary>

@@ -49,6 +49,8 @@ services:
         value: none # Disables external RabbitMQ requirement in PaaS environment
       - key: RabbitMQ__Enabled
         value: "false"
+      - key: AUTO_MIGRATE
+        value: "true"
 
   # ----------------------------------------------------------------------------
   # 2. Presentation Layer: Blazor Web App (.NET 10 Kestrel)
@@ -98,3 +100,5 @@ services:
           envVarKey: JWT_SECRET
       - key: DetailedErrors
         value: "false"
+      - key: AUTO_MIGRATE
+        value: "true"
