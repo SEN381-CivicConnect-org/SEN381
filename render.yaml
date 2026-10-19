@@ -105,4 +105,4 @@ services:
       - key: DetailedErrors
         value: "false"
       - key: AUTO_MIGRATE
-        value: "true"
+        value: "false"

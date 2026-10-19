@@ -90,13 +90,54 @@ if (shouldMigrate)
         new DbContextOptionsBuilder<CivicConnectDbContext>(),
         migrationTlsConn);
 
-    await using var migrationDb = new CivicConnectDbContext(migrationOptions.Options);
-    await migrationDb.Database.MigrateAsync();
-
-    if (isMigrateOnly)
+    try
     {
-        Console.WriteLine("Database migrations completed successfully.");
-        return;
+        await using var migrationDb = new CivicConnectDbContext(migrationOptions.Options);
+        await migrationDb.Database.MigrateAsync();
+
+        if (isMigrateOnly)
+        {
+            Console.WriteLine("Database migrations completed successfully.");
+            return;
+        }
+    }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42501" && string.IsNullOrWhiteSpace(systemSecrets.MigrationConnectionString))
+    {
+        // civic_app has least-privilege (no DDL) because migrations were already executed (NFR-10).
+        // Attempt fallback migration with the dedicated civic_migrate role.
+        try
+        {
+            var fallbackMigrateConn = SystemSecretsConfiguration.CreateMigrationRoleConnectionString(migrationConn);
+            var fallbackOptions = CivicConnectDbContext.Configure(
+                new DbContextOptionsBuilder<CivicConnectDbContext>(),
+                fallbackMigrateConn);
+            await using var fallbackDb = new CivicConnectDbContext(fallbackOptions.Options);
+            await fallbackDb.Database.MigrateAsync();
+
+            if (isMigrateOnly)
+            {
+                Console.WriteLine("Database migrations completed successfully under civic_migrate role.");
+                return;
+            }
+        }
+        catch (Exception fallbackEx)
+        {
+            if (isMigrateOnly)
+            {
+                throw;
+            }
+
+            app.Logger.LogWarning(fallbackEx, "Database migration skipped (already applied under least-privilege role): {Message}", fallbackEx.Message);
+        }
+    }
+    catch (Exception ex)
+    {
+        if (isMigrateOnly)
+        {
+            throw;
+        }
+
+        app.Logger.LogWarning(ex, "Automatic database migration skipped or failed: {Message}", ex.Message);
     }
 }
 

@@ -105,6 +105,22 @@ if (autoMigrate)
         var db = scope.ServiceProvider.GetRequiredService<CivicConnectDbContext>();
         await db.Database.MigrateAsync();
     }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42501")
+    {
+        try
+        {
+            var fallbackMigrateConn = SystemSecretsConfiguration.CreateMigrationRoleConnectionString(connectionString);
+            var fallbackOptions = CivicConnectDbContext.Configure(
+                new DbContextOptionsBuilder<CivicConnectDbContext>(),
+                fallbackMigrateConn);
+            await using var fallbackDb = new CivicConnectDbContext(fallbackOptions.Options);
+            await fallbackDb.Database.MigrateAsync();
+        }
+        catch (Exception fallbackEx)
+        {
+            app.Logger.LogWarning(fallbackEx, "Database migration skipped (already applied under least-privilege role): {Message}", fallbackEx.Message);
+        }
+    }
     catch (Exception ex)
     {
         app.Logger.LogWarning(ex, "Automatic database migration skipped or failed: {Message}", ex.Message);
