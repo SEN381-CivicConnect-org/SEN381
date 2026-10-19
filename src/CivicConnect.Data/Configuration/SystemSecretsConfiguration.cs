@@ -538,6 +538,21 @@ public static class SystemSecretsConfiguration
     }
 
     /// <summary>
+    /// Builds a TLS-enforced connection string for the dedicated <c>civic_migrate</c> migration database role (NFR-10, IT-SEC-02).
+    /// </summary>
+    public static string CreateMigrationRoleConnectionString(string baseConnectionString, string password = "civic_migrate_secure_pass")
+    {
+        var tlsConn = EnsureTlsConnectionString(baseConnectionString);
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder(tlsConn)
+        {
+            Username = MigrationRoleName,
+            Password = Environment.GetEnvironmentVariable("CIVIC_MIGRATE_PASSWORD") ?? password
+        };
+
+        return builder.ConnectionString;
+    }
+
+    /// <summary>
     /// Connects to the database and asserts that the current session role is neither a superuser
     /// nor the dedicated migration role (NFR-10: Least-Privilege Database Access, IT-SEC-02).
     /// </summary>
